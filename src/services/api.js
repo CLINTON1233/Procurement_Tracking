@@ -15,6 +15,10 @@ export const API_ENDPOINTS = {
   
   // Dashboard
   DASHBOARD_STATS: `${API_BASE_URL}/api/budget/dashboard/stats`,
+
+  // Departments
+  DEPARTMENTS_LIST: `${API_BASE_URL}/api/departments/list`,
+  DEPARTMENTS_SEED: `${API_BASE_URL}/api/departments/seed`,
 };
 
 export const apiFetch = async (url, options = {}) => {

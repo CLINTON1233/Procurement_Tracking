@@ -9,14 +9,12 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Download,
   FileSpreadsheet,
   ChevronDown,
   Grid,
   List,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Wallet,
   DollarSign,
   Calendar,
@@ -24,6 +22,7 @@ import {
   Tag,
   ArrowUp,
   ArrowDown,
+  Eye,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
@@ -33,8 +32,9 @@ import {
   showEditBudgetModal,
   showDeleteBudgetModal,
 } from "@/components/modals/BudgetManagementModals";
+import { departmentService } from "@/services/departmentService";
 
-export default function BudgetPage() {
+export default function BudgetManagementPage() {
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,6 +44,8 @@ export default function BudgetPage() {
   const [viewMode, setViewMode] = useState("list");
   const [showFilters, setShowFilters] = useState(false);
   const [sorting, setSorting] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [departmentFilter, setDepartmentFilter] = useState("all");
 
   // Statistics
   const [stats, setStats] = useState({
@@ -54,9 +56,10 @@ export default function BudgetPage() {
     totalSisa: 0,
   });
 
-  useEffect(() => {
-    fetchBudgets();
-  }, []);
+useEffect(() => {
+  fetchBudgets();
+  fetchDepartments();
+}, []);
 
   const fetchBudgets = async () => {
     setLoading(true);
@@ -77,6 +80,26 @@ export default function BudgetPage() {
       setRefreshing(false);
     }
   };
+
+const fetchDepartments = async () => {
+  setLoadingDepartments(true);
+  try {
+    const data = await departmentService.getAllDepartments();
+    setDepartments(data);
+  } catch (error) {
+    console.error("Error fetching departments:", error);
+    if (uniqueDepartments.length > 0) {
+      const fallbackDepts = uniqueDepartments.map((name, index) => ({
+        id: index,
+        name: name
+      }));
+      setDepartments(fallbackDepts);
+    }
+  } finally {
+    setLoadingDepartments(false);
+  }
+};
+
 
   const calculateStats = (data) => {
     const total = data.length;
@@ -195,8 +218,10 @@ export default function BudgetPage() {
 
       const matchesJenis =
         jenisFilter === "all" || budget.jenis === jenisFilter;
+      const matchesDepartment =
+        departmentFilter === "all" || budget.department === departmentFilter;
 
-      return matchesSearch && matchesJenis;
+      return matchesSearch && matchesJenis && matchesDepartment;
     });
 
     if (sorting.length > 0) {
@@ -217,7 +242,7 @@ export default function BudgetPage() {
     }
 
     return filtered;
-  }, [budgets, searchTerm, jenisFilter, sorting]);
+  }, [budgets, searchTerm, jenisFilter, departmentFilter, sorting]);
 
   // ============ EXPORT EXCEL ============
   const exportToExcel = (exportType = "current") => {
@@ -302,6 +327,19 @@ export default function BudgetPage() {
     }).format(number);
   };
 
+  // ============ GET ICON BY BUDGET TYPE ============
+  const getBudgetIcon = (jenis) => {
+    if (jenis === "CAPEX") {
+      return <Building className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />;
+    } else {
+      return <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-600" />;
+    }
+  };
+
+  const getIconBackground = (jenis) => {
+    return jenis === "CAPEX" ? "bg-purple-100" : "bg-green-100";
+  };
+
   // ============ LOADING STATE ============
   if (loading) {
     return (
@@ -326,20 +364,20 @@ export default function BudgetPage() {
               </h1>
             </div>
             <p className="text-gray-500 text-sm">
-              Manage Capex/Opex and Monitor Remaining Budget
+              Manage CAPEX/OPEX and monitor remaining budget
             </p>
           </div>
         </div>
 
-        {/* STATS CARDS*/}
+        {/* STATS CARDS */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b px-4 md:px-6 py-3 md:py-4">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
               Budget Overview
             </h2>
             <p className="text-gray-500 text-xs md:text-sm mt-1">
-           Capex/Opex budget summary
+              CAPEX/OPEX budget summary
             </p>
           </div>
 
@@ -356,7 +394,7 @@ export default function BudgetPage() {
                 Total Budget
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                {stats.capex} Capex • {stats.opex} Opex
+                {stats.capex} CAPEX • {stats.opex} OPEX
               </div>
             </div>
 
@@ -369,7 +407,7 @@ export default function BudgetPage() {
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Capex
+                CAPEX
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Asset purchases
@@ -385,7 +423,7 @@ export default function BudgetPage() {
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Opex
+                OPEX
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Operational expenses
@@ -508,6 +546,33 @@ export default function BudgetPage() {
                       ))}
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Department
+                    </label>
+                    <select
+                      value={departmentFilter}
+                      onChange={(e) => {
+                        setDepartmentFilter(e.target.value);
+                        setShowFilters(false);
+                      }}
+                      className="w-full border rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white"
+                    >
+                      <option value="all">All Departments</option>
+                      {departments.length > 0
+                        ? departments.map((dept) => (
+                            <option key={dept.id} value={dept.name}>
+                              {dept.name}
+                            </option>
+                          ))
+                        : uniqueDepartments.map((dept, index) => (
+                            <option key={index} value={dept}>
+                              {dept}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
@@ -603,6 +668,25 @@ export default function BudgetPage() {
                     <option value="OPEX">OPEX</option>
                   </select>
 
+                  <select
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm bg-white min-w-[180px]"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.length > 0
+                      ? departments.map((dept) => (
+                          <option key={dept.id} value={dept.name}>
+                            {dept.name}
+                          </option>
+                        ))
+                      : uniqueDepartments.map((dept, index) => (
+                          <option key={index} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                  </select>
+
                   {/* View Mode Toggle */}
                   <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                     <button
@@ -626,6 +710,26 @@ export default function BudgetPage() {
                       <Grid className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={departmentFilter}
+                    onChange={(e) => {
+                      setDepartmentFilter(e.target.value);
+                      setShowFilters(false);
+                    }}
+                    className="w-full border rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white"
+                  >
+                    <option value="all">All Departments</option>
+                    {uniqueDepartments.map((dept, index) => (
+                      <option key={index} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -686,17 +790,11 @@ export default function BudgetPage() {
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-2 flex-1">
                         <div
-                          className={`p-1.5 md:p-2 rounded-lg ${
-                            budget.jenis === "CAPEX"
-                              ? "bg-purple-100"
-                              : "bg-green-100"
-                          }`}
+                          className={`p-1.5 md:p-2 rounded-lg ${getIconBackground(
+                            budget.jenis,
+                          )}`}
                         >
-                          {budget.jenis === "CAPEX" ? (
-                            <Building className="w-4 h-4 text-purple-600" />
-                          ) : (
-                            <Calendar className="w-4 h-4 text-green-600" />
-                          )}
+                          {getBudgetIcon(budget.jenis)}
                         </div>
                         <div className="max-w-[140px] md:max-w-[160px] flex-1">
                           <h4 className="font-medium text-gray-900 truncate text-sm">
@@ -711,6 +809,18 @@ export default function BudgetPage() {
 
                     {/* CONTENT */}
                     <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Type</span>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            budget.jenis === "CAPEX"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {budget.jenis}
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Total</span>
                         <span className="text-xs font-bold text-gray-900">
@@ -786,35 +896,21 @@ export default function BudgetPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() =>
-                          setSorting([{ id: "tahun", desc: false }])
-                        }
-                      >
-                        <div className="flex items-center">
-                          Year/Dept
-                          {sorting[0]?.id === "tahun" &&
-                            (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
-                            ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
-                            ))}
-                        </div>
-                      </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Budget Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Type
                       </th>
+
                       <th
-                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "total_budget", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-center">
                           Total Budget
                           {sorting[0]?.id === "total_budget" &&
                             (sorting[0]?.desc ? (
@@ -824,13 +920,14 @@ export default function BudgetPage() {
                             ))}
                         </div>
                       </th>
+
                       <th
-                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "sisa_budget", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-center">
                           Remaining
                           {sorting[0]?.id === "sisa_budget" &&
                             (sorting[0]?.desc ? (
@@ -840,61 +937,101 @@ export default function BudgetPage() {
                             ))}
                         </div>
                       </th>
+
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Department
+                      </th>
+
+                      <th
+                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        onClick={() =>
+                          setSorting([{ id: "tahun", desc: false }])
+                        }
+                      >
+                        <div className="flex items-center justify-center">
+                          Year
+                          {sorting[0]?.id === "tahun" &&
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Status
                       </th>
+
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+
+                  <tbody className="bg-white divide-y divide-gray-200 text-center">
                     {filteredBudgets.map((budget) => (
                       <tr key={budget.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="text-sm font-medium text-gray-900">
-                            {budget.tahun}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {budget.department}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm text-gray-900">
-                            {budget.nama_budget}
-                          </div>
-                          {budget.keterangan && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {budget.keterangan}
+                        {/* Budget Name */}
+                        <td className="px-4 py-3 text-left">
+                          <div className="flex items-center">
+                            <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
+                              {budget.jenis === "CAPEX" ? (
+                                <Building className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Calendar className="w-4 h-4 text-blue-600" />
+                              )}
                             </div>
-                          )}
+
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                                {budget.nama_budget}
+                              </div>
+
+                              {budget.keterangan && (
+                                <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                  {budget.keterangan}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </td>
+
+                        {/* Type */}
                         <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              budget.jenis === "CAPEX"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
+                          <span className="text-sm text-gray-600">
                             {budget.jenis}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+
+                        {/* Total Budget */}
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatRupiah(budget.total_budget)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right">
-                          <span
-                            className={
-                              budget.sisa_budget < budget.total_budget * 0.2
-                                ? "text-red-600 font-medium"
-                                : "text-green-600 font-medium"
-                            }
-                          >
+
+                        {/* Remaining */}
+                        <td className="px-4 py-3 text-sm">
+                          <span className="font-medium text-gray-900">
                             {formatRupiah(budget.sisa_budget)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+
+                        {/* Department */}
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {budget.department}
+                          </span>
+                        </td>
+
+                        {/* Year */}
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {budget.tahun}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3">
                           {budget.is_active ? (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full">
                               <CheckCircle className="w-3 h-3 mr-1" />
@@ -907,19 +1044,20 @@ export default function BudgetPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
+
+                        {/* Actions */}
+                        <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => handleEditClick(budget)}
                               className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Edit Budget"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
+
                             <button
                               onClick={() => handleDeleteClick(budget)}
                               className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete Budget"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -939,10 +1077,6 @@ export default function BudgetPage() {
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
                 <div className="text-xs md:text-sm text-gray-500 text-center sm:text-left">
                   Showing {filteredBudgets.length} of {budgets.length} budgets
-                </div>
-                <div className="text-xs text-gray-500">
-                  Total Budget: {formatRupiah(stats.totalBudget)} • Remaining:{" "}
-                  {formatRupiah(stats.totalSisa)}
                 </div>
               </div>
             </div>
