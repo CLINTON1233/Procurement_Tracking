@@ -44,8 +44,8 @@ export const budgetService = {
     });
   },
 
-  chooseSRMR: async (id, tipe) => {
-    return await apiFetch(API_ENDPOINTS.REQUEST_CHOOSE_SRMR(id, tipe), {
+  chooseSRMR: async (id, type) => {
+    return await apiFetch(API_ENDPOINTS.REQUEST_CHOOSE_SRMR(id, type), {
       method: 'PUT',
     });
   },
