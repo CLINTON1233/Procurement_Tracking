@@ -66,37 +66,41 @@ const fetchDepartments = async () => {
     });
   };
 
-  const handleDeleteClick = (budget) => {
-    showDeleteBudgetModal({
-      budget,
-      onConfirm: async () => {
-        try {
-          await budgetService.deleteBudget(budget.id);
-          Swal.fire({
-            title: "Deleted!",
-            text: "Budget deleted successfully",
-            icon: "success",
-            confirmButtonColor: "#1e40af",
-          });
-          fetchBudgets();
-        } catch (error) {
-          Swal.fire({
-            title: "Error!",
-            text: "Failed to delete budget",
-            icon: "error",
-            confirmButtonColor: "#1e40af",
-          });
-        }
-      },
-    });
-  };
+const handleDeleteClick = (budget) => {
+  showDeleteBudgetModal({
+    budget,
+    onConfirm: async () => {
+      try {
+        const result = await budgetService.deleteBudget(budget.id);
+        console.log('Delete result:', result); 
 
-
-export const showAddBudgetModal = ({ onSave }) => {
-  const currentYear = new Date().getFullYear();
-  fetchDepartments().then((depts) => {
-    departmentsList = depts;
+        Swal.fire({
+          title: "Deleted!",
+          text: result.message || "Budget deleted successfully",
+          icon: "success",
+          timer: 1500,
+          confirmButtonColor: "#1e40af",
+        });
+        
+        fetchBudgets();
+      } catch (error) {
+        console.error("Delete error:", error);
+        Swal.fire({
+          title: "Error!",
+          text: error.message || "Failed to delete budget",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
+        });
+      }
+    },
   });
+};
+
+// Create Budget
+export const showAddBudgetModal = async ({ onSave }) => {
+  const currentYear = new Date().getFullYear();
+  const depts = await fetchDepartments();
+  departmentsList = depts;
 
   const generateDepartmentOptions = (selectedDept = '') => {
     let options = '<option value="">Select Department</option>';
@@ -125,31 +129,20 @@ export const showAddBudgetModal = ({ onSave }) => {
       </div>
 
       <div class="space-y-3">
+        <!-- 1. BUDGET NAME -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
-            Year *
+            Budget Name *
           </label>
           <input
             type="text"
-            class="entry-tahun w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            value="${currentYear}"
-            placeholder="2024"
+            class="entry-nama_budget w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            placeholder="Enter Budget Name"
             required
           >
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">
-            Department *
-          </label>
-          <select
-            class="entry-department w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-            required
-          >
-            ${generateDepartmentOptions(selectedDept)}
-          </select>
-        </div>
-
+        <!-- 2. BUDGET TYPE -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-2">
             Budget Type *
@@ -173,18 +166,7 @@ export const showAddBudgetModal = ({ onSave }) => {
           <input type="hidden" class="entry-jenis" value="CAPEX">
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">
-            Budget Name *
-          </label>
-          <input
-            type="text"
-            class="entry-nama_budget w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="Server Purchase, Software License"
-            required
-          >
-        </div>
-
+        <!-- 3. TOTAL BUDGET -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Total Budget (Rp) *
@@ -192,20 +174,55 @@ export const showAddBudgetModal = ({ onSave }) => {
           <input
             type="number"
             class="entry-total_budget w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="10000000"
+            placeholder="Enter total budget amount"
             min="0"
             required
           >
         </div>
 
+        <!-- 4. REMAINING BUDGET (TIDAK PERLU DIISI, OTOMATIS) -->
+        <!-- Ini tidak perlu ditampilkan karena otomatis -->
+
+        <!-- 5. DEPARTMENT -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            Department *
+          </label>
+          <select
+            class="entry-department w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            required
+          >
+            ${generateDepartmentOptions(selectedDept)}
+          </select>
+        </div>
+
+        <!-- 6. FISCAL YEAR  -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            Fiscal Year *
+          </label>
+          <input
+            type="text"
+            class="entry-tahun w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            value="${currentYear}"
+            placeholder="Enter fiscal year"
+            required
+          >
+          <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
+        </div>
+
+        <!-- 7. STATUS (TIDAK PERLU DIISI, DEFAULT ACTIVE) -->
+        <!-- Status default active -->
+
+        <!-- 8. DESCRIPTION (Optional) -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Description (Optional)
           </label>
           <textarea
             class="entry-keterangan w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            rows="1"
-            placeholder="Additional notes..."
+            rows="2"
+            placeholder="Additional notes, purpose of budget, etc..."
           ></textarea>
         </div>
       </div>
@@ -374,15 +391,16 @@ export const showAddBudgetModal = ({ onSave }) => {
   });
 };
 
-export const showEditBudgetModal = ({ budget, onSave }) => {
-  fetchDepartments().then((depts) => {
-    departmentsList = depts;
-  });
+// Edit Budget
+export const showEditBudgetModal = async ({ budget, onSave }) => {
+  // Tunggu data department selesai diambil sebelum render modal
+  const depts = await fetchDepartments();
+  departmentsList = depts;
 
   const generateDepartmentOptions = () => {
     let options = '<option value="">Select Department</option>';
     departmentsList.forEach(dept => {
-      const selected = dept.name === budget.department ? 'selected' : '';
+      const selected = dept.name === budget.department_name ? 'selected' : '';
       options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
     });
     return options;
@@ -393,34 +411,23 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
     html: `
       <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3">
         <div class="space-y-3">
+          <!-- 1. BUDGET NAME -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
-              Year *
+              Budget Name *
             </label>
             <input
               type="text"
-              id="swal-tahun"
+              id="swal-nama_budget"
               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value="${budget.tahun || ""}"
+              value="${budget.nama_budget || ""}"
+              placeholder="e.g., Server Purchase, Software License"
               required
             >
-            <div id="tahun-error" class="text-xs text-red-600 mt-1 hidden"></div>
+            <div id="nama-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">
-              Department *
-            </label>
-            <select
-              id="swal-department"
-              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-              required
-            >
-              ${generateDepartmentOptions()}
-            </select>
-            <div id="department-error" class="text-xs text-red-600 mt-1 hidden"></div>
-          </div>
-
+          <!-- 2. BUDGET TYPE -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-2">
               Budget Type *
@@ -445,20 +452,7 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
             <div id="jenis-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">
-              Budget Name *
-            </label>
-            <input
-              type="text"
-              id="swal-nama_budget"
-              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value="${budget.nama_budget || ""}"
-              required
-            >
-            <div id="nama-error" class="text-xs text-red-600 mt-1 hidden"></div>
-          </div>
-
+          <!-- 3. TOTAL BUDGET -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Total Budget (Rp) *
@@ -474,6 +468,54 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
             <div id="total-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
+          <!-- 4. REMAINING BUDGET (Read-only) -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Remaining Budget
+            </label>
+            <input
+              type="text"
+              class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+              value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.sisa_budget || 0)}"
+              readonly
+              disabled
+            >
+            <p class="text-xs text-gray-500 mt-1">Auto-calculated from total budget</p>
+          </div>
+
+          <!-- 5. DEPARTMENT -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Department *
+            </label>
+            <select
+              id="swal-department"
+              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              required
+            >
+              ${generateDepartmentOptions()}
+            </select>
+            <div id="department-error" class="text-xs text-red-600 mt-1 hidden"></div>
+          </div>
+
+          <!-- 6. FISCAL YEAR -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Fiscal Year *
+            </label>
+            <input
+              type="text"
+              id="swal-tahun"
+              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              value="${budget.tahun || ""}"
+              placeholder="e.g., 2026"
+              required
+            >
+            <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
+            <div id="tahun-error" class="text-xs text-red-600 mt-1 hidden"></div>
+          </div>
+
+            <!-- 7. Description -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Description (Optional)
@@ -482,6 +524,7 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
               id="swal-keterangan"
               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               rows="2"
+              placeholder="Additional notes, purpose of budget, etc..."
             >${budget.keterangan || ""}</textarea>
           </div>
         </div>
@@ -491,7 +534,7 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
         </div>
       </div>
     `,
-    width: window.innerWidth > 768 ? "500px" : "95vw",
+    width: window.innerWidth > 768 ? "550px" : "95vw",
     padding: "0",
     showCancelButton: true,
     confirmButtonText: "Update",
@@ -580,6 +623,8 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
     }
   });
 };
+
+//Delete Budget
 export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
   Swal.fire({
     title: `Delete ${budget.nama_budget || "Budget"}?`,
@@ -592,12 +637,31 @@ export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
     cancelButtonText: "Cancel",
     customClass: {
       popup: "rounded-xl",
-      confirmButton: "!bg-red-600 hover:!bg-red-700",
-      cancelButton: "!bg-gray-500 hover:!bg-gray-600",
+      confirmButton: "!bg-red-600 hover:!bg-red-700 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+      cancelButton: "!bg-gray-500 hover:!bg-gray-600 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
     },
-  }).then((result) => {
+  }).then(async (result) => {
     if (result.isConfirmed) {
-      onConfirm();
+      try {
+        Swal.fire({
+          title: 'Deleting...',
+          text: 'Please wait',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        await onConfirm();
+      
+      } catch (error) {
+        Swal.fire({
+          title: 'Error!',
+          text: error.message || 'Failed to delete budget',
+          icon: 'error',
+          confirmButtonColor: '#1e40af'
+        });
+      }
     }
   });
 };

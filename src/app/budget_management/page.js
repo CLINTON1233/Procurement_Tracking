@@ -12,14 +12,13 @@ import {
   FileSpreadsheet,
   ChevronDown,
   Grid,
-  List,
   CheckCircle,
   XCircle,
   Wallet,
   DollarSign,
   Calendar,
   Building,
-  Tag,
+  List,
   ArrowUp,
   ArrowDown,
   BarChart3,
@@ -52,8 +51,8 @@ export default function BudgetManagementPage() {
   // Statistics
   const [stats, setStats] = useState({
     total: 0,
-    Capex: 0,
-    Opex: 0,
+    CAPEX: 0,
+    OPEX: 0,
     totalBudget: 0,
     totalSisa: 0,
   });
@@ -112,8 +111,8 @@ export default function BudgetManagementPage() {
 
   const calculateStats = (data) => {
     const total = data.length;
-    const Capex = data.filter((b) => b.jenis === "CAPEX").length;
-    const Opex = data.filter((b) => b.jenis === "OPEX").length;
+    const CAPEX = data.filter((b) => b.jenis === "CAPEX").length;
+    const OPEX = data.filter((b) => b.jenis === "OPEX").length;
     const totalBudget = data.reduce(
       (sum, b) => sum + Number(b.total_budget),
       0,
@@ -122,8 +121,8 @@ export default function BudgetManagementPage() {
 
     setStats({
       total,
-      Capex,
-      Opex,
+      CAPEX,
+      OPEX,
       totalBudget,
       totalSisa,
     });
@@ -221,13 +220,16 @@ export default function BudgetManagementPage() {
       const matchesSearch =
         searchTerm === "" ||
         budget.nama_budget?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        budget.department_name_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        budget.department_name_name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         budget.keterangan?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesJenis =
         jenisFilter === "all" || budget.jenis === jenisFilter;
       const matchesDepartment =
-        departmentFilter === "all" || budget.department_name_name === departmentFilter;
+        departmentFilter === "all" ||
+        budget.department_name_name === departmentFilter;
 
       return matchesSearch && matchesJenis && matchesDepartment;
     });
@@ -337,7 +339,7 @@ export default function BudgetManagementPage() {
 
   // ============ GET ICON BY BUDGET TYPE ============
   const getBudgetIcon = (jenis) => {
-    if (jenis === "Capex") {
+    if (jenis === "CAPEX") {
       return <Building className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />;
     } else {
       return <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-600" />;
@@ -345,7 +347,7 @@ export default function BudgetManagementPage() {
   };
 
   const getIconBackground = (jenis) => {
-    return jenis === "Capex" ? "bg-purple-100" : "bg-green-100";
+    return jenis === "CAPEX" ? "bg-purple-100" : "bg-green-100";
   };
 
   // ============ LOADING STATE ============
@@ -361,7 +363,7 @@ export default function BudgetManagementPage() {
 
   return (
     <LayoutDashboard activeMenu={1}>
-      <div className="space-y-6 p-3 md:p-6 bg-gray-50 min-h-screen">
+      <div className="space-y-6 p-3 md:p-6 bg-gray-50">
         {/* HEADER SECTION */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
@@ -372,7 +374,7 @@ export default function BudgetManagementPage() {
               </h1>
             </div>
             <p className="text-gray-500 text-sm">
-              Manage Capex/Opex and monitor remaining budget
+              Manage CAPEX/OPEX and monitor remaining budget
             </p>
           </div>
         </div>
@@ -385,7 +387,7 @@ export default function BudgetManagementPage() {
               Budget Overview
             </h2>
             <p className="text-gray-500 text-xs md:text-sm mt-1">
-              Capex/Opex budget summary
+              CAPEX/OPEX budget summary
             </p>
           </div>
 
@@ -402,36 +404,36 @@ export default function BudgetManagementPage() {
                 Total Budget
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                {stats.Capex} Capex • {stats.Opex} Opex
+                {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
               </div>
             </div>
 
-            {/* Capex */}
+            {/* CAPEX */}
             <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-center">
                 <Building className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
-                  {stats.Capex}
+                  {stats.CAPEX}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Capex
+                CAPEX
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Asset purchases
               </div>
             </div>
 
-            {/* Opex */}
+            {/* OPEX */}
             <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-center">
                 <Calendar className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
-                  {stats.Opex}
+                  {stats.OPEX}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Opex
+                OPEX
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Operational expenses
@@ -465,12 +467,12 @@ export default function BudgetManagementPage() {
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-blue-600" />
+                  <List className="w-5 h-5 text-blue-600" />
                   Budget List
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {budgets.length} budgets available •{" "}
-                  {uniqueDepartments.length} departments
+                  {budgets.length} Budgets available •{" "}
+                  {uniqueDepartments.length} Departments
                 </p>
               </div>
 
@@ -532,7 +534,7 @@ export default function BudgetManagementPage() {
                       Budget Type
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {["all", "Capex", "Opex"].map((jenis) => (
+                      {["all", "CAPEX", "OPEX"].map((jenis) => (
                         <button
                           key={jenis}
                           onClick={() => {
@@ -541,9 +543,9 @@ export default function BudgetManagementPage() {
                           }}
                           className={`px-3 py-1.5 text-xs rounded-lg ${
                             jenisFilter === jenis
-                              ? jenis === "Capex"
+                              ? jenis === "CAPEX"
                                 ? "bg-purple-600 text-white"
-                                : jenis === "Opex"
+                                : jenis === "OPEX"
                                   ? "bg-green-600 text-white"
                                   : "bg-blue-600 text-white"
                               : "bg-white border text-gray-700"
@@ -586,7 +588,6 @@ export default function BudgetManagementPage() {
 
               {/* Desktop Action Buttons */}
               <div className="flex flex-wrap items-center gap-2">
-                {/* Export Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowExportDropdown(!showExportDropdown)}
@@ -663,7 +664,7 @@ export default function BudgetManagementPage() {
                   <span>Add Budget</span>
                 </button>
 
-                {/* Desktop Filters - HANYA SATU SELECT UNTUK DEPARTMENT */}
+                {/* Desktop Filters  */}
                 <div className="hidden md:flex items-center gap-2 ml-auto">
                   {/* Type Filter */}
                   <select
@@ -672,11 +673,11 @@ export default function BudgetManagementPage() {
                     className="border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm bg-white min-w-[120px]"
                   >
                     <option value="all">All Types</option>
-                    <option value="Capex">Capex</option>
-                    <option value="Opex">Opex</option>
+                    <option value="CAPEX">CAPEX</option>
+                    <option value="OPEX">OPEX</option>
                   </select>
 
-                  {/* Department Filter - SATU INI SAJA */}
+                  {/* Department Filter */}
                   <select
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -734,7 +735,7 @@ export default function BudgetManagementPage() {
                     No budget available
                   </h3>
                   <p className="text-gray-400 text-sm mb-6">
-                    Start by adding Capex/Opex budget
+                    Start by adding CAPEX/OPEX budget
                   </p>
                   <button
                     onClick={handleAddClick}
@@ -778,56 +779,52 @@ export default function BudgetManagementPage() {
                     {/* HEADER */}
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-2 flex-1">
-                        <div
-                          className={`p-1.5 md:p-2 rounded-lg ${getIconBackground(
-                            budget.jenis,
-                          )}`}
-                        >
-                          {getBudgetIcon(budget.jenis)}
+                        <div className="p-1.5 md:p-2 rounded-lg bg-blue-100">
+                          {/* Icon biru */}
+                          {budget.jenis === "CAPEX" ? (
+                            <Building className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                          )}
                         </div>
                         <div className="max-w-[140px] md:max-w-[160px] flex-1">
                           <h4 className="font-medium text-gray-900 truncate text-sm">
                             {budget.nama_budget}
                           </h4>
-                          <p className="text-xs text-gray-500 truncate">
-                            {budget.tahun} • {budget.department_name}
-                          </p>
+                          {/* Type badge biru di bawah nama budget */}
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                            {budget.jenis}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {/* CONTENT */}
                     <div className="space-y-2">
+                      {/* Department */}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Type</span>
-                        <span
-                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            budget.jenis === "Capex"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {budget.jenis}
+                        <span className="text-xs text-gray-500">
+                          Department
+                        </span>
+                        <span className="text-xs font-medium text-gray-900">
+                          {budget.department_name}
                         </span>
                       </div>
+                      {/* Total */}
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Total</span>
                         <span className="text-xs font-bold text-gray-900">
                           {formatRupiah(budget.total_budget)}
                         </span>
                       </div>
+                      {/* Remaining */}
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Remaining</span>
-                        <span
-                          className={`text-xs font-medium ${
-                            budget.sisa_budget < budget.total_budget * 0.2
-                              ? "text-red-600"
-                              : "text-green-600"
-                          }`}
-                        >
+                        <span className="text-xs font-medium text-blue-600">
                           {formatRupiah(budget.sisa_budget)}
                         </span>
                       </div>
+                      {/* Status */}
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Status</span>
                         <span
@@ -850,13 +847,18 @@ export default function BudgetManagementPage() {
                           )}
                         </span>
                       </div>
-                      {budget.keterangan && (
-                        <div className="pt-2 border-t">
-                          <span className="text-xs text-gray-500">
-                            {budget.keterangan}
-                          </span>
-                        </div>
-                      )}
+                      {/* Description */}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-gray-500 font-semibold">Description</span>
+                        <span className="text-xs font-medium text-gray-900">{budget.keterangan || "-"}</span>
+                      </div>
+                      {/* Tahun */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Fiscal Year</span>
+                        <span className="text-xs font-medium text-gray-900">
+                          {budget.tahun}
+                        </span>
+                      </div>
                     </div>
 
                     {/* ACTION BUTTONS */}
@@ -880,7 +882,7 @@ export default function BudgetManagementPage() {
                 ))}
               </div>
             ) : (
-              /* LIST VIEW - SAMA */
+              /* LIST VIEW  */
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -933,7 +935,7 @@ export default function BudgetManagementPage() {
                         }
                       >
                         <div className="flex items-center justify-center">
-                          Year
+                          Fiscal Year
                           {sorting[0]?.id === "tahun" &&
                             (sorting[0]?.desc ? (
                               <ArrowDown className="w-3 h-3 ml-1" />
@@ -956,7 +958,7 @@ export default function BudgetManagementPage() {
                         <td className="px-4 py-3 text-left">
                           <div className="flex items-center">
                             <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
-                              {budget.jenis === "Capex" ? (
+                              {budget.jenis === "CAPEX" ? (
                                 <Building className="w-4 h-4 text-blue-600" />
                               ) : (
                                 <Calendar className="w-4 h-4 text-blue-600" />
