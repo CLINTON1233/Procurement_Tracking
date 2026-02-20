@@ -88,7 +88,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
     {
       icon: FileText,
       label: "Budget Request",
-      href: "/request",
+      href: "/budget_request",
       hasDropdown: false,
     },
     // {
@@ -194,12 +194,12 @@ export default function LayoutDashboard({ children, activeMenu }) {
       {/* Top Navbar */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+         <div className="flex items-center space-x-2">
             <Image
               src="/seatrium.png"
               alt="Seatrium Logo"
               width={200}
-              height={200}
+              height={250}
               className="object-contain"
               priority
             />

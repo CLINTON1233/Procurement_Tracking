@@ -55,7 +55,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
           <input
             type="text"
             class="entry-budget_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="e.g., Server Procurement 2026"
+            placeholder="Capex/Opex IT 2026"
             required
           >
         </div>
@@ -68,7 +68,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
           <input
             type="text"
             class="entry-budget_code w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="e.g., BUD-2026-001"
+            placeholder="BUD-2026-001"
           >
           <p class="text-xs text-gray-500 mt-1">Optional internal budget code</p>
         </div>
@@ -129,11 +129,11 @@ export const showAddBudgetModal = async ({ onSave }) => {
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Budget Owner
           </label>
-          <input
-            type="text"
-            class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="e.g., John Doe"
-          >
+            <input
+              type="text"
+              class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="Enter owner name"
+            >
           <p class="text-xs text-gray-500 mt-1">Person responsible for this budget</p>
         </div>
 
@@ -146,7 +146,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
             type="text"
             class="entry-fiscal_year w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             value="${currentYear}"
-            placeholder="e.g., 2026"
+            placeholder="2026"
             required
           >
           <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
@@ -441,7 +441,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
               id="edit-budget_code"
               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value="${budget.budget_code || ""}"
-              placeholder="e.g., BUD-2026-001"
+              placeholder="BUD-2026-001"
             >
           </div>
 
@@ -566,7 +566,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
               id="edit-fiscal_year"
               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value="${budget.fiscal_year || ""}"
-              placeholder="e.g., 2026"
+              placeholder="2026"
               required
             >
             <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
@@ -928,12 +928,6 @@ export const showBudgetDetailsModal = (budget) => {
         <div>
           <div class="${label}">Updated At</div>
           <div class="${value}">${formatDate(budget.updated_at)}</div>
-        </div>
-
-        <!-- Baris 10: Budget ID (full width) -->
-        <div class="col-span-2 border-t mt-1 pt-2">
-          <div class="${label}">Budget ID</div>
-          <div class="${value} font-mono text-xs">${budget.id}</div>
         </div>
       </div>
     `,
