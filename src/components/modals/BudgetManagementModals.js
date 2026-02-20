@@ -9,7 +9,7 @@ const fetchDepartments = async () => {
     departmentsList = data;
     return data;
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    console.error("Error fetching departments:", error);
     return [];
   }
 };
@@ -20,16 +20,16 @@ export const showAddBudgetModal = async ({ onSave }) => {
   const depts = await fetchDepartments();
   departmentsList = depts;
 
-  const generateDepartmentOptions = (selectedDept = '') => {
+  const generateDepartmentOptions = (selectedDept = "") => {
     let options = '<option value="">Select Department</option>';
-    departmentsList.forEach(dept => {
-      const selected = dept.name === selectedDept ? 'selected' : '';
+    departmentsList.forEach((dept) => {
+      const selected = dept.name === selectedDept ? "selected" : "";
       options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
     });
     return options;
   };
 
-  const generateEntryHTML = (index, selectedDept = '') => `
+  const generateEntryHTML = (index, selectedDept = "") => `
     <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-index="${index}">
       <div class="flex justify-between items-center mb-3">
         <h4 class="text-sm font-semibold text-gray-700">Budget Entry #${index + 1}</h4>
@@ -237,9 +237,12 @@ export const showAddBudgetModal = async ({ onSave }) => {
     customClass: {
       popup: "rounded-xl overflow-hidden bg-white mx-4",
       htmlContainer: "!p-4 !m-0 !bg-white",
-      actions: "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
-      confirmButton: "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
-      cancelButton: "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+      actions:
+        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
+      cancelButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
     },
     didOpen: () => {
       const setupJenisButtons = (container) => {
@@ -251,10 +254,18 @@ export const showAddBudgetModal = async ({ onSave }) => {
 
             buttons.forEach((b) => {
               b.classList.remove("bg-blue-600", "text-white");
-              b.classList.add("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
+              b.classList.add(
+                "bg-gray-100",
+                "text-gray-700",
+                "hover:bg-gray-200",
+              );
             });
 
-            btn.classList.remove("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
+            btn.classList.remove(
+              "bg-gray-100",
+              "text-gray-700",
+              "hover:bg-gray-200",
+            );
             btn.classList.add("bg-blue-600", "text-white");
 
             const jenis = btn.getAttribute("data-jenis");
@@ -277,20 +288,22 @@ export const showAddBudgetModal = async ({ onSave }) => {
       setupJenisButtons(document);
       setupRemoveButtons();
 
-      document.getElementById("add-more-entries")?.addEventListener("click", () => {
-        const container = document.getElementById("budget-entries-container");
-        const currentCount = container.children.length;
+      document
+        .getElementById("add-more-entries")
+        ?.addEventListener("click", () => {
+          const container = document.getElementById("budget-entries-container");
+          const currentCount = container.children.length;
 
-        const newEntry = document.createElement("div");
-        newEntry.innerHTML = generateEntryHTML(currentCount);
+          const newEntry = document.createElement("div");
+          newEntry.innerHTML = generateEntryHTML(currentCount);
 
-        container.appendChild(newEntry.firstElementChild);
-        const lastEntry = container.lastElementChild;
-        setupJenisButtons(lastEntry);
-        setupRemoveButtons();
+          container.appendChild(newEntry.firstElementChild);
+          const lastEntry = container.lastElementChild;
+          setupJenisButtons(lastEntry);
+          setupRemoveButtons();
 
-        lastEntry.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
+          lastEntry.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
     },
     preConfirm: () => {
       const entries = document.querySelectorAll(".budget-entry");
@@ -298,16 +311,26 @@ export const showAddBudgetModal = async ({ onSave }) => {
       const errors = [];
 
       entries.forEach((entry, index) => {
-        const fiscal_year = entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
-        const budget_code = entry.querySelector(".entry-budget_code")?.value?.trim() || null;
-        const department_name = entry.querySelector(".entry-department_name")?.value || "";
-        const budget_type = entry.querySelector(".entry-budget_type")?.value || "CAPEX";
-        const budget_name = entry.querySelector(".entry-budget_name")?.value?.trim() || "";
-        const total_amount = entry.querySelector(".entry-total_amount")?.value || "";
-        const budget_owner = entry.querySelector(".entry-budget_owner")?.value?.trim() || null;
-        const period_start = entry.querySelector(".entry-period_start")?.value || null;
-        const period_end = entry.querySelector(".entry-period_end")?.value || null;
-        const description = entry.querySelector(".entry-description")?.value?.trim() || "";
+        const fiscal_year =
+          entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
+        const budget_code =
+          entry.querySelector(".entry-budget_code")?.value?.trim() || null;
+        const department_name =
+          entry.querySelector(".entry-department_name")?.value || "";
+        const budget_type =
+          entry.querySelector(".entry-budget_type")?.value || "CAPEX";
+        const budget_name =
+          entry.querySelector(".entry-budget_name")?.value?.trim() || "";
+        const total_amount =
+          entry.querySelector(".entry-total_amount")?.value || "";
+        const budget_owner =
+          entry.querySelector(".entry-budget_owner")?.value?.trim() || null;
+        const period_start =
+          entry.querySelector(".entry-period_start")?.value || null;
+        const period_end =
+          entry.querySelector(".entry-period_end")?.value || null;
+        const description =
+          entry.querySelector(".entry-description")?.value?.trim() || "";
 
         const entryErrors = [];
 
@@ -366,17 +389,31 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
 
   const generateDepartmentOptions = () => {
     let options = '<option value="">Select Department</option>';
-    departmentsList.forEach(dept => {
-      const selected = dept.name === budget.department_name ? 'selected' : '';
+    departmentsList.forEach((dept) => {
+      const selected = dept.name === budget.department_name ? "selected" : "";
       options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
     });
     return options;
   };
 
   Swal.fire({
-    title: `<span class="text-gray-900 font-semibold">Edit Budget</span>`,
+    title: "",
     html: `
       <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3">
+        <div class="sticky top-0 bg-white py-2 z-10 border-b border-gray-200 mb-3">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="text-blue-600">
+              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14"/>
+              <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+
+            <span class="text-base font-semibold text-gray-900">
+              Edit Budget
+            </span>
+          </div>
+        </div>
         <div class="space-y-3">
           <!-- 1. BUDGET NAME -->
           <div>
@@ -458,7 +495,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
               <input
                 type="text"
                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
+                value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
                 readonly
                 disabled
               >
@@ -470,7 +507,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
               <input
                 type="text"
                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
+                value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
                 readonly
                 disabled
               >
@@ -482,7 +519,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
               <input
                 type="text"
                 class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
+                value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
                 readonly
                 disabled
               >
@@ -546,7 +583,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
                 type="date"
                 id="edit-period_start"
                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.period_start ? budget.period_start.split('T')[0] : ''}"
+                value="${budget.period_start ? budget.period_start.split("T")[0] : ""}"
               >
             </div>
             <div>
@@ -557,7 +594,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
                 type="date"
                 id="edit-period_end"
                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.period_end ? budget.period_end.split('T')[0] : ''}"
+                value="${budget.period_end ? budget.period_end.split("T")[0] : ""}"
               >
             </div>
           </div>
@@ -590,24 +627,36 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
     cancelButtonColor: "#6b7280",
     customClass: {
       popup: "rounded-xl overflow-hidden bg-white mx-4",
-      title: "!text-left !p-4 !m-0 !bg-white !border-b !border-gray-200 !text-gray-900",
+      title:
+        "!text-left !p-4 !m-0 !bg-white !border-b !border-gray-200 !text-gray-900",
       htmlContainer: "!p-4 !m-0 !bg-white",
-      actions: "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
-      confirmButton: "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
-      cancelButton: "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+      actions:
+        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
+      cancelButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
     },
     preConfirm: () => {
       const formData = {
-        fiscal_year: document.getElementById("edit-fiscal_year")?.value?.trim() || "",
-        budget_code: document.getElementById("edit-budget_code")?.value?.trim() || null,
-        department_name: document.getElementById("edit-department_name")?.value || "",
-        budget_type: document.getElementById("edit-budget_type")?.value || "CAPEX",
-        budget_name: document.getElementById("edit-budget_name")?.value?.trim() || "",
+        fiscal_year:
+          document.getElementById("edit-fiscal_year")?.value?.trim() || "",
+        budget_code:
+          document.getElementById("edit-budget_code")?.value?.trim() || null,
+        department_name:
+          document.getElementById("edit-department_name")?.value || "",
+        budget_type:
+          document.getElementById("edit-budget_type")?.value || "CAPEX",
+        budget_name:
+          document.getElementById("edit-budget_name")?.value?.trim() || "",
         total_amount: document.getElementById("edit-total_amount")?.value || "",
-        budget_owner: document.getElementById("edit-budget_owner")?.value?.trim() || null,
-        period_start: document.getElementById("edit-period_start")?.value || null,
+        budget_owner:
+          document.getElementById("edit-budget_owner")?.value?.trim() || null,
+        period_start:
+          document.getElementById("edit-period_start")?.value || null,
         period_end: document.getElementById("edit-period_end")?.value || null,
-        description: document.getElementById("edit-description")?.value?.trim() || "",
+        description:
+          document.getElementById("edit-description")?.value?.trim() || "",
       };
 
       const errors = {};
@@ -622,7 +671,8 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
 
       if (!formData.department_name) {
         errors.department = "Department is required";
-        document.getElementById("department-error").textContent = errors.department;
+        document.getElementById("department-error").textContent =
+          errors.department;
         document.getElementById("department-error").classList.remove("hidden");
       } else {
         document.getElementById("department-error").classList.add("hidden");
@@ -652,14 +702,24 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
       return formData;
     },
     didOpen: () => {
-      const jenisButtons = document.querySelectorAll("#edit-jenis-container .jenis-btn");
+      const jenisButtons = document.querySelectorAll(
+        "#edit-jenis-container .jenis-btn",
+      );
       jenisButtons.forEach((btn) => {
         btn.addEventListener("click", () => {
           jenisButtons.forEach((b) => {
             b.classList.remove("bg-blue-600", "text-white");
-            b.classList.add("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
+            b.classList.add(
+              "bg-gray-100",
+              "text-gray-700",
+              "hover:bg-gray-200",
+            );
           });
-          btn.classList.remove("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
+          btn.classList.remove(
+            "bg-gray-100",
+            "text-gray-700",
+            "hover:bg-gray-200",
+          );
           btn.classList.add("bg-blue-600", "text-white");
 
           const jenis = btn.getAttribute("data-jenis");
@@ -688,31 +748,206 @@ export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
     cancelButtonText: "Cancel",
     customClass: {
       popup: "rounded-xl",
-      confirmButton: "!bg-red-600 hover:!bg-red-700 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
-      cancelButton: "!bg-gray-500 hover:!bg-gray-600 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+      confirmButton:
+        "!bg-red-600 hover:!bg-red-700 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+      cancelButton:
+        "!bg-gray-500 hover:!bg-gray-600 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
     },
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
         Swal.fire({
-          title: 'Deleting...',
-          text: 'Please wait',
+          title: "Deleting...",
+          text: "Please wait",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
-          }
+          },
         });
 
         await onConfirm();
-      
       } catch (error) {
         Swal.fire({
-          title: 'Error!',
-          text: error.message || 'Failed to delete budget',
-          icon: 'error',
-          confirmButtonColor: '#1e40af'
+          title: "Error!",
+          text: error.message || "Failed to delete budget",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
         });
       }
     }
+  });
+};
+
+export const showBudgetDetailsModal = (budget) => {
+  const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(number || 0);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "-";
+    }
+  };
+
+  const label = "text-[11px] text-gray-500 leading-tight";
+  const value = "text-[15px] font-semibold text-gray-900 leading-tight";
+
+  Swal.fire({
+    title: `
+      <h2 class="text-[17px] font-semibold text-gray-900 text-center !m-0 !p-0">
+        ${budget.budget_name || "Budget Details"}
+      </h2>
+    `,
+    html: `
+      <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-left mt-1">
+        <!-- Baris 1: Type & Budget Code -->
+        <div>
+          <div class="${label}">Type</div>
+          <div class="${value}">${budget.budget_type || "N/A"}</div>
+        </div>
+        <div>
+          <div class="${label}">Budget Code</div>
+          <div class="${value}">${budget.budget_code || "-"}</div>
+        </div>
+
+        <!-- Baris 2: Total Amount & Remaining -->
+        <div>
+          <div class="${label}">Total Amount</div>
+          <div class="${value}">${formatRupiah(budget.total_amount)}</div>
+        </div>
+        <div>
+          <div class="${label}">Remaining</div>
+          <div class="text-[15px] font-semibold text-green-600 leading-tight">${formatRupiah(budget.remaining_amount)}</div>
+        </div>
+
+        <!-- Baris 3: Reserved & Used -->
+        <div>
+          <div class="${label}">Reserved</div>
+          <div class="text-[15px] font-semibold text-yellow-600 leading-tight">${formatRupiah(budget.reserved_amount)}</div>
+        </div>
+        <div>
+          <div class="${label}">Used</div>
+          <div class="text-[15px] font-semibold text-blue-600 leading-tight">${formatRupiah(budget.used_amount)}</div>
+        </div>
+
+        <!-- Baris 4: Department & Budget Owner -->
+        <div>
+          <div class="${label}">Department</div>
+          <div class="${value}">${budget.department_name || "-"}</div>
+        </div>
+        <div>
+          <div class="${label}">Budget Owner</div>
+          <div class="${value}">${budget.budget_owner || "-"}</div>
+        </div>
+
+        <!-- Baris 5: Fiscal Year & Status -->
+        <div>
+          <div class="${label}">Fiscal Year</div>
+          <div class="${value}">${budget.fiscal_year || "-"}</div>
+        </div>
+        <div>
+          <div class="${label}">Status</div>
+          <div class="text-[15px] font-semibold ${budget.is_active ? "text-green-600" : "text-gray-500"} leading-tight">
+            ${budget.is_active ? "Active" : "Inactive"}
+          </div>
+        </div>
+
+        <!-- Baris 6: Period Start & Period End (jika ada) -->
+        ${
+          budget.period_start
+            ? `
+        <div>
+          <div class="${label}">Period Start</div>
+          <div class="${value}">${formatDate(budget.period_start)}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          budget.period_end
+            ? `
+        <div>
+          <div class="${label}">Period End</div>
+          <div class="${value}">${formatDate(budget.period_end)}</div>
+        </div>
+        `
+            : ""
+        }
+
+        <!-- Baris 7: Description (full width jika ada) -->
+        ${
+          budget.description
+            ? `
+        <div class="col-span-2">
+          <div class="${label}">Description</div>
+          <div class="${value}">${budget.description}</div>
+        </div>
+        `
+            : ""
+        }
+
+        <!-- Baris 8: Revision Info (jika ada) -->
+        ${
+          budget.revision_no > 0
+            ? `
+        <div>
+          <div class="${label}">Revision No.</div>
+          <div class="${value}">${budget.revision_no}</div>
+        </div>
+        `
+            : ""
+        }
+        ${
+          budget.last_revision_at
+            ? `
+        <div>
+          <div class="${label}">Last Revision</div>
+          <div class="${value}">${formatDate(budget.last_revision_at)}</div>
+        </div>
+        `
+            : ""
+        }
+
+        <!-- Baris 9: Created At & Updated At -->
+        <div>
+          <div class="${label}">Created At</div>
+          <div class="${value}">${formatDate(budget.created_at)}</div>
+        </div>
+        <div>
+          <div class="${label}">Updated At</div>
+          <div class="${value}">${formatDate(budget.updated_at)}</div>
+        </div>
+
+        <!-- Baris 10: Budget ID (full width) -->
+        <div class="col-span-2 border-t mt-1 pt-2">
+          <div class="${label}">Budget ID</div>
+          <div class="${value} font-mono text-xs">${budget.id}</div>
+        </div>
+      </div>
+    `,
+    width: 550,
+    showConfirmButton: true,
+    showCancelButton: false,
+    confirmButtonText: "Close",
+    confirmButtonColor: "#2563eb",
+    customClass: {
+      popup: "rounded-lg bg-white p-4",
+      title: "!pb-1 !pt-0",
+      htmlContainer: "!pb-1 !pt-1",
+      confirmButton:
+        "!flex !items-center !justify-center w-[110px] h-[38px] bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium !leading-none mx-auto",
+    },
   });
 };

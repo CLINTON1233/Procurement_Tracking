@@ -31,6 +31,7 @@ import {
   showAddBudgetModal,
   showEditBudgetModal,
   showDeleteBudgetModal,
+  showBudgetDetailsModal,
 } from "@/components/modals/BudgetManagementModals";
 import { departmentService } from "@/services/departmentService";
 
@@ -217,6 +218,10 @@ export default function BudgetManagementPage() {
     });
   };
 
+  const handleViewDetails = (budget) => {
+    showBudgetDetailsModal(budget);
+  };
+
   // ============ FILTER & SEARCH ============
   const uniqueDepartments = useMemo(() => {
     const depts = [...new Set(budgets.map((b) => b.department_name))];
@@ -227,13 +232,24 @@ export default function BudgetManagementPage() {
     let filtered = budgets.filter((budget) => {
       const matchesSearch =
         searchTerm === "" ||
-        (budget.budget_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (budget.department_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (budget.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (budget.budget_owner || "").toLowerCase().includes(searchTerm.toLowerCase());
+        (budget.budget_name || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (budget.department_name || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (budget.description || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (budget.budget_owner || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-      const matchesType = typeFilter === "all" || budget.budget_type === typeFilter;
-      const matchesDepartment = departmentFilter === "all" || budget.department_name === departmentFilter;
+      const matchesType =
+        typeFilter === "all" || budget.budget_type === typeFilter;
+      const matchesDepartment =
+        departmentFilter === "all" ||
+        budget.department_name === departmentFilter;
 
       return matchesSearch && matchesType && matchesDepartment;
     });
@@ -244,7 +260,14 @@ export default function BudgetManagementPage() {
         let aValue = a[id];
         let bValue = b[id];
 
-        if (["total_amount", "remaining_amount", "reserved_amount", "used_amount"].includes(id)) {
+        if (
+          [
+            "total_amount",
+            "remaining_amount",
+            "reserved_amount",
+            "used_amount",
+          ].includes(id)
+        ) {
           aValue = Number(aValue || 0);
           bValue = Number(bValue || 0);
         }
@@ -387,7 +410,8 @@ export default function BudgetManagementPage() {
               </h1>
             </div>
             <p className="text-gray-500 text-sm">
-              Manage CAPEX/OPEX budgets, track allocations, and monitor remaining funds
+              Manage CAPEX/OPEX budgets, track allocations, and monitor
+              remaining funds
             </p>
           </div>
         </div>
@@ -426,7 +450,7 @@ export default function BudgetManagementPage() {
               <div className="flex justify-between items-center">
                 <DollarSign className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
-                  {formatRupiah(stats.totalAmount).replace('Rp', '')}
+                  {formatRupiah(stats.totalAmount).replace("Rp", "")}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
@@ -442,7 +466,7 @@ export default function BudgetManagementPage() {
               <div className="flex justify-between items-center">
                 <DollarSign className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold text-green-300">
-                  {formatRupiah(stats.totalRemaining).replace('Rp', '')}
+                  {formatRupiah(stats.totalRemaining).replace("Rp", "")}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
@@ -459,10 +483,10 @@ export default function BudgetManagementPage() {
                 <DollarSign className="w-6 h-6 opacity-90" />
                 <div className="text-right">
                   <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
-                    {formatRupiah(stats.totalReserved).replace('Rp', '')}
+                    {formatRupiah(stats.totalReserved).replace("Rp", "")}
                   </span>
                   <span className="text-xl md:text-2xl font-bold text-blue-300 block">
-                    {formatRupiah(stats.totalUsed).replace('Rp', '')}
+                    {formatRupiah(stats.totalUsed).replace("Rp", "")}
                   </span>
                 </div>
               </div>
@@ -486,7 +510,8 @@ export default function BudgetManagementPage() {
                   Budget List
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {budgets.length} Budgets available • {uniqueDepartments.length} Departments
+                  {budgets.length} Budgets available •{" "}
+                  {uniqueDepartments.length} Departments
                 </p>
               </div>
 
@@ -816,7 +841,9 @@ export default function BudgetManagementPage() {
                     <div className="space-y-2">
                       {/* Department */}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Department</span>
+                        <span className="text-xs text-gray-500">
+                          Department
+                        </span>
                         <span className="text-xs font-medium text-gray-900">
                           {budget.department_name}
                         </span>
@@ -900,7 +927,9 @@ export default function BudgetManagementPage() {
 
                       {/* Fiscal Year */}
                       <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-xs text-gray-500">Fiscal Year</span>
+                        <span className="text-xs text-gray-500">
+                          Fiscal Year
+                        </span>
                         <span className="text-xs font-medium text-gray-900">
                           {budget.fiscal_year}
                         </span>
@@ -909,6 +938,13 @@ export default function BudgetManagementPage() {
 
                     {/* ACTION BUTTONS */}
                     <div className="flex justify-end items-center gap-1 mt-2 pt-2 border-t border-gray-200">
+                      <button
+                        onClick={() => handleViewDetails(budget)}
+                        className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="View Budget Details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => handleEditClick(budget)}
                         className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -944,42 +980,66 @@ export default function BudgetManagementPage() {
                       </th>
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() => setSorting([{ id: "total_amount", desc: false }])}
+                        onClick={() =>
+                          setSorting([{ id: "total_amount", desc: false }])
+                        }
                       >
                         <div className="flex items-center justify-center">
                           Total
                           {sorting[0]?.id === "total_amount" &&
-                            (sorting[0]?.desc ? <ArrowDown className="w-3 h-3 ml-1" /> : <ArrowUp className="w-3 h-3 ml-1" />)}
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
                         </div>
                       </th>
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() => setSorting([{ id: "reserved_amount", desc: false }])}
+                        onClick={() =>
+                          setSorting([{ id: "reserved_amount", desc: false }])
+                        }
                       >
                         <div className="flex items-center justify-center">
                           Reserved
                           {sorting[0]?.id === "reserved_amount" &&
-                            (sorting[0]?.desc ? <ArrowDown className="w-3 h-3 ml-1" /> : <ArrowUp className="w-3 h-3 ml-1" />)}
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
                         </div>
                       </th>
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() => setSorting([{ id: "used_amount", desc: false }])}
+                        onClick={() =>
+                          setSorting([{ id: "used_amount", desc: false }])
+                        }
                       >
                         <div className="flex items-center justify-center">
                           Used
                           {sorting[0]?.id === "used_amount" &&
-                            (sorting[0]?.desc ? <ArrowDown className="w-3 h-3 ml-1" /> : <ArrowUp className="w-3 h-3 ml-1" />)}
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
                         </div>
                       </th>
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() => setSorting([{ id: "remaining_amount", desc: false }])}
+                        onClick={() =>
+                          setSorting([{ id: "remaining_amount", desc: false }])
+                        }
                       >
                         <div className="flex items-center justify-center">
                           Remaining
                           {sorting[0]?.id === "remaining_amount" &&
-                            (sorting[0]?.desc ? <ArrowDown className="w-3 h-3 ml-1" /> : <ArrowUp className="w-3 h-3 ml-1" />)}
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
                         </div>
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -990,12 +1050,18 @@ export default function BudgetManagementPage() {
                       </th>
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                        onClick={() => setSorting([{ id: "fiscal_year", desc: false }])}
+                        onClick={() =>
+                          setSorting([{ id: "fiscal_year", desc: false }])
+                        }
                       >
                         <div className="flex items-center justify-center">
                           Fiscal Year
                           {sorting[0]?.id === "fiscal_year" &&
-                            (sorting[0]?.desc ? <ArrowDown className="w-3 h-3 ml-1" /> : <ArrowUp className="w-3 h-3 ml-1" />)}
+                            (sorting[0]?.desc ? (
+                              <ArrowDown className="w-3 h-3 ml-1" />
+                            ) : (
+                              <ArrowUp className="w-3 h-3 ml-1" />
+                            ))}
                         </div>
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -1080,8 +1146,16 @@ export default function BudgetManagementPage() {
                             </span>
                           )}
                         </td>
+                        {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleViewDetails(budget)}
+                              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Budget Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleEditClick(budget)}
                               className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -1111,9 +1185,6 @@ export default function BudgetManagementPage() {
                 <div className="text-xs md:text-sm text-gray-500 text-center sm:text-left">
                   Showing {filteredBudgets.length} of {budgets.length} budgets
                 </div>
-                <div className="text-xs text-gray-500">
-                  Total: {formatRupiah(stats.totalAmount)} • Remaining: {formatRupiah(stats.totalRemaining)}
-                </div>
               </div>
             </div>
           )}
@@ -1122,7 +1193,10 @@ export default function BudgetManagementPage() {
 
       <style jsx global>{`
         .swal2-popup {
-          font-family: system-ui, -apple-system, sans-serif;
+          font-family:
+            system-ui,
+            -apple-system,
+            sans-serif;
           background: white;
         }
         .swal2-title {
@@ -1153,8 +1227,12 @@ export default function BudgetManagementPage() {
           border-radius: 0.75rem;
         }
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
         .animate-spin {
           animation: spin 1s linear infinite;
