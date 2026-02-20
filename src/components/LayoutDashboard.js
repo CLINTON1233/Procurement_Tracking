@@ -80,7 +80,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
       hasDropdown: false,
     },
     {
-      icon: DollarSign,
+      icon: Wallet,
       label: "Budget Management",
       href: "/budget_management",
       hasDropdown: false,

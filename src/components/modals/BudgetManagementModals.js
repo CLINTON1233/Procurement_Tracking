@@ -1,12 +1,113 @@
 import Swal from "sweetalert2";
 import { Plus, Trash2 } from "lucide-react";
+import { departmentService } from "@/services/departmentService";
+
+let departmentsList = [];
+
+const fetchDepartments = async () => {
+  try {
+    const data = await departmentService.getAllDepartments();
+    departmentsList = data;
+    return data;
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    return [];
+  }
+};
+
+  const handleAddClick = () => {
+    showAddBudgetModal({
+      onSave: async (formData) => {
+        try {
+          await budgetService.createBudget(formData);
+          Swal.fire({
+            title: "Success!",
+            text: "Budget added successfully",
+            icon: "success",
+            timer: 1500,
+            confirmButtonColor: "#1e40af",
+          });
+          fetchBudgets();
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to add budget",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        }
+      },
+    });
+  };
+
+  const handleEditClick = (budget) => {
+    showEditBudgetModal({
+      budget,
+      onSave: async (formData) => {
+        try {
+          await budgetService.updateBudget(budget.id, formData);
+          Swal.fire({
+            title: "Success!",
+            text: "Budget updated successfully",
+            icon: "success",
+            timer: 1500,
+            confirmButtonColor: "#1e40af",
+          });
+          fetchBudgets();
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to update budget",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        }
+      },
+    });
+  };
+
+  const handleDeleteClick = (budget) => {
+    showDeleteBudgetModal({
+      budget,
+      onConfirm: async () => {
+        try {
+          await budgetService.deleteBudget(budget.id);
+          Swal.fire({
+            title: "Deleted!",
+            text: "Budget deleted successfully",
+            icon: "success",
+            confirmButtonColor: "#1e40af",
+          });
+          fetchBudgets();
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete budget",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        }
+      },
+    });
+  };
+
 
 export const showAddBudgetModal = ({ onSave }) => {
   const currentYear = new Date().getFullYear();
-  let entryCount = 1;
+  fetchDepartments().then((depts) => {
+    departmentsList = depts;
+  });
 
-  // Function to generate HTML for a single budget entry
-  const generateEntryHTML = (index) => `
+  const generateDepartmentOptions = (selectedDept = '') => {
+    let options = '<option value="">Select Department</option>';
+    departmentsList.forEach(dept => {
+      const selected = dept.name === selectedDept ? 'selected' : '';
+      options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
+    });
+    return options;
+  };
+
+  const generateEntryHTML = (index, selectedDept = '') => `
     <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-index="${index}">
       <div class="flex justify-between items-center mb-3">
         <h4 class="text-sm font-semibold text-gray-700">Budget Entry #${index + 1}</h4>
@@ -41,12 +142,12 @@ export const showAddBudgetModal = ({ onSave }) => {
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Department *
           </label>
-          <input
-            type="text"
-            class="entry-department w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="IT, Finance, HR"
+          <select
+            class="entry-department w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
             required
           >
+            ${generateDepartmentOptions(selectedDept)}
+          </select>
         </div>
 
         <div>
@@ -111,7 +212,6 @@ export const showAddBudgetModal = ({ onSave }) => {
     </div>
   `;
 
-  // Initial HTML with one entry
   let html = `
     <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3">
       <div class="sticky top-0 bg-white py-2 z-10 border-b border-gray-200 mb-3">
@@ -148,7 +248,7 @@ export const showAddBudgetModal = ({ onSave }) => {
   `;
 
   Swal.fire({
-    title: "", // Kosongkan title karena kita pakai header custom
+    title: "",
     html: html,
     width: window.innerWidth > 768 ? "600px" : "95vw",
     padding: "0",
@@ -160,15 +260,11 @@ export const showAddBudgetModal = ({ onSave }) => {
     customClass: {
       popup: "rounded-xl overflow-hidden bg-white mx-4",
       htmlContainer: "!p-4 !m-0 !bg-white",
-      actions:
-        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
-      confirmButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
-      cancelButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+      actions: "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton: "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
+      cancelButton: "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
     },
     didOpen: () => {
-      // Setup event listeners for jenis buttons
       const setupJenisButtons = (container) => {
         const jenisButtons = container.querySelectorAll(".jenis-btn");
         jenisButtons.forEach((btn) => {
@@ -178,18 +274,10 @@ export const showAddBudgetModal = ({ onSave }) => {
 
             buttons.forEach((b) => {
               b.classList.remove("bg-blue-600", "text-white");
-              b.classList.add(
-                "bg-gray-100",
-                "text-gray-700",
-                "hover:bg-gray-200",
-              );
+              b.classList.add("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
             });
 
-            btn.classList.remove(
-              "bg-gray-100",
-              "text-gray-700",
-              "hover:bg-gray-200",
-            );
+            btn.classList.remove("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
             btn.classList.add("bg-blue-600", "text-white");
 
             const jenis = btn.getAttribute("data-jenis");
@@ -197,8 +285,6 @@ export const showAddBudgetModal = ({ onSave }) => {
           });
         });
       };
-
-      // Setup remove buttons
       const setupRemoveButtons = () => {
         document.querySelectorAll(".remove-entry-btn").forEach((btn) => {
           btn.addEventListener("click", (e) => {
@@ -211,30 +297,23 @@ export const showAddBudgetModal = ({ onSave }) => {
         });
       };
 
-      // Initial setup
       setupJenisButtons(document);
       setupRemoveButtons();
 
-      // Handle Add More button
-      document
-        .getElementById("add-more-entries")
-        ?.addEventListener("click", () => {
-          const container = document.getElementById("budget-entries-container");
-          const currentCount = container.children.length;
+      document.getElementById("add-more-entries")?.addEventListener("click", () => {
+        const container = document.getElementById("budget-entries-container");
+        const currentCount = container.children.length;
 
-          const newEntry = document.createElement("div");
-          newEntry.innerHTML = generateEntryHTML(currentCount);
+        const newEntry = document.createElement("div");
+        newEntry.innerHTML = generateEntryHTML(currentCount);
 
-          container.appendChild(newEntry.firstElementChild);
+        container.appendChild(newEntry.firstElementChild);
+        const lastEntry = container.lastElementChild;
+        setupJenisButtons(lastEntry);
+        setupRemoveButtons();
 
-          // Setup new entry's jenis buttons
-          const lastEntry = container.lastElementChild;
-          setupJenisButtons(lastEntry);
-          setupRemoveButtons();
-
-          // Scroll to new entry
-          lastEntry.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        });
+        lastEntry.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     },
     preConfirm: () => {
       const entries = document.querySelectorAll(".budget-entry");
@@ -243,15 +322,11 @@ export const showAddBudgetModal = ({ onSave }) => {
 
       entries.forEach((entry, index) => {
         const tahun = entry.querySelector(".entry-tahun")?.value?.trim() || "";
-        const department =
-          entry.querySelector(".entry-department")?.value?.trim() || "";
+        const department = entry.querySelector(".entry-department")?.value || "";
         const jenis = entry.querySelector(".entry-jenis")?.value || "CAPEX";
-        const nama_budget =
-          entry.querySelector(".entry-nama_budget")?.value?.trim() || "";
-        const total_budget =
-          entry.querySelector(".entry-total_budget")?.value || "";
-        const keterangan =
-          entry.querySelector(".entry-keterangan")?.value?.trim() || "";
+        const nama_budget = entry.querySelector(".entry-nama_budget")?.value?.trim() || "";
+        const total_budget = entry.querySelector(".entry-total_budget")?.value || "";
+        const keterangan = entry.querySelector(".entry-keterangan")?.value?.trim() || "";
 
         const entryErrors = [];
 
@@ -266,7 +341,7 @@ export const showAddBudgetModal = ({ onSave }) => {
         } else {
           budgets.push({
             tahun,
-            department,
+            department_name: department,
             jenis,
             nama_budget,
             total_budget,
@@ -289,7 +364,6 @@ export const showAddBudgetModal = ({ onSave }) => {
     },
   }).then((result) => {
     if (result.isConfirmed && result.value) {
-      // Save each budget sequentially
       const saveAll = async () => {
         for (const budget of result.value) {
           await onSave(budget);
@@ -301,6 +375,19 @@ export const showAddBudgetModal = ({ onSave }) => {
 };
 
 export const showEditBudgetModal = ({ budget, onSave }) => {
+  fetchDepartments().then((depts) => {
+    departmentsList = depts;
+  });
+
+  const generateDepartmentOptions = () => {
+    let options = '<option value="">Select Department</option>';
+    departmentsList.forEach(dept => {
+      const selected = dept.name === budget.department ? 'selected' : '';
+      options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
+    });
+    return options;
+  };
+
   Swal.fire({
     title: `<span class="text-gray-900 font-semibold">Edit Budget</span>`,
     html: `
@@ -324,13 +411,13 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Department *
             </label>
-            <input
-              type="text"
+            <select
               id="swal-department"
-              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value="${budget.department || ""}"
+              class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               required
             >
+              ${generateDepartmentOptions()}
+            </select>
             <div id="department-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
@@ -413,27 +500,20 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
     cancelButtonColor: "#6b7280",
     customClass: {
       popup: "rounded-xl overflow-hidden bg-white mx-4",
-      title:
-        "!text-left !p-4 !m-0 !bg-white !border-b !border-gray-200 !text-gray-900",
+      title: "!text-left !p-4 !m-0 !bg-white !border-b !border-gray-200 !text-gray-900",
       htmlContainer: "!p-4 !m-0 !bg-white",
-      actions:
-        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
-      confirmButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
-      cancelButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+      actions: "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton: "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
+      cancelButton: "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
     },
     preConfirm: () => {
       const formData = {
         tahun: document.getElementById("swal-tahun")?.value?.trim() || "",
-        department:
-          document.getElementById("swal-department")?.value?.trim() || "",
+        department_name: document.getElementById("swal-department")?.value || "", 
         jenis: document.getElementById("swal-jenis")?.value || "CAPEX",
-        nama_budget:
-          document.getElementById("swal-nama_budget")?.value?.trim() || "",
+        nama_budget: document.getElementById("swal-nama_budget")?.value?.trim() || "",
         total_budget: document.getElementById("swal-total_budget")?.value || "",
-        keterangan:
-          document.getElementById("swal-keterangan")?.value?.trim() || "",
+        keterangan: document.getElementById("swal-keterangan")?.value?.trim() || "",
       };
 
       const errors = {};
@@ -446,10 +526,9 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
         document.getElementById("tahun-error").classList.add("hidden");
       }
 
-      if (!formData.department) {
+      if (!formData.department_name) {
         errors.department = "Department is required";
-        document.getElementById("department-error").textContent =
-          errors.department;
+        document.getElementById("department-error").textContent = errors.department;
         document.getElementById("department-error").classList.remove("hidden");
       } else {
         document.getElementById("department-error").classList.add("hidden");
@@ -484,17 +563,9 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
         btn.addEventListener("click", () => {
           jenisButtons.forEach((b) => {
             b.classList.remove("bg-blue-600", "text-white");
-            b.classList.add(
-              "bg-gray-100",
-              "text-gray-700",
-              "hover:bg-gray-200",
-            );
+            b.classList.add("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
           });
-          btn.classList.remove(
-            "bg-gray-100",
-            "text-gray-700",
-            "hover:bg-gray-200",
-          );
+          btn.classList.remove("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
           btn.classList.add("bg-blue-600", "text-white");
 
           const jenis = btn.getAttribute("data-jenis");
@@ -509,7 +580,6 @@ export const showEditBudgetModal = ({ budget, onSave }) => {
     }
   });
 };
-
 export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
   Swal.fire({
     title: `Delete ${budget.nama_budget || "Budget"}?`,

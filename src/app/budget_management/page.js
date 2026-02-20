@@ -22,6 +22,7 @@ import {
   Tag,
   ArrowUp,
   ArrowDown,
+  BarChart3,
   Eye,
 } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -46,20 +47,21 @@ export default function BudgetManagementPage() {
   const [sorting, setSorting] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
     total: 0,
-    capex: 0,
-    opex: 0,
+    Capex: 0,
+    Opex: 0,
     totalBudget: 0,
     totalSisa: 0,
   });
 
-useEffect(() => {
-  fetchBudgets();
-  fetchDepartments();
-}, []);
+  useEffect(() => {
+    fetchBudgets();
+    fetchDepartments();
+  }, []);
 
   const fetchBudgets = async () => {
     setLoading(true);
@@ -81,30 +83,37 @@ useEffect(() => {
     }
   };
 
-const fetchDepartments = async () => {
-  setLoadingDepartments(true);
-  try {
-    const data = await departmentService.getAllDepartments();
-    setDepartments(data);
-  } catch (error) {
-    console.error("Error fetching departments:", error);
-    if (uniqueDepartments.length > 0) {
-      const fallbackDepts = uniqueDepartments.map((name, index) => ({
-        id: index,
-        name: name
-      }));
-      setDepartments(fallbackDepts);
+  const fetchDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      console.log("Fetching departments...");
+      const data = await departmentService.getAllDepartments();
+      console.log("Departments fetched:", data);
+      setDepartments(data);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      if (uniqueDepartments.length > 0) {
+        const fallbackDepts = uniqueDepartments.map((name, index) => ({
+          id: `temp-${index}`,
+          name: name,
+        }));
+        setDepartments(fallbackDepts);
+        Swal.fire({
+          title: "Warning",
+          text: "Using local department data",
+          icon: "warning",
+          timer: 2000,
+        });
+      }
+    } finally {
+      setLoadingDepartments(false);
     }
-  } finally {
-    setLoadingDepartments(false);
-  }
-};
-
+  };
 
   const calculateStats = (data) => {
     const total = data.length;
-    const capex = data.filter((b) => b.jenis === "CAPEX").length;
-    const opex = data.filter((b) => b.jenis === "OPEX").length;
+    const Capex = data.filter((b) => b.jenis === "CAPEX").length;
+    const Opex = data.filter((b) => b.jenis === "OPEX").length;
     const totalBudget = data.reduce(
       (sum, b) => sum + Number(b.total_budget),
       0,
@@ -113,8 +122,8 @@ const fetchDepartments = async () => {
 
     setStats({
       total,
-      capex,
-      opex,
+      Capex,
+      Opex,
       totalBudget,
       totalSisa,
     });
@@ -125,7 +134,6 @@ const fetchDepartments = async () => {
     fetchBudgets();
   };
 
-  // ============ MODAL HANDLERS ============
   const handleAddClick = () => {
     showAddBudgetModal({
       onSave: async (formData) => {
@@ -204,7 +212,7 @@ const fetchDepartments = async () => {
 
   // ============ FILTER & SEARCH ============
   const uniqueDepartments = useMemo(() => {
-    const depts = [...new Set(budgets.map((b) => b.department))];
+    const depts = [...new Set(budgets.map((b) => b.department_name))];
     return depts.filter(Boolean);
   }, [budgets]);
 
@@ -213,13 +221,13 @@ const fetchDepartments = async () => {
       const matchesSearch =
         searchTerm === "" ||
         budget.nama_budget?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        budget.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        budget.department_name_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         budget.keterangan?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesJenis =
         jenisFilter === "all" || budget.jenis === jenisFilter;
       const matchesDepartment =
-        departmentFilter === "all" || budget.department === departmentFilter;
+        departmentFilter === "all" || budget.department_name_name === departmentFilter;
 
       return matchesSearch && matchesJenis && matchesDepartment;
     });
@@ -252,7 +260,7 @@ const fetchDepartments = async () => {
       if (exportType === "current") {
         dataToExport = filteredBudgets.map((budget) => ({
           Year: budget.tahun,
-          Department: budget.department,
+          Department: budget.department_name,
           "Budget Name": budget.nama_budget,
           Type: budget.jenis,
           "Total Budget": budget.total_budget,
@@ -263,7 +271,7 @@ const fetchDepartments = async () => {
       } else {
         dataToExport = budgets.map((budget) => ({
           Year: budget.tahun,
-          Department: budget.department,
+          Department: budget.department_name,
           "Budget Name": budget.nama_budget,
           Type: budget.jenis,
           "Total Budget": budget.total_budget,
@@ -329,7 +337,7 @@ const fetchDepartments = async () => {
 
   // ============ GET ICON BY BUDGET TYPE ============
   const getBudgetIcon = (jenis) => {
-    if (jenis === "CAPEX") {
+    if (jenis === "Capex") {
       return <Building className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />;
     } else {
       return <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-600" />;
@@ -337,7 +345,7 @@ const fetchDepartments = async () => {
   };
 
   const getIconBackground = (jenis) => {
-    return jenis === "CAPEX" ? "bg-purple-100" : "bg-green-100";
+    return jenis === "Capex" ? "bg-purple-100" : "bg-green-100";
   };
 
   // ============ LOADING STATE ============
@@ -364,7 +372,7 @@ const fetchDepartments = async () => {
               </h1>
             </div>
             <p className="text-gray-500 text-sm">
-              Manage CAPEX/OPEX and monitor remaining budget
+              Manage Capex/Opex and monitor remaining budget
             </p>
           </div>
         </div>
@@ -373,11 +381,11 @@ const fetchDepartments = async () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b px-4 md:px-6 py-3 md:py-4">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-              <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
+              <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
               Budget Overview
             </h2>
             <p className="text-gray-500 text-xs md:text-sm mt-1">
-              CAPEX/OPEX budget summary
+              Capex/Opex budget summary
             </p>
           </div>
 
@@ -394,36 +402,36 @@ const fetchDepartments = async () => {
                 Total Budget
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                {stats.capex} CAPEX • {stats.opex} OPEX
+                {stats.Capex} Capex • {stats.Opex} Opex
               </div>
             </div>
 
-            {/* CAPEX */}
+            {/* Capex */}
             <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-center">
                 <Building className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
-                  {stats.capex}
+                  {stats.Capex}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                CAPEX
+                Capex
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Asset purchases
               </div>
             </div>
 
-            {/* OPEX */}
+            {/* Opex */}
             <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-center">
                 <Calendar className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
-                  {stats.opex}
+                  {stats.Opex}
                 </span>
               </div>
               <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                OPEX
+                Opex
               </p>
               <div className="text-[10px] md:text-xs opacity-80 mt-1">
                 Operational expenses
@@ -524,7 +532,7 @@ const fetchDepartments = async () => {
                       Budget Type
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {["all", "CAPEX", "OPEX"].map((jenis) => (
+                      {["all", "Capex", "Opex"].map((jenis) => (
                         <button
                           key={jenis}
                           onClick={() => {
@@ -533,9 +541,9 @@ const fetchDepartments = async () => {
                           }}
                           className={`px-3 py-1.5 text-xs rounded-lg ${
                             jenisFilter === jenis
-                              ? jenis === "CAPEX"
+                              ? jenis === "Capex"
                                 ? "bg-purple-600 text-white"
-                                : jenis === "OPEX"
+                                : jenis === "Opex"
                                   ? "bg-green-600 text-white"
                                   : "bg-blue-600 text-white"
                               : "bg-white border text-gray-700"
@@ -655,7 +663,7 @@ const fetchDepartments = async () => {
                   <span>Add Budget</span>
                 </button>
 
-                {/* Desktop Filters */}
+                {/* Desktop Filters - HANYA SATU SELECT UNTUK DEPARTMENT */}
                 <div className="hidden md:flex items-center gap-2 ml-auto">
                   {/* Type Filter */}
                   <select
@@ -664,10 +672,11 @@ const fetchDepartments = async () => {
                     className="border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm bg-white min-w-[120px]"
                   >
                     <option value="all">All Types</option>
-                    <option value="CAPEX">CAPEX</option>
-                    <option value="OPEX">OPEX</option>
+                    <option value="Capex">Capex</option>
+                    <option value="Opex">Opex</option>
                   </select>
 
+                  {/* Department Filter - SATU INI SAJA */}
                   <select
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -711,26 +720,6 @@ const fetchDepartments = async () => {
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={departmentFilter}
-                    onChange={(e) => {
-                      setDepartmentFilter(e.target.value);
-                      setShowFilters(false);
-                    }}
-                    className="w-full border rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white"
-                  >
-                    <option value="all">All Departments</option>
-                    {uniqueDepartments.map((dept, index) => (
-                      <option key={index} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
           </div>
@@ -738,48 +727,48 @@ const fetchDepartments = async () => {
           {/* CONTENT */}
           <div className="p-3 md:p-6">
             {budgets.length === 0 ? (
-              <div className="py-8 md:py-12 text-center">
+              <div className="py-16 text-center">
                 <div className="max-w-md mx-auto">
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl inline-block mb-4">
-                    <Wallet className="w-10 h-10 md:w-12 md:h-12 text-blue-400" />
-                  </div>
-                  <h3 className="text-gray-900 font-semibold text-base md:text-lg mb-2">
+                  <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="text-gray-700 font-medium text-base mb-1">
                     No budget available
                   </h3>
-                  <p className="text-gray-500 text-sm mb-6">
-                    Start by adding CAPEX/OPEX budget
+                  <p className="text-gray-400 text-sm mb-6">
+                    Start by adding Capex/Opex budget
                   </p>
                   <button
                     onClick={handleAddClick}
-                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl hover:from-blue-700 hover:to-indigo-800 inline-flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2 text-xs transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     Add First Budget
                   </button>
                 </div>
               </div>
             ) : filteredBudgets.length === 0 ? (
-              <div className="py-8 md:py-12 text-center">
-                <Search className="w-10 h-10 md:w-12 md:h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-gray-900 font-semibold text-base mb-2">
-                  No matching budgets found
-                </h3>
-                <p className="text-gray-500 text-sm mb-6">
-                  Try adjusting your filters or search
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setJenisFilter("all");
-                  }}
-                  className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 inline-flex items-center gap-2 text-sm"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Clear Filters
-                </button>
+              <div className="py-16 text-center">
+                <div className="max-w-md mx-auto">
+                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="text-gray-700 font-medium text-base mb-1">
+                    No matching budgets found
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-6">
+                    Try adjusting your search criteria
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setJenisFilter("all");
+                      setDepartmentFilter("all");
+                    }}
+                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2 text-xs transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             ) : viewMode === "grid" ? (
-              /* GRID VIEW */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                 {filteredBudgets.map((budget) => (
                   <div
@@ -801,7 +790,7 @@ const fetchDepartments = async () => {
                             {budget.nama_budget}
                           </h4>
                           <p className="text-xs text-gray-500 truncate">
-                            {budget.tahun} • {budget.department}
+                            {budget.tahun} • {budget.department_name}
                           </p>
                         </div>
                       </div>
@@ -813,7 +802,7 @@ const fetchDepartments = async () => {
                         <span className="text-xs text-gray-500">Type</span>
                         <span
                           className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            budget.jenis === "CAPEX"
+                            budget.jenis === "Capex"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-green-100 text-green-800"
                           }`}
@@ -891,7 +880,7 @@ const fetchDepartments = async () => {
                 ))}
               </div>
             ) : (
-              /* LIST VIEW */
+              /* LIST VIEW - SAMA */
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -899,11 +888,9 @@ const fetchDepartments = async () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Budget Name
                       </th>
-
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Type
                       </th>
-
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
@@ -920,7 +907,6 @@ const fetchDepartments = async () => {
                             ))}
                         </div>
                       </th>
-
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
@@ -937,11 +923,9 @@ const fetchDepartments = async () => {
                             ))}
                         </div>
                       </th>
-
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Department
                       </th>
-
                       <th
                         className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
@@ -958,36 +942,30 @@ const fetchDepartments = async () => {
                             ))}
                         </div>
                       </th>
-
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Status
                       </th>
-
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-
                   <tbody className="bg-white divide-y divide-gray-200 text-center">
                     {filteredBudgets.map((budget) => (
                       <tr key={budget.id} className="hover:bg-gray-50">
-                        {/* Budget Name */}
                         <td className="px-4 py-3 text-left">
                           <div className="flex items-center">
                             <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
-                              {budget.jenis === "CAPEX" ? (
+                              {budget.jenis === "Capex" ? (
                                 <Building className="w-4 h-4 text-blue-600" />
                               ) : (
                                 <Calendar className="w-4 h-4 text-blue-600" />
                               )}
                             </div>
-
                             <div className="min-w-0">
                               <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
                                 {budget.nama_budget}
                               </div>
-
                               {budget.keterangan && (
                                 <div className="text-xs text-gray-500 truncate max-w-[200px]">
                                   {budget.keterangan}
@@ -996,41 +974,29 @@ const fetchDepartments = async () => {
                             </div>
                           </div>
                         </td>
-
-                        {/* Type */}
                         <td className="px-4 py-3">
                           <span className="text-sm text-gray-600">
                             {budget.jenis}
                           </span>
                         </td>
-
-                        {/* Total Budget */}
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatRupiah(budget.total_budget)}
                         </td>
-
-                        {/* Remaining */}
                         <td className="px-4 py-3 text-sm">
                           <span className="font-medium text-gray-900">
                             {formatRupiah(budget.sisa_budget)}
                           </span>
                         </td>
-
-                        {/* Department */}
                         <td className="px-4 py-3">
                           <span className="text-sm text-gray-600">
-                            {budget.department}
+                            {budget.department_name}
                           </span>
                         </td>
-
-                        {/* Year */}
                         <td className="px-4 py-3">
                           <span className="text-sm text-gray-600">
                             {budget.tahun}
                           </span>
                         </td>
-
-                        {/* Status */}
                         <td className="px-4 py-3">
                           {budget.is_active ? (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full">
@@ -1044,8 +1010,6 @@ const fetchDepartments = async () => {
                             </span>
                           )}
                         </td>
-
-                        {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             <button
@@ -1054,7 +1018,6 @@ const fetchDepartments = async () => {
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-
                             <button
                               onClick={() => handleDeleteClick(budget)}
                               className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -1092,14 +1055,12 @@ const fetchDepartments = async () => {
             sans-serif;
           background: white;
         }
-
         .swal2-title {
           color: #111827;
           font-size: 1.1rem;
           font-weight: 600;
           background: white;
         }
-
         .swal2-input,
         .swal2-select {
           border: 1px solid #d1d5db;
@@ -1110,20 +1071,17 @@ const fetchDepartments = async () => {
           color: #374151;
           padding: 0.625rem 0.75rem;
         }
-
         .swal2-input:focus,
         .swal2-select:focus {
           border-color: #2563eb;
           box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
-
         .swal2-validation-message {
           background: #fef2f2;
           border: 1px solid #fecaca;
           color: #dc2626;
           border-radius: 0.75rem;
         }
-
         @keyframes spin {
           from {
             transform: rotate(0deg);
@@ -1132,40 +1090,32 @@ const fetchDepartments = async () => {
             transform: rotate(360deg);
           }
         }
-
         .animate-spin {
           animation: spin 1s linear infinite;
         }
-
         ::-webkit-scrollbar {
           width: 6px;
           height: 6px;
         }
-
         ::-webkit-scrollbar-track {
           background: #f1f1f1;
           border-radius: 4px;
         }
-
         ::-webkit-scrollbar-thumb {
           background: #888;
           border-radius: 4px;
         }
-
         ::-webkit-scrollbar-thumb:hover {
           background: #555;
         }
-
         @media (max-width: 640px) {
           .swal2-popup {
             max-width: 95vw !important;
           }
-
           .swal2-actions {
             flex-wrap: wrap !important;
             gap: 0.5rem !important;
           }
-
           .swal2-confirm,
           .swal2-cancel {
             flex: 1 !important;
