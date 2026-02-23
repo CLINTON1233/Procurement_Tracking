@@ -35,7 +35,7 @@ import {
 } from "@/components/modals/BudgetManagementModals";
 import { departmentService } from "@/services/departmentService";
 
-export default function BudgetRequest() {
+export default function BudgetRevision() {
 
   return (
     <LayoutDashboard activeMenu={1}>
