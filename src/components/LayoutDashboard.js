@@ -24,14 +24,16 @@ import {
   Layers,
   BarChart3,
   Camera,
-  FilePenLine,
   ScanFace,
   Router,
   Network,
   Server,
+  FilePen,
+  FilePenLine,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Swal from "sweetalert2";
+import { PORTAL_APP_URL, APP_URL, logoutFromPortal } from "../services/api";
 
 export default function LayoutDashboard({ children, activeMenu }) {
   const [activeMenuIndex, setActiveMenuIndex] = useState(null);
@@ -39,23 +41,115 @@ export default function LayoutDashboard({ children, activeMenu }) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState({});
   const [currentDate, setCurrentDate] = useState("");
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const userDropdownRef = useRef(null);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  // User data
   const [user, setUser] = useState({
-    username: "John Doe",
-    department: "Finance",
-    no_badge: "FIN-001",
-    email: "john@seatrium.com",
-    name: "John Doe",
-    role: "Finance",
+    username: "Loading...",
+    department: "",
+    no_badge: "",
+    email: "",
+    name: "",
   });
 
-  // Format current date
+  useEffect(() => {
+    checkAuth();
+    loadUserData();
+    handleWelcomeNotification();
+  }, [pathname]);
+
+  const checkAuth = () => {
+    if (pathname === "/auth/callback") return;
+
+    const isAuthenticated = sessionStorage.getItem("isAuthenticated");
+    const userData = localStorage.getItem("budget_user");
+
+    if (!isAuthenticated || !userData) {
+      const redirectUrl = `${PORTAL_APP_URL}/login?redirect=${encodeURIComponent(
+        `${APP_URL}/auth/callback?next=${encodeURIComponent(pathname)}`,
+      )}`;
+
+      window.location.href = redirectUrl;
+      return;
+    }
+  };
+
+  const loadUserData = () => {
+    try {
+      const userData = localStorage.getItem("budget_user");
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser({
+          username: parsedUser.nama || "User",
+          department: parsedUser.departemen || "Department",
+          no_badge: parsedUser.badge || "N/A",
+          email: parsedUser.email || "",
+          name: parsedUser.nama || "User",
+        });
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    }
+  };
+
+  const handleWelcomeNotification = () => {
+    if (pathname !== "/dashboard") {
+      return;
+    }
+    const hasShown = localStorage.getItem("has_shown_welcome");
+    const isFromPortal = sessionStorage.getItem("auth_source") === "portal";
+    
+    if (!isFromPortal && hasShown) {
+      localStorage.removeItem("has_shown_welcome");
+      return;
+    }
+    
+    if (isFromPortal && !hasShown) {
+      setTimeout(() => {
+        Swal.fire({
+          title: "Login Successful",
+          text: `Welcome back, ${user.username}!`,
+          icon: "success",
+          confirmButtonColor: "#1e40af",
+          timer: 3000,
+        }).then(() => {
+          localStorage.setItem("has_shown_welcome", "true");
+          sessionStorage.removeItem("auth_source");
+          setHasShownWelcome(true);
+        });
+      }, 1000);
+    }
+  };
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Logout Confirmation",
+      text: "Are you sure you want to log out?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Logout!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("has_shown_welcome");
+        sessionStorage.removeItem("isAuthenticated");
+        sessionStorage.removeItem("auth_source");
+        localStorage.removeItem("budget_user");
+        localStorage.removeItem("budget_token");
+
+        document.cookie = "budget_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "budget_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+        logoutFromPortal();
+      }
+    });
+  };
+
   useEffect(() => {
     const updateDate = () => {
       const now = new Date();
@@ -80,12 +174,10 @@ export default function LayoutDashboard({ children, activeMenu }) {
       href: "/dashboard",
       hasDropdown: true,
     },
-
     {
       label: "Budget",
       icon: Wallet,
       children: [
-       
         {
           icon: Wallet,
           label: "Budget Management",
@@ -98,30 +190,12 @@ export default function LayoutDashboard({ children, activeMenu }) {
         },
         {
           icon: FileText,
-          label: "Request",
+          label: "Budget Request",
           href: "/budget_request",
         },
       ],
     },
   ];
-  // {
-  //   icon: CheckSquare,
-  //   label: "Approval Queue",
-  //   href: "/approval",
-  //   hasDropdown: false,
-  // },
-  // {
-  //   icon: PieChart,
-  //   label: "SR/MR Selection",
-  //   href: "/selection",
-  //   hasDropdown: false,
-  // },
-  // {
-  //   icon: History,
-  //   label: "History & Reports",
-  //   href: "/history",
-  //   hasDropdown: false,
-  // },
 
   const toggleMobileSubmenu = (index) => {
     setMobileSubmenuOpen((prev) => ({
@@ -144,71 +218,8 @@ export default function LayoutDashboard({ children, activeMenu }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    setUserDropdownOpen(false);
-    setMobileMenuOpen(false);
-
-    Swal.fire({
-      title: "Logout Confirmation",
-      text: "Are you sure you want to log out?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Logout!",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.push("/login");
-      }
-    });
-  };
-
-  const handleChildClick = (href) => {
-  router.push(href);
-  setOpenMenu(null); 
-  setMobileMenuOpen(false); 
-};
-
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Font Inter Global Style */}
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
-        * {
-          font-family: "Inter", sans-serif;
-        }
-
-        /* SweetAlert Styles */
-        .swal2-container {
-          font-family: "Inter", sans-serif !important;
-        }
-
-        .swal2-title {
-          font-family: "Inter", sans-serif !important;
-          font-weight: 600 !important;
-          color: #1e293b !important;
-        }
-
-        .swal2-html-container {
-          font-family: "Inter", sans-serif !important;
-          color: #475569 !important;
-        }
-
-        .swal2-confirm {
-          font-family: "Inter", sans-serif !important;
-          font-weight: 500 !important;
-          padding: 0.5rem 2rem !important;
-          border-radius: 0.375rem !important;
-          background-color: #1e40af !important;
-          border: none !important;
-        }
-
-        .swal2-confirm:hover {
-          background-color: #1e3a8a !important;
-        }
-      `}</style>
-
       {/* Top Navbar */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 py-2 flex items-center justify-between">
@@ -239,7 +250,9 @@ export default function LayoutDashboard({ children, activeMenu }) {
                 <User className="w-4 h-4" />
                 <span>{user.username}</span>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform ${userDropdownOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 transition-transform ${
+                    userDropdownOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
@@ -252,7 +265,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
                     <p className="text-xs text-gray-500">{user.email}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                        {user.role}
+                        {user.department}
                       </span>
                     </p>
                   </div>
@@ -280,63 +293,63 @@ export default function LayoutDashboard({ children, activeMenu }) {
           </div>
         </div>
 
-{/* Desktop Menu */}
-<div className="hidden md:block bg-blue-600 px-4">
-  <div className="flex items-center gap-1 py-2">
-    {menuItems.map((menu, index) => (
-      <div key={index} className="relative">
-        {!menu.children && (
-          <button
-            className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
-            onClick={() => router.push(menu.href)}
-          >
-            <menu.icon className="w-4 h-4" />
-            <span>{menu.label}</span>
-          </button>
-        )}
-
-        {menu.children && (
-          <>
-            <button
-              className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
-              onClick={() =>
-                setOpenMenu(openMenu === index ? null : index)
-              }
-            >
-              <menu.icon className="w-4 h-4" />
-              <span>{menu.label}</span>
-              <ChevronDown
-                className={`w-3 h-3 transition-transform ${openMenu === index ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {openMenu === index && (
-              <div className="absolute left-0 mt-1 bg-white text-gray-800 rounded shadow-lg w-56 z-50">
-                {menu.children.map((child, i) => (
+        {/* Desktop Menu */}
+        <div className="hidden md:block bg-blue-600 px-4">
+          <div className="flex items-center gap-1 py-2">
+            {menuItems.map((menu, index) => (
+              <div key={index} className="relative">
+                {!menu.children && (
                   <button
-                    key={i}
-                    onClick={() => {
-                      router.push(child.href);
-                      setOpenMenu(null);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 transition"
+                    className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
+                    onClick={() => router.push(menu.href)}
                   >
-                    <child.icon className="w-4 h-4 mr-3" />
-                    {child.label}
+                    <menu.icon className="w-4 h-4" />
+                    <span>{menu.label}</span>
                   </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    ))}
+                )}
 
-    <div className="ml-auto text-white text-sm py-2 px-3 opacity-80">
-      {currentDate}
-    </div>
-  </div>
-</div>
+                {menu.children && (
+                  <>
+                    <button
+                      className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
+                      onClick={() => setOpenMenu(openMenu === index ? null : index)}
+                    >
+                      <menu.icon className="w-4 h-4" />
+                      <span>{menu.label}</span>
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform ${
+                          openMenu === index ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {openMenu === index && (
+                      <div className="absolute left-0 mt-1 bg-white text-gray-800 rounded shadow-lg w-56 z-50">
+                        {menu.children.map((child, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              router.push(child.href);
+                              setOpenMenu(null);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 transition"
+                          >
+                            <child.icon className="w-4 h-4 mr-3" />
+                            {child.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+
+            <div className="ml-auto text-white text-sm py-2 px-3 opacity-80">
+              {currentDate}
+            </div>
+          </div>
+        </div>
       </nav>
 
       {/* Mobile Sidebar Menu */}
@@ -360,18 +373,15 @@ export default function LayoutDashboard({ children, activeMenu }) {
                 <User className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <div className="text-white font-medium text-sm">
-                  {user.name}
-                </div>
+                <div className="text-white font-medium text-sm">{user.name}</div>
                 <div className="text-blue-100 text-xs">{user.department}</div>
               </div>
             </div>
 
-            {/* Mobile Menu Items dengan Submenu */}
             <div className="py-2 pb-20">
               {menuItems.map((item, index) => (
                 <div key={index} className="w-full">
-                  {!item.hasDropdown ? (
+                  {!item.children ? (
                     <button
                       className="flex items-center w-full px-4 py-3 text-white hover:bg-blue-700 text-sm transition"
                       onClick={() => {
@@ -412,9 +422,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
                               }}
                             >
                               <child.icon className="w-4 h-4 mr-3" />
-                              <span className="flex-1 text-left">
-                                {child.label}
-                              </span>
+                              <span className="flex-1 text-left">{child.label}</span>
                             </button>
                           ))}
                         </div>

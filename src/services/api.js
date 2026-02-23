@@ -1,5 +1,54 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4003";
+// API URLs
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4003";
+export const PORTAL_APP_URL = process.env.NEXT_PUBLIC_PORTAL_APP_URL || "http://localhost:3000";
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003";
+export const PORTAL_API_URL = process.env.NEXT_PUBLIC_PORTAL_API_URL || "http://localhost:4000";
 
+// Portal authentication functions
+export const verifyPortalToken = async (token) => {
+  try {
+    const response = await fetch(
+      `${PORTAL_API_URL}/users/verify-for-monitoring`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      }
+    );
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error verifying portal token:", error);
+    throw error;
+  }
+};
+
+export const getCurrentUser = () => {
+  try {
+    const userStr = localStorage.getItem("budget_user");
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    console.error("Error getting current user:", error);
+    return null;
+  }
+};
+
+export const getPortalToken = () => {
+  return localStorage.getItem("budget_token");
+};
+
+export const logoutFromPortal = () => {
+  localStorage.removeItem("budget_user");
+  localStorage.removeItem("budget_token");
+  sessionStorage.removeItem("isAuthenticated");
+  sessionStorage.removeItem("auth_source");
+
+  window.location.href = `${PORTAL_APP_URL}/login`;
+};
+
+// Budget API Endpoints
 export const API_ENDPOINTS = {
   // Budget Management
   BUDGET_LIST: `${API_BASE_URL}/api/budget/list`,
