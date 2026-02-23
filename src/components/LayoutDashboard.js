@@ -77,39 +77,50 @@ export default function LayoutDashboard({ children, activeMenu }) {
       icon: Home,
       label: "Home",
       href: "/dashboard",
-      hasDropdown: false,
+      hasDropdown: true,
     },
+
     {
+      label: "Budget",
       icon: Wallet,
-      label: "Budget Management",
-      href: "/budget_management",
-      hasDropdown: false,
+      children: [
+       
+        {
+          icon: Wallet,
+          label: "Budget Management",
+          href: "/budget_management",
+        },
+        {
+          icon: Repeat,
+          label: "Revision",
+          href: "/revision_budget",
+        },
+        {
+          icon: FileText,
+          label: "Budget Request",
+          href: "/budget_request",
+        },
+      ],
     },
-    {
-      icon: FileText,
-      label: "Budget Request",
-      href: "/budget_request",
-      hasDropdown: false,
-    },
-    // {
-    //   icon: CheckSquare,
-    //   label: "Approval Queue",
-    //   href: "/approval",
-    //   hasDropdown: false,
-    // },
-    // {
-    //   icon: PieChart,
-    //   label: "SR/MR Selection",
-    //   href: "/selection",
-    //   hasDropdown: false,
-    // },
-    // {
-    //   icon: History,
-    //   label: "History & Reports",
-    //   href: "/history",
-    //   hasDropdown: false,
-    // },
   ];
+  // {
+  //   icon: CheckSquare,
+  //   label: "Approval Queue",
+  //   href: "/approval",
+  //   hasDropdown: false,
+  // },
+  // {
+  //   icon: PieChart,
+  //   label: "SR/MR Selection",
+  //   href: "/selection",
+  //   hasDropdown: false,
+  // },
+  // {
+  //   icon: History,
+  //   label: "History & Reports",
+  //   href: "/history",
+  //   hasDropdown: false,
+  // },
 
   const toggleMobileSubmenu = (index) => {
     setMobileSubmenuOpen((prev) => ({
@@ -150,6 +161,12 @@ export default function LayoutDashboard({ children, activeMenu }) {
       }
     });
   };
+
+  const handleChildClick = (href) => {
+  router.push(href);
+  setOpenMenu(null); 
+  setMobileMenuOpen(false); 
+};
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -194,7 +211,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
       {/* Top Navbar */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 py-2 flex items-center justify-between">
-         <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <Image
               src="/seatrium.png"
               alt="Seatrium Logo"
@@ -262,63 +279,63 @@ export default function LayoutDashboard({ children, activeMenu }) {
           </div>
         </div>
 
-        {/* Desktop Menu - Dengan Submenu */}
-        <div className="hidden md:block bg-blue-600 px-4">
-          <div className="flex items-center gap-1 py-2">
-            {menuItems.map((menu, index) => (
-              <div key={index} className="relative">
-                {!menu.hasDropdown && (
+{/* Desktop Menu */}
+<div className="hidden md:block bg-blue-600 px-4">
+  <div className="flex items-center gap-1 py-2">
+    {menuItems.map((menu, index) => (
+      <div key={index} className="relative">
+        {!menu.children && (
+          <button
+            className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
+            onClick={() => router.push(menu.href)}
+          >
+            <menu.icon className="w-4 h-4" />
+            <span>{menu.label}</span>
+          </button>
+        )}
+
+        {menu.children && (
+          <>
+            <button
+              className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
+              onClick={() =>
+                setOpenMenu(openMenu === index ? null : index)
+              }
+            >
+              <menu.icon className="w-4 h-4" />
+              <span>{menu.label}</span>
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${openMenu === index ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {openMenu === index && (
+              <div className="absolute left-0 mt-1 bg-white text-gray-800 rounded shadow-lg w-56 z-50">
+                {menu.children.map((child, i) => (
                   <button
-                    className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
-                    onClick={() => router.push(menu.href)}
+                    key={i}
+                    onClick={() => {
+                      router.push(child.href);
+                      setOpenMenu(null);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 transition"
                   >
-                    <menu.icon className="w-4 h-4" />
-                    <span>{menu.label}</span>
+                    <child.icon className="w-4 h-4 mr-3" />
+                    {child.label}
                   </button>
-                )}
-
-                {menu.hasDropdown && (
-                  <>
-                    <button
-                      className="flex items-center space-x-2 px-3 py-2 text-white hover:bg-blue-700 text-sm transition rounded"
-                      onClick={() =>
-                        setOpenMenu(openMenu === index ? null : index)
-                      }
-                    >
-                      <menu.icon className="w-4 h-4" />
-                      <span>{menu.label}</span>
-                      <ChevronDown
-                        className={`w-3 h-3 transition-transform ${openMenu === index ? "rotate-180" : ""}`}
-                      />
-                    </button>
-
-                    {openMenu === index && (
-                      <div className="absolute left-0 mt-1 bg-white text-gray-800 rounded shadow-lg w-56 z-50">
-                        {menu.children.map((child, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              router.push(child.href);
-                              setOpenMenu(null);
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 transition"
-                          >
-                            <child.icon className="w-4 h-4 mr-3" />
-                            {child.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                ))}
               </div>
-            ))}
+            )}
+          </>
+        )}
+      </div>
+    ))}
 
-            <div className="ml-auto text-white text-sm py-2 px-3 opacity-80">
-              {currentDate}
-            </div>
-          </div>
-        </div>
+    <div className="ml-auto text-white text-sm py-2 px-3 opacity-80">
+      {currentDate}
+    </div>
+  </div>
+</div>
       </nav>
 
       {/* Mobile Sidebar Menu */}
