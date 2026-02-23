@@ -183,6 +183,11 @@ export default function LayoutDashboard({ children, activeMenu }) {
           label: "Budget Management",
           href: "/budget_management",
         },
+          {
+          icon: Wallet,
+          label: "Budget Request",
+          href: "/budget_request",
+        },
         {
           icon: FilePenLine,
           label: "Revision",
@@ -190,8 +195,8 @@ export default function LayoutDashboard({ children, activeMenu }) {
         },
         {
           icon: FileText,
-          label: "Budget Request",
-          href: "/budget_request",
+          label: "Request",
+          href: "/request_budget_form",
         },
       ],
     },
