@@ -407,7 +407,7 @@ export default function DashboardPage() {
           {/* Department Budget Distribution */}
           <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
+              <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
               Top 5 Departments by Budget
             </h2>
             <ResponsiveContainer width="100%" height={200}>
@@ -428,7 +428,26 @@ export default function DashboardPage() {
                   width={120}
                   tick={{ fontSize: 11, fill: "#6b7280" }}
                 />
-                <Tooltip formatter={(value) => formatRupiah(value)} />
+                <Tooltip
+                  formatter={(value) => formatRupiah(value)}
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0.5rem",
+                    padding: "0.75rem",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: "#4b5563", 
+                  }}
+                  labelStyle={{
+                    color: "#4b5563", 
+                    fontWeight: 400,
+                    marginBottom: "0.25rem",
+                  }}
+                  itemStyle={{
+                    color: "#2563eb",
+                    fontWeight: 500,
+                  }}
+                />
                 <Bar dataKey="value" fill="#2563eb" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

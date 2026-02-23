@@ -33,6 +33,7 @@ import {
   showEditBudgetModal,
   showDeleteBudgetModal,
   showBudgetDetailsModal,
+    showBulkEditBudgetModal, 
 } from "@/components/modals/BudgetManagementModals";
 import { departmentService } from "@/services/departmentService";
 
@@ -49,6 +50,11 @@ export default function BudgetManagementPage() {
   const [departments, setDepartments] = useState([]);
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+
+  // ============ STATE UNTUK SELECT MULTIPLE ============
+  const [selectedBudgets, setSelectedBudgets] = useState([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -223,6 +229,167 @@ export default function BudgetManagementPage() {
     showBudgetDetailsModal(budget);
   };
 
+  // ============ FUNGSI UNTUK SELECT MULTIPLE ============
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedBudgets([]);
+    setSelectAll(false);
+  };
+
+  const handleSelectBudget = (budgetId) => {
+    setSelectedBudgets(prev => {
+      if (prev.includes(budgetId)) {
+        return prev.filter(id => id !== budgetId);
+      } else {
+        return [...prev, budgetId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedBudgets([]);
+    } else {
+      setSelectedBudgets(filteredBudgets.map(b => b.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+const handleBulkEdit = () => {
+  if (selectedBudgets.length === 0) {
+    Swal.fire({
+      title: "No Selection",
+      text: "Please select at least one budget to edit",
+      icon: "warning",
+      confirmButtonColor: "#1e40af",
+    });
+    return;
+  }
+  const selectedData = budgets.filter(b => selectedBudgets.includes(b.id));
+
+  showBulkEditBudgetModal({
+    budgets: selectedData,
+    onSave: async (updatedBudgets) => {
+      try {
+        Swal.fire({
+          title: "Updating...",
+          text: "Please wait",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const budget of updatedBudgets) {
+          try {
+            await budgetService.updateBudget(budget.id, budget);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+
+        Swal.fire({
+          title: "Updated!",
+          text: `${successCount} Budgets updated successfully`,
+          icon: "success",
+          confirmButtonColor: "#1e40af",
+        });
+
+        fetchBudgets();
+        setSelectMode(false);
+        setSelectedBudgets([]);
+        setSelectAll(false);
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to update budgets",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
+        });
+      }
+    },
+  });
+};
+
+  const handleBulkDelete = async () => {
+    if (selectedBudgets.length === 0) {
+      Swal.fire({
+        title: "No Selection",
+        text: "Please select at least one budget to delete",
+        icon: "warning",
+        confirmButtonColor: "#1e40af",
+      });
+      return;
+    }
+
+const result = await Swal.fire({
+  title: `Delete ${selectedBudgets.length} Budgets?`,
+  text: `Are you sure you want to delete ${selectedBudgets.length} selected budgets? This action cannot be undone!`,
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonText: "Yes, Delete All!",
+  cancelButtonText: "Cancel",
+
+  buttonsStyling: false,
+  customClass: {
+    actions: "flex gap-3 justify-center",
+    confirmButton:
+      "px-6 py-2 rounded-lg bg-red-600 text-white font-medium min-w-[140px] hover:bg-red-700 transition",
+    cancelButton:
+      "px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium min-w-[140px] hover:bg-gray-300 transition",
+  },
+});
+    if (result.isConfirmed) {
+      try {
+        Swal.fire({
+          title: "Deleting...",
+          text: "Please wait",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        // Hapus satu per satu
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const budgetId of selectedBudgets) {
+          try {
+            await budgetService.deleteBudget(budgetId);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+
+        Swal.fire({
+          title: "Deleted!",
+          text: `${successCount} Budgets deleted successfully`,
+          icon: "success",
+          confirmButtonColor: "#1e40af",
+        });
+
+        // Refresh data dan reset select mode
+        fetchBudgets();
+        setSelectMode(false);
+        setSelectedBudgets([]);
+        setSelectAll(false);
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to delete budgets",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
+        });
+      }
+    }
+  };
+
   // ============ FILTER & SEARCH ============
   const uniqueDepartments = useMemo(() => {
     const depts = [...new Set(budgets.map((b) => b.department_name))];
@@ -377,9 +544,9 @@ export default function BudgetManagementPage() {
   // ============ GET ICON BY BUDGET TYPE ============
   const getBudgetIcon = (type) => {
     if (type === "CAPEX") {
-      return <Building className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />;
+      return <Calendar className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />;
     } else {
-      return <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-600" />;
+      return <Server className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />;
     }
   };
 
@@ -704,63 +871,60 @@ export default function BudgetManagementPage() {
                   <span>Add Budget</span>
                 </button>
 
-                {/* Desktop Filters */}
-                <div className="hidden md:flex items-center gap-2 ml-auto">
-                  {/* Type Filter */}
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm bg-white min-w-[120px]"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="CAPEX">CAPEX</option>
-                    <option value="OPEX">OPEX</option>
-                  </select>
+                {/* TOMBOL SELECT - BARU */}
+                <button
+                  onClick={toggleSelectMode}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
+                    selectMode 
+                      ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                      : 'bg-gray-600 text-white hover:bg-gray-600'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
+                    {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
+                    {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
+                    {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
+                  </svg>
+                  <span>{selectMode ? 'Cancel Select' : 'Select Multiple'}</span>
+                </button>
 
-                  {/* Department Filter */}
-                  <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm bg-white min-w-[180px]"
-                  >
-                    <option value="all">All Departments</option>
-                    {departments.length > 0
-                      ? departments.map((dept) => (
-                          <option key={dept.id} value={dept.name}>
-                            {dept.name}
-                          </option>
-                        ))
-                      : uniqueDepartments.map((dept, index) => (
-                          <option key={index} value={dept}>
-                            {dept}
-                          </option>
-                        ))}
-                  </select>
+                {/* TOMBOL ACTION BULK */}
+                {selectMode && (
+                  <>
+                    <button
+                      onClick={handleSelectAll}
+                      className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        {!selectAll && <line x1="3" y1="9" x2="21" y2="9"></line>}
+                        {!selectAll && <line x1="3" y1="15" x2="21" y2="15"></line>}
+                        {!selectAll && <line x1="9" y1="21" x2="9" y2="3"></line>}
+                        {!selectAll && <line x1="15" y1="21" x2="15" y2="3"></line>}
+                        {selectAll && <polyline points="20 6 9 17 4 12"></polyline>}
+                      </svg>
+                      <span>{selectAll ? 'Unselect All' : 'Select All'}</span>
+                    </button>
 
-                  {/* View Mode Toggle */}
-                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                     <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-2 ${
-                        viewMode === "list"
-                          ? "bg-gray-100 text-gray-900"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
+                      onClick={handleBulkEdit}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
                     >
-                      <ListIcon className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
+                      <span>Edit Selected ({selectedBudgets.length})</span>
                     </button>
+
                     <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-2 ${
-                        viewMode === "grid"
-                          ? "bg-gray-100 text-gray-900"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
                     >
-                      <Grid className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Selected ({selectedBudgets.length})</span>
                     </button>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -817,14 +981,24 @@ export default function BudgetManagementPage() {
                     key={budget.id}
                     className="bg-gray-50 border border-gray-200 rounded-xl p-3 md:p-4 hover:shadow-sm transition-shadow"
                   >
-                    {/* HEADER */}
+                    {/* HEADER dengan checkbox jika select mode */}
                     <div className="flex justify-between items-start mb-3">
+                      {selectMode && (
+                        <div className="mr-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedBudgets.includes(budget.id)}
+                            onChange={() => handleSelectBudget(budget.id)}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 flex-1">
                         <div className="p-1.5 md:p-2 rounded-lg bg-blue-100">
                           {budget.budget_type === "CAPEX" ? (
-                            <Building className="w-5 h-5 text-blue-600" />
-                          ) : (
                             <Calendar className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Server className="w-5 h-5 text-blue-600" />
                           )}
                         </div>
                         <div className="max-w-[140px] md:max-w-[160px] flex-1">
@@ -970,6 +1144,16 @@ export default function BudgetManagementPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      {selectMode && (
+                        <th className="px-2 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Budget Name
                       </th>
@@ -1076,6 +1260,16 @@ export default function BudgetManagementPage() {
                   <tbody className="bg-white divide-y divide-gray-200 text-center">
                     {filteredBudgets.map((budget) => (
                       <tr key={budget.id} className="hover:bg-gray-50">
+                        {selectMode && (
+                          <td className="px-2 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedBudgets.includes(budget.id)}
+                              onChange={() => handleSelectBudget(budget.id)}
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-left">
                           <div className="flex items-center">
                             <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
@@ -1184,8 +1378,13 @@ export default function BudgetManagementPage() {
             <div className="px-4 md:px-6 py-3 md:py-4 border-t bg-gray-50">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
                 <div className="text-xs md:text-sm text-gray-500 text-center sm:text-left">
-                  Showing {filteredBudgets.length} of {budgets.length} budgets
+                  Showing {filteredBudgets.length} of {budgets.length} Budgets
                 </div>
+                {selectMode && (
+                  <div className="text-xs font-medium text-gray-500">
+                    {selectedBudgets.length} Budgets Selected
+                  </div>
+                )}
               </div>
             </div>
           )}

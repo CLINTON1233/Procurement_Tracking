@@ -735,6 +735,374 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
   });
 };
 
+
+// Bulk Edit Budget Modal 
+export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
+  const currentYear = new Date().getFullYear().toString();
+  const depts = await fetchDepartments();
+  departmentsList = depts;
+
+  const generateDepartmentOptions = (selectedDept = "") => {
+    let options = '<option value="">Select Department</option>';
+    departmentsList.forEach((dept) => {
+      options += `<option value="${dept.name}">${dept.name}</option>`;
+    });
+    return options;
+  };
+
+  const generateBudgetEntries = () => {
+    let entriesHtml = '';
+    
+    budgets.forEach((budget, index) => {
+      entriesHtml += `
+        <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-id="${budget.id}" data-index="${index}">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-sm font-semibold text-gray-700">Edit Budget #${index + 1}: ${budget.budget_name}</h4>
+            <input type="hidden" class="entry-id" value="${budget.id}">
+          </div>
+
+          <div class="space-y-3">
+            <!-- 1. BUDGET NAME -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Budget Name *
+              </label>
+              <input
+                type="text"
+                class="entry-budget_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value="${budget.budget_name || ''}"
+                placeholder="Capex/Opex IT 2026"
+                required
+              >
+            </div>
+
+            <!-- 2. BUDGET CODE (Optional) -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Budget Code
+              </label>
+              <input
+                type="text"
+                class="entry-budget_code w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value="${budget.budget_code || ''}"
+                placeholder="BUD-2026-001"
+              >
+              <p class="text-xs text-gray-500 mt-1">Optional internal budget code</p>
+            </div>
+
+            <!-- 3. BUDGET TYPE -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                Budget Type *
+              </label>
+              <div class="flex flex-wrap gap-2 jenis-container">
+                <button
+                  type="button"
+                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === 'CAPEX' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                  data-jenis="CAPEX"
+                >
+                  CAPEX
+                </button>
+                <button
+                  type="button"
+                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === 'OPEX' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                  data-jenis="OPEX"
+                >
+                  OPEX
+                </button>
+              </div>
+              <input type="hidden" class="entry-budget_type" value="${budget.budget_type || 'CAPEX'}">
+            </div>
+
+            <!-- 4. TOTAL AMOUNT -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Total Amount (Rp) *
+              </label>
+              <input
+                type="number"
+                class="entry-total_amount w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value="${budget.total_amount || ''}"
+                placeholder="Enter total budget amount"
+                min="0"
+                required
+              >
+            </div>
+
+            <!-- 5. FINANCIAL STATUS (Read-only) -->
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Reserved</label>
+                <input
+                  type="text"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
+                  readonly
+                  disabled
+                >
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Used</label>
+                <input
+                  type="text"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
+                  readonly
+                  disabled
+                >
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Remaining</label>
+                <input
+                  type="text"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
+                  readonly
+                  disabled
+                >
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Financial status is auto-calculated</p>
+
+            <!-- 6. DEPARTMENT -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Department *
+              </label>
+              <select
+                class="entry-department_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                required
+              >
+                ${generateDepartmentOptions()}
+              </select>
+            </div>
+
+            <!-- 7. BUDGET OWNER (Optional) -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Budget Owner
+              </label>
+              <input
+                type="text"
+                class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value="${budget.budget_owner || ''}"
+                placeholder="Enter owner name"
+              >
+              <p class="text-xs text-gray-500 mt-1">Person responsible for this budget</p>
+            </div>
+
+            <!-- 8. FISCAL YEAR -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Fiscal Year *
+              </label>
+              <input
+                type="text"
+                class="entry-fiscal_year w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value="${budget.fiscal_year || currentYear}"
+                placeholder="2026"
+                required
+              >
+              <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
+            </div>
+
+            <!-- 9. PERIOD (Optional) -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">
+                  Period Start
+                </label>
+                <input
+                  type="date"
+                  class="entry-period_start w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  value="${budget.period_start ? budget.period_start.split('T')[0] : ''}"
+                >
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">
+                  Period End
+                </label>
+                <input
+                  type="date"
+                  class="entry-period_end w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  value="${budget.period_end ? budget.period_end.split('T')[0] : ''}"
+                >
+              </div>
+            </div>
+
+            <!-- 10. DESCRIPTION (Optional) -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                class="entry-description w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                rows="2"
+                placeholder="Additional notes, purpose of budget, etc..."
+              >${budget.description || ''}</textarea>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    return entriesHtml;
+  };
+
+  let html = `
+    <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3">
+      <div class="sticky top-0 bg-white py-2 z-10 border-b border-gray-200 mb-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="text-blue-600">
+              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14"/>
+              <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span class="text-base font-semibold text-gray-900">
+              Edit ${budgets.length} Selected Budgets
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div id="budget-entries-container">
+        ${generateBudgetEntries()}
+      </div>
+
+      <div class="text-xs text-gray-500 pt-2 border-t">
+        * Required fields
+      </div>
+    </div>
+  `;
+
+  Swal.fire({
+    title: "",
+    html: html,
+    width: window.innerWidth > 768 ? "800px" : "95vw",
+    padding: "0",
+    showCancelButton: true,
+    confirmButtonText: "Update All",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#2563eb",
+    cancelButtonColor: "#6b7280",
+    customClass: {
+      popup: "rounded-xl overflow-hidden bg-white mx-4",
+      htmlContainer: "!p-4 !m-0 !bg-white",
+      actions:
+        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
+      cancelButton:
+        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+    },
+    didOpen: () => {
+      const setupJenisButtons = (container) => {
+        const jenisButtons = container.querySelectorAll(".jenis-btn");
+        jenisButtons.forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const parentContainer = e.target.closest(".budget-entry");
+            const buttons = parentContainer.querySelectorAll(".jenis-btn");
+
+            buttons.forEach((b) => {
+              b.classList.remove("bg-blue-600", "text-white");
+              b.classList.add(
+                "bg-gray-100",
+                "text-gray-700",
+                "hover:bg-gray-200",
+              );
+            });
+
+            btn.classList.remove(
+              "bg-gray-100",
+              "text-gray-700",
+              "hover:bg-gray-200",
+            );
+            btn.classList.add("bg-blue-600", "text-white");
+
+            const jenis = btn.getAttribute("data-jenis");
+            parentContainer.querySelector(".entry-budget_type").value = jenis;
+          });
+        });
+      };
+
+      setupJenisButtons(document);
+    },
+    preConfirm: () => {
+      const entries = document.querySelectorAll(".budget-entry");
+      const updatedBudgets = [];
+      const errors = [];
+
+      entries.forEach((entry, index) => {
+        const id = entry.querySelector(".entry-id")?.value;
+        const fiscal_year =
+          entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
+        const budget_code =
+          entry.querySelector(".entry-budget_code")?.value?.trim() || null;
+        const department_name =
+          entry.querySelector(".entry-department_name")?.value || "";
+        const budget_type =
+          entry.querySelector(".entry-budget_type")?.value || "CAPEX";
+        const budget_name =
+          entry.querySelector(".entry-budget_name")?.value?.trim() || "";
+        const total_amount =
+          entry.querySelector(".entry-total_amount")?.value || "";
+        const budget_owner =
+          entry.querySelector(".entry-budget_owner")?.value?.trim() || null;
+        const period_start =
+          entry.querySelector(".entry-period_start")?.value || null;
+        const period_end =
+          entry.querySelector(".entry-period_end")?.value || null;
+        const description =
+          entry.querySelector(".entry-description")?.value?.trim() || "";
+
+        const entryErrors = [];
+
+        if (!fiscal_year) entryErrors.push("Fiscal year is required");
+        if (!department_name) entryErrors.push("Department is required");
+        if (!budget_name) entryErrors.push("Budget name is required");
+        if (!total_amount || total_amount <= 0)
+          entryErrors.push("Total amount must be greater than 0");
+
+        if (entryErrors.length > 0) {
+          errors.push(`Budget #${index + 1}: ${entryErrors.join(", ")}`);
+        } else {
+          updatedBudgets.push({
+            id: Number(id),
+            fiscal_year,
+            budget_code,
+            department_name,
+            budget_type,
+            budget_name,
+            total_amount,
+            budget_owner,
+            period_start,
+            period_end,
+            description,
+          });
+        }
+      });
+
+      if (errors.length > 0) {
+        Swal.showValidationMessage(errors.join("<br>"));
+        return false;
+      }
+
+      if (updatedBudgets.length === 0) {
+        Swal.showValidationMessage("No valid budgets to update");
+        return false;
+      }
+
+      return updatedBudgets;
+    },
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      onSave(result.value);
+    }
+  });
+};
+
 // Delete Budget Modal
 export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
   Swal.fire({
