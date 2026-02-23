@@ -23,6 +23,7 @@ import {
   ArrowDown,
   BarChart3,
   Eye,
+  Server,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
@@ -410,7 +411,7 @@ export default function BudgetManagementPage() {
               </h1>
             </div>
             <p className="text-gray-500 text-sm">
-              Manage CAPEX/OPEX budgets, track allocations, and monitor
+              Manage Capex/Opex budgets, track allocations, and monitor
               remaining funds
             </p>
           </div>
@@ -1079,9 +1080,9 @@ export default function BudgetManagementPage() {
                           <div className="flex items-center">
                             <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
                               {budget.budget_type === "CAPEX" ? (
-                                <Building className="w-4 h-4 text-blue-600" />
-                              ) : (
                                 <Calendar className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Server className="w-4 h-4 text-blue-600" />
                               )}
                             </div>
                             <div className="min-w-0">

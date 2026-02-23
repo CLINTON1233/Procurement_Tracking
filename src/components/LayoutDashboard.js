@@ -75,7 +75,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
   const menuItems = [
     {
       icon: Home,
-      label: "Dashboard",
+      label: "Home",
       href: "/dashboard",
       hasDropdown: false,
     },
