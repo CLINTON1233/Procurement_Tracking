@@ -1,6 +1,6 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import {
   Send,
@@ -22,8 +22,10 @@ import {
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
+import Link from "next/link";
 
 export default function RequestBudgetForm() {
+  const router = useRouter(); // TAMBAHKAN INI
   const [budgets, setBudgets] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,17 +80,17 @@ export default function RequestBudgetForm() {
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
-      
+
       // Calculate estimated total when quantity or unit price changes
       if (name === "quantity" || name === "estimated_unit_price") {
         const qty = parseInt(newData.quantity) || 0;
         const price = parseFloat(newData.estimated_unit_price) || 0;
         newData.estimated_total = qty * price;
       }
-      
+
       return newData;
     });
   };
@@ -97,12 +99,12 @@ export default function RequestBudgetForm() {
   const handleBudgetSelect = (e) => {
     const budgetId = e.target.value;
     setFormData((prev) => ({ ...prev, budget_id: budgetId }));
-    
+
     if (budgetId) {
       const budget = budgets.find((b) => b.id === parseInt(budgetId));
       setSelectedBudget(budget);
       setBudgetDetails(budget);
-      
+
       // Auto-fill budget type based on selected budget
       setFormData((prev) => ({
         ...prev,
@@ -170,13 +172,13 @@ export default function RequestBudgetForm() {
     const result = await Swal.fire({
       title: "Submit Budget Request?",
       html: `
-        <div class="text-left text-sm">
-          <p><strong>Item:</strong> ${formData.item_name}</p>
-          <p><strong>Quantity:</strong> ${formData.quantity}</p>
-          <p><strong>Total:</strong> ${formatRupiah(formData.estimated_total)}</p>
-          <p><strong>Budget:</strong> ${budgetDetails?.budget_name}</p>
-        </div>
-      `,
+      <div class="text-left text-sm">
+        <p><strong>Item:</strong> ${formData.item_name}</p>
+        <p><strong>Quantity:</strong> ${formData.quantity}</p>
+        <p><strong>Total:</strong> ${formatRupiah(formData.estimated_total)}</p>
+        <p><strong>Budget:</strong> ${budgetDetails?.budget_name}</p>
+      </div>
+    `,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Yes, Submit",
@@ -207,11 +209,14 @@ export default function RequestBudgetForm() {
 
       const response = await budgetService.createRequest(requestData);
 
-      Swal.fire({
-        title: "Success!",
-        text: "Budget request submitted successfully",
+      // ✅ SweetAlert sukses seperti di halaman login
+      await Swal.fire({
+        title: "Request Submitted Successfully",
+        text: "Your budget request has been submitted for approval",
         icon: "success",
         confirmButtonColor: "#1e40af",
+        timer: 3000,
+        showConfirmButton: true,
       });
 
       // Reset form
@@ -231,6 +236,10 @@ export default function RequestBudgetForm() {
       });
       setSelectedBudget(null);
       setBudgetDetails(null);
+
+      // ✅ Redirect ke halaman budget request list
+      router.push("/budget_request_list");
+
     } catch (error) {
       console.error("Error submitting request:", error);
       Swal.fire({
@@ -318,7 +327,7 @@ export default function RequestBudgetForm() {
           <div className="border-b border-gray-200 px-6 py-4">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
-              Request Budget 
+              Request Budget
             </h2>
             <p className="text-gray-500 text-sm mt-1">
               Please fill all required fields marked with <span className="text-red-500">*</span>
@@ -563,11 +572,10 @@ export default function RequestBudgetForm() {
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Type</p>
                           <p className="text-sm font-medium">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              budgetDetails.budget_type === "CAPEX"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-green-100 text-green-800"
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${budgetDetails.budget_type === "CAPEX"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-green-100 text-green-800"
+                              }`}>
                               {budgetDetails.budget_type}
                             </span>
                           </p>
@@ -578,11 +586,10 @@ export default function RequestBudgetForm() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Remaining</p>
-                          <p className={`text-sm font-medium ${
-                            budgetDetails.remaining_amount < formData.estimated_total
-                              ? "text-red-600"
-                              : "text-green-600"
-                          }`}>
+                          <p className={`text-sm font-medium ${budgetDetails.remaining_amount < formData.estimated_total
+                            ? "text-red-600"
+                            : "text-green-600"
+                            }`}>
                             {formatRupiah(budgetDetails.remaining_amount)}
                           </p>
                         </div>
