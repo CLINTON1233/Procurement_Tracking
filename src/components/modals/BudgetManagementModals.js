@@ -29,6 +29,145 @@ export const showAddBudgetModal = async ({ onSave }) => {
     return options;
   };
 
+  // Generate currency options HTML
+  const generateCurrencyOptions = (selectedCurrency = "IDR") => {
+    const currencies = [
+      { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp" },
+      { code: "USD", name: "US Dollar", symbol: "$" },
+      { code: "EUR", name: "Euro", symbol: "€" },
+      { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
+      { code: "GBP", name: "British Pound", symbol: "£" },
+      { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+      { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+      { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
+      { code: "MYR", name: "Malaysian Ringgit", symbol: "RM" },
+      { code: "THB", name: "Thai Baht", symbol: "฿" },
+      { code: "KRW", name: "South Korean Won", symbol: "₩" },
+      { code: "INR", name: "Indian Rupee", symbol: "₹" },
+      { code: "SAR", name: "Saudi Riyal", symbol: "﷼" },
+      { code: "AED", name: "UAE Dirham", symbol: "د.إ" },
+      { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
+      { code: "CHF", name: "Swiss Franc", symbol: "Fr" },
+      { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+      { code: "NZD", name: "New Zealand Dollar", symbol: "NZ$" },
+      { code: "RUB", name: "Russian Ruble", symbol: "₽" },
+      { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+      { code: "ZAR", name: "South African Rand", symbol: "R" },
+      { code: "TRY", name: "Turkish Lira", symbol: "₺" },
+      { code: "MXN", name: "Mexican Peso", symbol: "$" },
+      { code: "PHP", name: "Philippine Peso", symbol: "₱" },
+      { code: "VND", name: "Vietnamese Dong", symbol: "₫" },
+      { code: "PKR", name: "Pakistani Rupee", symbol: "₨" },
+      { code: "BDT", name: "Bangladeshi Taka", symbol: "৳" },
+      { code: "LKR", name: "Sri Lankan Rupee", symbol: "₨" },
+      { code: "NPR", name: "Nepalese Rupee", symbol: "₨" },
+      { code: "IQD", name: "Iraqi Dinar", symbol: "ع.د" },
+      { code: "JOD", name: "Jordanian Dinar", symbol: "د.ا" },
+      { code: "KWD", name: "Kuwaiti Dinar", symbol: "د.ك" },
+      { code: "BHD", name: "Bahraini Dinar", symbol: ".د.ب" },
+      { code: "OMR", name: "Omani Rial", symbol: "﷼" },
+      { code: "QAR", name: "Qatari Rial", symbol: "﷼" },
+      { code: "EGP", name: "Egyptian Pound", symbol: "£" },
+      { code: "MAD", name: "Moroccan Dirham", symbol: "د.م." },
+      { code: "TND", name: "Tunisian Dinar", symbol: "د.ت" },
+      { code: "DZD", name: "Algerian Dinar", symbol: "د.ج" },
+      { code: "NGN", name: "Nigerian Naira", symbol: "₦" },
+      { code: "GHS", name: "Ghanaian Cedi", symbol: "₵" },
+      { code: "KES", name: "Kenyan Shilling", symbol: "KSh" },
+      { code: "UGX", name: "Ugandan Shilling", symbol: "USh" },
+      { code: "TZS", name: "Tanzanian Shilling", symbol: "TSh" },
+      { code: "ETB", name: "Ethiopian Birr", symbol: "Br" },
+      { code: "MUR", name: "Mauritian Rupee", symbol: "₨" },
+      { code: "SCR", name: "Seychellois Rupee", symbol: "₨" },
+      { code: "MVR", name: "Maldivian Rufiyaa", symbol: "Rf" },
+      { code: "AFN", name: "Afghan Afghani", symbol: "؋" },
+      { code: "IRR", name: "Iranian Rial", symbol: "﷼" },
+    ];
+
+    let options = "";
+    currencies.forEach((currency) => {
+      const selected = currency.code === selectedCurrency ? "selected" : "";
+      options += `<option value="${currency.code}" ${selected}>${currency.code} - ${currency.name} (${currency.symbol})</option>`;
+    });
+    return options;
+  };
+
+  // Perbaiki fungsi setupConvertCheckboxes
+  const setupConvertCheckboxes = (container) => {
+    const checkboxes = container.querySelectorAll(".entry-convert-checkbox");
+
+    checkboxes.forEach((checkbox) => {
+      const entry = checkbox.closest(".budget-entry");
+      const convertFields = entry.querySelector(".convert-fields");
+      const totalAmount = entry.querySelector(".entry-total_amount");
+      const currencySelect = entry.querySelector(".entry-currency");
+      const convertToSelect = entry.querySelector(".entry-convert-to");
+      const exchangeRateInput = entry.querySelector(".entry-exchange-rate");
+      const convertedAmount = entry.querySelector(".entry-converted-amount");
+
+      // Fungsi untuk menghitung amount yang dikonversi menggunakan rate dari CURRENCIES
+      const calculateConvertedAmount = () => {
+        if (!checkbox.checked) return;
+
+        const amount = parseFloat(totalAmount.value) || 0;
+        const fromCurrency = currencySelect.value;
+        const toCurrency = convertToSelect.value;
+
+        if (amount && fromCurrency && toCurrency) {
+          // Gunakan fungsi convertCurrency dari currency.js
+          import("@/utils/currency").then(({ convertCurrency }) => {
+            const result = convertCurrency(amount, fromCurrency, toCurrency);
+            convertedAmount.value = result.toFixed(2);
+
+            // Set exchange rate berdasarkan perhitungan (untuk referensi)
+            if (fromCurrency !== toCurrency) {
+              const fromRate =
+                CURRENCIES.find((c) => c.code === fromCurrency)?.rate || 1;
+              const toRate =
+                CURRENCIES.find((c) => c.code === toCurrency)?.rate || 1;
+              const calculatedRate = fromRate / toRate;
+              exchangeRateInput.value = calculatedRate.toFixed(4);
+            } else {
+              exchangeRateInput.value = "1";
+            }
+          });
+        } else {
+          convertedAmount.value = "";
+        }
+      };
+
+      // Event listener untuk checkbox
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          convertFields.classList.remove("hidden");
+          calculateConvertedAmount();
+        } else {
+          convertFields.classList.add("hidden");
+          convertedAmount.value = "";
+          exchangeRateInput.value = "1";
+        }
+      });
+
+      // Event listeners untuk perhitungan
+      totalAmount.addEventListener("input", calculateConvertedAmount);
+      currencySelect.addEventListener("change", calculateConvertedAmount);
+      convertToSelect.addEventListener("change", calculateConvertedAmount);
+
+      // Exchange rate input bisa diubah manual tapi akan mempengaruhi hasil konversi
+      exchangeRateInput.addEventListener("input", () => {
+        if (!checkbox.checked) return;
+
+        const amount = parseFloat(totalAmount.value) || 0;
+        const rate = parseFloat(exchangeRateInput.value) || 1;
+
+        if (amount && rate) {
+          const result = amount * rate;
+          convertedAmount.value = result.toFixed(2);
+        }
+      });
+    });
+  };
+
   const generateEntryHTML = (index, selectedDept = "") => `
     <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-index="${index}">
       <div class="flex justify-between items-center mb-3">
@@ -97,10 +236,22 @@ export const showAddBudgetModal = async ({ onSave }) => {
           <input type="hidden" class="entry-budget_type" value="CAPEX">
         </div>
 
-        <!-- 4. TOTAL AMOUNT -->
+        <!-- 4. CURRENCY -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
-            Total Amount (Rp) *
+            Currency *
+          </label>
+          <select
+            class="entry-currency w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+          >
+            ${generateCurrencyOptions("IDR")}
+          </select>
+        </div>
+
+        <!-- 5. TOTAL AMOUNT -->
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            Total Amount *
           </label>
           <input
             type="number"
@@ -111,7 +262,66 @@ export const showAddBudgetModal = async ({ onSave }) => {
           >
         </div>
 
-        <!-- 5. DEPARTMENT -->
+        <!-- CONVERT TO ANOTHER CURRENCY SECTION -->
+        <div class="border-t border-gray-200 my-4 pt-4">
+          <div class="flex items-center mb-3">
+            <input
+              type="checkbox"
+              class="entry-convert-checkbox w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-2"
+              id="convert-checkbox-${index}"
+            >
+            <label for="convert-checkbox-${index}" class="text-sm font-medium text-gray-700">
+              Convert to another currency
+            </label>
+          </div>
+          
+          <div class="convert-fields hidden space-y-3 ml-6 border-l-2 border-blue-200 pl-4" id="convert-fields-${index}">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Convert to Currency
+              </label>
+              <select
+                class="entry-convert-to w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              >
+                ${generateCurrencyOptions("USD")}
+              </select>
+            </div>
+            
+          <div>
+  <label class="block text-xs font-medium text-gray-700 mb-1">
+    Exchange Rate
+  </label>
+  <input
+    type="number"
+    class="entry-exchange-rate w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+    placeholder="Auto-calculated"
+    step="0.0001"
+    min="0"
+    value="1"
+    readonly
+  >
+  <p class="text-xs text-gray-500 mt-1">Calculated automatically based on currency rates</p>
+</div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Converted Amount
+              </label>
+              <input
+                type="number"
+                class="entry-converted-amount w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-blue-50 text-gray-900 font-medium"
+                readonly
+                placeholder="Calculated automatically"
+              >
+            </div>
+
+            <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+              <span class="font-medium">Info:</span> Converted amount will be saved for reference
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. DEPARTMENT -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Department *
@@ -124,20 +334,20 @@ export const showAddBudgetModal = async ({ onSave }) => {
           </select>
         </div>
 
-        <!-- 6. BUDGET OWNER (Optional) -->
+        <!-- 7. BUDGET OWNER (Optional) -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Budget Owner
           </label>
-            <input
-              type="text"
-              class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              placeholder="Enter owner name"
-            >
+          <input
+            type="text"
+            class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            placeholder="Enter owner name"
+          >
           <p class="text-xs text-gray-500 mt-1">Person responsible for this budget</p>
         </div>
 
-        <!-- 7. FISCAL YEAR -->
+        <!-- 8. FISCAL YEAR -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Fiscal Year *
@@ -152,7 +362,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
           <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
         </div>
 
-        <!-- 8. PERIOD (Optional) -->
+        <!-- 9. PERIOD (Optional) -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
@@ -174,7 +384,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
           </div>
         </div>
 
-        <!-- 9. DESCRIPTION (Optional) -->
+        <!-- 10. DESCRIPTION (Optional) -->
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             Description (Optional)
@@ -245,6 +455,7 @@ export const showAddBudgetModal = async ({ onSave }) => {
         "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
     },
     didOpen: () => {
+      // Fungsi untuk setup tombol jenis budget
       const setupJenisButtons = (container) => {
         const jenisButtons = container.querySelectorAll(".jenis-btn");
         jenisButtons.forEach((btn) => {
@@ -273,8 +484,155 @@ export const showAddBudgetModal = async ({ onSave }) => {
           });
         });
       };
+
+      // Fungsi untuk setup checkbox convert
+      const setupConvertCheckboxes = (container) => {
+        const currencies = [
+          { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp", rate: 1 },
+          { code: "USD", name: "US Dollar", symbol: "$", rate: 15700 },
+          { code: "EUR", name: "Euro", symbol: "€", rate: 17000 },
+          { code: "SGD", name: "Singapore Dollar", symbol: "S$", rate: 11600 },
+          { code: "GBP", name: "British Pound", symbol: "£", rate: 19800 },
+          { code: "JPY", name: "Japanese Yen", symbol: "¥", rate: 105 },
+          { code: "AUD", name: "Australian Dollar", symbol: "A$", rate: 10200 },
+          { code: "CNY", name: "Chinese Yuan", symbol: "¥", rate: 2170 },
+          { code: "MYR", name: "Malaysian Ringgit", symbol: "RM", rate: 3350 },
+          { code: "THB", name: "Thai Baht", symbol: "฿", rate: 435 },
+          { code: "KRW", name: "South Korean Won", symbol: "₩", rate: 11.5 },
+          { code: "INR", name: "Indian Rupee", symbol: "₹", rate: 188 },
+          { code: "SAR", name: "Saudi Riyal", symbol: "﷼", rate: 4180 },
+          { code: "AED", name: "UAE Dirham", symbol: "د.إ", rate: 4270 },
+          { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$", rate: 2000 },
+          { code: "CHF", name: "Swiss Franc", symbol: "Fr", rate: 17500 },
+          { code: "CAD", name: "Canadian Dollar", symbol: "C$", rate: 11500 },
+          {
+            code: "NZD",
+            name: "New Zealand Dollar",
+            symbol: "NZ$",
+            rate: 9500,
+          },
+          { code: "RUB", name: "Russian Ruble", symbol: "₽", rate: 170 },
+          { code: "BRL", name: "Brazilian Real", symbol: "R$", rate: 3100 },
+          { code: "ZAR", name: "South African Rand", symbol: "R", rate: 850 },
+          { code: "TRY", name: "Turkish Lira", symbol: "₺", rate: 480 },
+          { code: "MXN", name: "Mexican Peso", symbol: "$", rate: 870 },
+          { code: "PHP", name: "Philippine Peso", symbol: "₱", rate: 280 },
+          { code: "VND", name: "Vietnamese Dong", symbol: "₫", rate: 0.64 },
+          { code: "PKR", name: "Pakistani Rupee", symbol: "₨", rate: 56 },
+          { code: "BDT", name: "Bangladeshi Taka", symbol: "৳", rate: 142 },
+          { code: "LKR", name: "Sri Lankan Rupee", symbol: "₨", rate: 51 },
+          { code: "NPR", name: "Nepalese Rupee", symbol: "₨", rate: 117 },
+          { code: "IQD", name: "Iraqi Dinar", symbol: "ع.د", rate: 12 },
+          { code: "JOD", name: "Jordanian Dinar", symbol: "د.ا", rate: 22100 },
+          { code: "KWD", name: "Kuwaiti Dinar", symbol: "د.ك", rate: 51200 },
+          { code: "BHD", name: "Bahraini Dinar", symbol: ".د.ب", rate: 41600 },
+          { code: "OMR", name: "Omani Rial", symbol: "﷼", rate: 40800 },
+          { code: "QAR", name: "Qatari Rial", symbol: "﷼", rate: 4310 },
+          { code: "EGP", name: "Egyptian Pound", symbol: "£", rate: 510 },
+          { code: "MAD", name: "Moroccan Dirham", symbol: "د.م.", rate: 1560 },
+          { code: "TND", name: "Tunisian Dinar", symbol: "د.ت", rate: 5050 },
+          { code: "DZD", name: "Algerian Dinar", symbol: "د.ج", rate: 117 },
+          { code: "NGN", name: "Nigerian Naira", symbol: "₦", rate: 38 },
+          { code: "GHS", name: "Ghanaian Cedi", symbol: "₵", rate: 1280 },
+          { code: "KES", name: "Kenyan Shilling", symbol: "KSh", rate: 118 },
+          { code: "UGX", name: "Ugandan Shilling", symbol: "USh", rate: 4.2 },
+          { code: "TZS", name: "Tanzanian Shilling", symbol: "TSh", rate: 6.1 },
+          { code: "ETB", name: "Ethiopian Birr", symbol: "Br", rate: 275 },
+          { code: "MUR", name: "Mauritian Rupee", symbol: "₨", rate: 350 },
+          { code: "SCR", name: "Seychellois Rupee", symbol: "₨", rate: 1150 },
+          { code: "MVR", name: "Maldivian Rufiyaa", symbol: "Rf", rate: 1015 },
+          { code: "AFN", name: "Afghan Afghani", symbol: "؋", rate: 180 },
+          { code: "IRR", name: "Iranian Rial", symbol: "﷼", rate: 0.37 },
+        ];
+
+        const checkboxes = container.querySelectorAll(
+          ".entry-convert-checkbox",
+        );
+
+        checkboxes.forEach((checkbox) => {
+          const entry = checkbox.closest(".budget-entry");
+          const convertFields = entry.querySelector(".convert-fields");
+          const totalAmount = entry.querySelector(".entry-total_amount");
+          const currencySelect = entry.querySelector(".entry-currency");
+          const convertToSelect = entry.querySelector(".entry-convert-to");
+          const exchangeRateInput = entry.querySelector(".entry-exchange-rate");
+          const convertedAmount = entry.querySelector(
+            ".entry-converted-amount",
+          );
+
+          // Fungsi untuk menghitung amount yang dikonversi secara OTOMATIS
+          const calculateConvertedAmount = () => {
+            if (!checkbox.checked) return;
+
+            const amount = parseFloat(totalAmount.value) || 0;
+            const fromCurrency = currencySelect.value;
+            const toCurrency = convertToSelect.value;
+
+            if (
+              amount &&
+              fromCurrency &&
+              toCurrency &&
+              fromCurrency !== toCurrency
+            ) {
+              // Cari rate dari kedua mata uang
+              const fromRate =
+                currencies.find((c) => c.code === fromCurrency)?.rate || 1;
+              const toRate =
+                currencies.find((c) => c.code === toCurrency)?.rate || 1;
+
+              // Konversi via IDR sebagai base currency
+              // amount in IDR = amount * fromRate
+              // then convert to toCurrency = (amount * fromRate) / toRate
+              const amountInIDR = amount * fromRate;
+              const result = amountInIDR / toRate;
+
+              // Update converted amount
+              convertedAmount.value = result.toFixed(2);
+
+              // Hitung dan update exchange rate untuk referensi (1 fromCurrency = ? toCurrency)
+              const calculatedRate = fromRate / toRate;
+              exchangeRateInput.value = calculatedRate.toFixed(4);
+              exchangeRateInput.readOnly = true; // Bikin readonly karena otomatis
+              exchangeRateInput.classList.add("bg-gray-50");
+            } else if (fromCurrency === toCurrency) {
+              convertedAmount.value = amount.toFixed(2);
+              exchangeRateInput.value = "1";
+            } else {
+              convertedAmount.value = "";
+              exchangeRateInput.value = "";
+            }
+          };
+
+          // Event listener untuk checkbox
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) {
+              convertFields.classList.remove("hidden");
+              calculateConvertedAmount();
+            } else {
+              convertFields.classList.add("hidden");
+              convertedAmount.value = "";
+              exchangeRateInput.value = "1";
+              exchangeRateInput.readOnly = false;
+              exchangeRateInput.classList.remove("bg-gray-50");
+            }
+          });
+
+          // Event listeners untuk perubahan yang memicu konversi ulang
+          totalAmount.addEventListener("input", calculateConvertedAmount);
+          currencySelect.addEventListener("change", () => {
+            calculateConvertedAmount();
+          });
+          convertToSelect.addEventListener("change", calculateConvertedAmount);
+
+          // Exchange rate input dibuat readonly agar tidak bisa diubah manual
+          exchangeRateInput.readOnly = true;
+          exchangeRateInput.classList.add("bg-gray-50");
+        });
+      };
+      // Fungsi untuk setup tombol remove
       const setupRemoveButtons = () => {
-        document.querySelectorAll(".remove-entry-btn").forEach((btn) => {
+        const removeButtons = document.querySelectorAll(".remove-entry-btn");
+        removeButtons.forEach((btn) => {
           btn.addEventListener("click", (e) => {
             e.preventDefault();
             const entry = btn.closest(".budget-entry");
@@ -285,9 +643,12 @@ export const showAddBudgetModal = async ({ onSave }) => {
         });
       };
 
+      // Panggil semua fungsi setup
       setupJenisButtons(document);
+      setupConvertCheckboxes(document);
       setupRemoveButtons();
 
+      // Event listener untuk tombol "Add Another"
       document
         .getElementById("add-more-entries")
         ?.addEventListener("click", () => {
@@ -299,7 +660,10 @@ export const showAddBudgetModal = async ({ onSave }) => {
 
           container.appendChild(newEntry.firstElementChild);
           const lastEntry = container.lastElementChild;
+
+          // Setup ulang untuk entry baru
           setupJenisButtons(lastEntry);
+          setupConvertCheckboxes(lastEntry);
           setupRemoveButtons();
 
           lastEntry.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -311,6 +675,13 @@ export const showAddBudgetModal = async ({ onSave }) => {
       const errors = [];
 
       entries.forEach((entry, index) => {
+        const currency = entry.querySelector(".entry-currency")?.value || "IDR";
+        const convertCheckbox = entry.querySelector(".entry-convert-checkbox");
+        const convertTo = entry.querySelector(".entry-convert-to")?.value;
+        const exchangeRate = entry.querySelector(".entry-exchange-rate")?.value;
+        const convertedAmount = entry.querySelector(
+          ".entry-converted-amount",
+        )?.value;
         const fiscal_year =
           entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
         const budget_code =
@@ -337,24 +708,38 @@ export const showAddBudgetModal = async ({ onSave }) => {
         if (!fiscal_year) entryErrors.push("Fiscal year is required");
         if (!department_name) entryErrors.push("Department is required");
         if (!budget_name) entryErrors.push("Budget name is required");
-        if (!total_amount || total_amount <= 0)
+        if (!total_amount || parseFloat(total_amount) <= 0)
           entryErrors.push("Total amount must be greater than 0");
 
         if (entryErrors.length > 0) {
           errors.push(`Entry #${index + 1}: ${entryErrors.join(", ")}`);
         } else {
-          budgets.push({
+          const budgetData = {
             fiscal_year,
             budget_code,
             department_name,
             budget_type,
             budget_name,
-            total_amount,
+            currency,
+            total_amount: parseFloat(total_amount),
             budget_owner,
             period_start,
             period_end,
             description,
-          });
+          };
+
+          if (
+            convertCheckbox?.checked &&
+            convertTo &&
+            exchangeRate &&
+            convertedAmount
+          ) {
+            budgetData.convert_to = convertTo;
+            budgetData.exchange_rate = parseFloat(exchangeRate);
+            budgetData.converted_amount = parseFloat(convertedAmount);
+          }
+
+          budgets.push(budgetData);
         }
       });
 
@@ -394,6 +779,28 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
       options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
     });
     return options;
+  };
+
+  // Helper untuk mendapatkan nama mata uang
+  const getCurrencyName = (currencyCode) => {
+    const currencies = {
+      IDR: "IDR - Indonesian Rupiah (Rp)",
+      USD: "USD - US Dollar ($)",
+      EUR: "EUR - Euro (€)",
+      SGD: "SGD - Singapore Dollar (S$)",
+      GBP: "GBP - British Pound (£)",
+      JPY: "JPY - Japanese Yen (¥)",
+      AUD: "AUD - Australian Dollar (A$)",
+      CNY: "CNY - Chinese Yuan (¥)",
+      MYR: "MYR - Malaysian Ringgit (RM)",
+      THB: "THB - Thai Baht (฿)",
+      KRW: "KRW - South Korean Won (₩)",
+      INR: "INR - Indian Rupee (₹)",
+      SAR: "SAR - Saudi Riyal (﷼)",
+      AED: "AED - UAE Dirham (د.إ)",
+      HKD: "HKD - Hong Kong Dollar (HK$)",
+    };
+    return currencies[currencyCode] || `${currencyCode} - Unknown Currency`;
   };
 
   Swal.fire({
@@ -470,10 +877,36 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             <div id="type-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <!-- 4. TOTAL AMOUNT -->
+          <!-- 4. CURRENCY (Read-only) -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
-              Total Amount (Rp) *
+              Currency
+            </label>
+            <div class="relative">
+              <input
+                type="text"
+                id="edit-currency_display"
+                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 pr-10"
+                value="${getCurrencyName(budget.currency || "IDR")}"
+                readonly
+                disabled
+              >
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="2" x2="12" y2="22"></line>
+                  <line x1="17" y1="6" x2="5" y2="18"></line>
+                </svg>
+              </div>
+            </div>
+            <input type="hidden" id="edit-currency" value="${budget.currency || "IDR"}">
+            <p class="text-xs text-gray-500 mt-1">Currency is fixed and cannot be changed</p>
+          </div>
+
+          <!-- 5. TOTAL AMOUNT -->
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Total Amount *
             </label>
             <input
               type="number"
@@ -486,7 +919,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             <div id="total-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <!-- 5. FINANCIAL STATUS (Read-only) -->
+          <!-- 6. FINANCIAL STATUS (Read-only) -->
           <div class="grid grid-cols-3 gap-2">
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
@@ -527,7 +960,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
           </div>
           <p class="text-xs text-gray-500 mt-1">Financial status is auto-calculated</p>
 
-          <!-- 6. DEPARTMENT -->
+          <!-- 7. DEPARTMENT -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Department *
@@ -542,7 +975,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             <div id="department-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <!-- 7. BUDGET OWNER (Optional) -->
+          <!-- 8. BUDGET OWNER (Optional) -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Budget Owner
@@ -556,7 +989,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             >
           </div>
 
-          <!-- 8. FISCAL YEAR -->
+          <!-- 9. FISCAL YEAR -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Fiscal Year *
@@ -573,7 +1006,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             <div id="year-error" class="text-xs text-red-600 mt-1 hidden"></div>
           </div>
 
-          <!-- 9. PERIOD (Optional) -->
+          <!-- 10. PERIOD (Optional) -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
@@ -599,7 +1032,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
             </div>
           </div>
 
-          <!-- 10. DESCRIPTION (Optional) -->
+          <!-- 11. DESCRIPTION (Optional) -->
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               Description (Optional)
@@ -647,6 +1080,7 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
           document.getElementById("edit-department_name")?.value || "",
         budget_type:
           document.getElementById("edit-budget_type")?.value || "CAPEX",
+        currency: document.getElementById("edit-currency")?.value || "IDR", // INI YANG PENTING!
         budget_name:
           document.getElementById("edit-budget_name")?.value?.trim() || "",
         total_amount: document.getElementById("edit-total_amount")?.value || "",
@@ -735,8 +1169,8 @@ export const showEditBudgetModal = async ({ budget, onSave }) => {
   });
 };
 
-
-// Bulk Edit Budget Modal 
+// Bulk Edit Budget Modal
+// Bulk Edit Budget Modal
 export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
   const currentYear = new Date().getFullYear().toString();
   const depts = await fetchDepartments();
@@ -750,9 +1184,31 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
     return options;
   };
 
+  // Helper untuk mendapatkan nama mata uang
+  const getCurrencyName = (currencyCode) => {
+    const currencies = {
+      IDR: "IDR - Indonesian Rupiah (Rp)",
+      USD: "USD - US Dollar ($)",
+      EUR: "EUR - Euro (€)",
+      SGD: "SGD - Singapore Dollar (S$)",
+      GBP: "GBP - British Pound (£)",
+      JPY: "JPY - Japanese Yen (¥)",
+      AUD: "AUD - Australian Dollar (A$)",
+      CNY: "CNY - Chinese Yuan (¥)",
+      MYR: "MYR - Malaysian Ringgit (RM)",
+      THB: "THB - Thai Baht (฿)",
+      KRW: "KRW - South Korean Won (₩)",
+      INR: "INR - Indian Rupee (₹)",
+      SAR: "SAR - Saudi Riyal (﷼)",
+      AED: "AED - UAE Dirham (د.إ)",
+      HKD: "HKD - Hong Kong Dollar (HK$)",
+    };
+    return currencies[currencyCode] || `${currencyCode} - Unknown Currency`;
+  };
+
   const generateBudgetEntries = () => {
-    let entriesHtml = '';
-    
+    let entriesHtml = "";
+
     budgets.forEach((budget, index) => {
       entriesHtml += `
         <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-id="${budget.id}" data-index="${index}">
@@ -770,7 +1226,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               <input
                 type="text"
                 class="entry-budget_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.budget_name || ''}"
+                value="${budget.budget_name || ""}"
                 placeholder="Capex/Opex IT 2026"
                 required
               >
@@ -784,7 +1240,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               <input
                 type="text"
                 class="entry-budget_code w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.budget_code || ''}"
+                value="${budget.budget_code || ""}"
                 placeholder="BUD-2026-001"
               >
               <p class="text-xs text-gray-500 mt-1">Optional internal budget code</p>
@@ -798,45 +1254,70 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               <div class="flex flex-wrap gap-2 jenis-container">
                 <button
                   type="button"
-                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === 'CAPEX' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === "CAPEX" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}"
                   data-jenis="CAPEX"
                 >
                   CAPEX
                 </button>
                 <button
                   type="button"
-                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === 'OPEX' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === "OPEX" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}"
                   data-jenis="OPEX"
                 >
                   OPEX
                 </button>
               </div>
-              <input type="hidden" class="entry-budget_type" value="${budget.budget_type || 'CAPEX'}">
+              <input type="hidden" class="entry-budget_type" value="${budget.budget_type || "CAPEX"}">
             </div>
 
-            <!-- 4. TOTAL AMOUNT -->
+            <!-- 4. CURRENCY (Read-only) -->
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
-                Total Amount (Rp) *
+                Currency
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 pr-10"
+                  value="${getCurrencyName(budget.currency || "IDR")}"
+                  readonly
+                  disabled
+                >
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="2" x2="12" y2="22"></line>
+                    <line x1="17" y1="6" x2="5" y2="18"></line>
+                  </svg>
+                </div>
+              </div>
+              <input type="hidden" class="entry-currency" value="${budget.currency || "IDR"}">
+              <p class="text-xs text-gray-500 mt-1">Currency is fixed and cannot be changed</p>
+            </div>
+
+            <!-- 5. TOTAL AMOUNT -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">
+                Total Amount *
               </label>
               <input
                 type="number"
                 class="entry-total_amount w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.total_amount || ''}"
+                value="${budget.total_amount || ""}"
                 placeholder="Enter total budget amount"
                 min="0"
                 required
               >
             </div>
 
-            <!-- 5. FINANCIAL STATUS (Read-only) -->
+            <!-- 6. FINANCIAL STATUS (Read-only) -->
             <div class="grid grid-cols-3 gap-2">
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Reserved</label>
                 <input
                   type="text"
                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
+                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
                   readonly
                   disabled
                 >
@@ -846,7 +1327,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 <input
                   type="text"
                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
+                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
                   readonly
                   disabled
                 >
@@ -856,7 +1337,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 <input
                   type="text"
                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
+                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
                   readonly
                   disabled
                 >
@@ -864,7 +1345,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
             </div>
             <p class="text-xs text-gray-500 mt-1">Financial status is auto-calculated</p>
 
-            <!-- 6. DEPARTMENT -->
+            <!-- 7. DEPARTMENT -->
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
                 Department *
@@ -877,7 +1358,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               </select>
             </div>
 
-            <!-- 7. BUDGET OWNER (Optional) -->
+            <!-- 8. BUDGET OWNER (Optional) -->
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
                 Budget Owner
@@ -885,13 +1366,13 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               <input
                 type="text"
                 class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.budget_owner || ''}"
+                value="${budget.budget_owner || ""}"
                 placeholder="Enter owner name"
               >
               <p class="text-xs text-gray-500 mt-1">Person responsible for this budget</p>
             </div>
 
-            <!-- 8. FISCAL YEAR -->
+            <!-- 9. FISCAL YEAR -->
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
                 Fiscal Year *
@@ -906,7 +1387,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
               <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
             </div>
 
-            <!-- 9. PERIOD (Optional) -->
+            <!-- 10. PERIOD (Optional) -->
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">
@@ -915,7 +1396,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 <input
                   type="date"
                   class="entry-period_start w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  value="${budget.period_start ? budget.period_start.split('T')[0] : ''}"
+                  value="${budget.period_start ? budget.period_start.split("T")[0] : ""}"
                 >
               </div>
               <div>
@@ -925,12 +1406,12 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 <input
                   type="date"
                   class="entry-period_end w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  value="${budget.period_end ? budget.period_end.split('T')[0] : ''}"
+                  value="${budget.period_end ? budget.period_end.split("T")[0] : ""}"
                 >
               </div>
             </div>
 
-            <!-- 10. DESCRIPTION (Optional) -->
+            <!-- 11. DESCRIPTION (Optional) -->
             <div>
               <label class="block text-xs font-medium text-gray-700 mb-1">
                 Description (Optional)
@@ -939,13 +1420,13 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 class="entry-description w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 rows="2"
                 placeholder="Additional notes, purpose of budget, etc..."
-              >${budget.description || ''}</textarea>
+              >${budget.description || ""}</textarea>
             </div>
           </div>
         </div>
       `;
     });
-    
+
     return entriesHtml;
   };
 
@@ -1044,6 +1525,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
           entry.querySelector(".entry-department_name")?.value || "";
         const budget_type =
           entry.querySelector(".entry-budget_type")?.value || "CAPEX";
+        const currency = entry.querySelector(".entry-currency")?.value || "IDR"; // TAMBAHKAN INI!
         const budget_name =
           entry.querySelector(".entry-budget_name")?.value?.trim() || "";
         const total_amount =
@@ -1074,6 +1556,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
             budget_code,
             department_name,
             budget_type,
+            currency,
             budget_name,
             total_amount,
             budget_owner,
@@ -1102,7 +1585,6 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
     }
   });
 };
-
 // Delete Budget Modal
 export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
   Swal.fire({

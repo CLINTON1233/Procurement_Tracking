@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import {
@@ -18,20 +18,26 @@ import {
   AlertCircle,
   CheckCircle,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
-import Link from "next/link";
+import { CURRENCIES, getCurrencySymbol, formatCurrency, formatIDR } from "@/utils/currency";
 
 export default function RequestBudgetForm() {
-  const router = useRouter(); // TAMBAHKAN INI
+  const router = useRouter();
   const [budgets, setBudgets] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [budgetDetails, setBudgetDetails] = useState(null);
+  
+  // Currency states
+  const [selectedCurrency, setSelectedCurrency] = useState("IDR");
+  const [exchangeRate, setExchangeRate] = useState(1);
+  const [showConverted, setShowConverted] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -44,6 +50,7 @@ export default function RequestBudgetForm() {
     quantity: 1,
     estimated_unit_price: "",
     estimated_total: 0,
+    estimated_total_idr: 0, // Tambahkan untuk menyimpan nilai dalam IDR
     budget_type: "CAPEX",
     budget_id: "",
     notes: "",
@@ -57,11 +64,9 @@ export default function RequestBudgetForm() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch budgets
       const budgetsData = await budgetService.getAllBudgets();
       setBudgets(budgetsData);
 
-      // Fetch departments
       const deptsData = await departmentService.getAllDepartments();
       setDepartments(deptsData);
     } catch (error) {
@@ -77,6 +82,38 @@ export default function RequestBudgetForm() {
     }
   };
 
+  // Handle currency change
+  const handleCurrencyChange = (e) => {
+    const currency = e.target.value;
+    setSelectedCurrency(currency);
+    
+    // Cari rate dari CURRENCIES
+    const curr = CURRENCIES.find((c) => c.code === currency);
+    const newRate = curr?.rate || 1;
+    setExchangeRate(newRate);
+    
+    // Recalculate totals with new currency
+    calculateTotals(formData.quantity, formData.estimated_unit_price, newRate);
+  };
+
+  // Calculate totals
+  const calculateTotals = (qty, unitPrice, rate = exchangeRate) => {
+    const quantity = parseInt(qty) || 0;
+    const price = parseFloat(unitPrice) || 0;
+    
+    // Total dalam mata uang yang dipilih
+    const totalInSelectedCurrency = quantity * price;
+    
+    // Total dalam IDR (untuk pengecekan budget)
+    const totalInIDR = totalInSelectedCurrency * rate;
+    
+    setFormData(prev => ({
+      ...prev,
+      estimated_total: totalInSelectedCurrency,
+      estimated_total_idr: totalInIDR
+    }));
+  };
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -84,11 +121,19 @@ export default function RequestBudgetForm() {
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
 
-      // Calculate estimated total when quantity or unit price changes
+      // Calculate totals when quantity or unit price changes
       if (name === "quantity" || name === "estimated_unit_price") {
-        const qty = parseInt(newData.quantity) || 0;
-        const price = parseFloat(newData.estimated_unit_price) || 0;
-        newData.estimated_total = qty * price;
+        const qty = name === "quantity" ? parseInt(value) || 0 : parseInt(prev.quantity) || 0;
+        const price = name === "estimated_unit_price" ? parseFloat(value) || 0 : parseFloat(prev.estimated_unit_price) || 0;
+        
+        // Hitung total dalam mata uang yang dipilih
+        const totalInSelectedCurrency = qty * price;
+        
+        // Konversi ke IDR
+        const totalInIDR = totalInSelectedCurrency * exchangeRate;
+        
+        newData.estimated_total = totalInSelectedCurrency;
+        newData.estimated_total_idr = totalInIDR;
       }
 
       return newData;
@@ -105,7 +150,6 @@ export default function RequestBudgetForm() {
       setSelectedBudget(budget);
       setBudgetDetails(budget);
 
-      // Auto-fill budget type based on selected budget
       setFormData((prev) => ({
         ...prev,
         budget_type: budget?.budget_type || "CAPEX",
@@ -129,13 +173,18 @@ export default function RequestBudgetForm() {
   const validateForm = () => {
     const errors = [];
 
-    if (!formData.requester_name.trim()) errors.push("Requester name is required");
-    if (!formData.requester_badge.trim()) errors.push("Requester badge is required");
+    if (!formData.requester_name.trim())
+      errors.push("Requester name is required");
+    if (!formData.requester_badge.trim())
+      errors.push("Requester badge is required");
     if (!formData.department) errors.push("Department is required");
-    if (!formData.item_name.trim()) errors.push("Item/Service name is required");
-    if (!formData.specification.trim()) errors.push("Specification is required");
+    if (!formData.item_name.trim())
+      errors.push("Item/Service name is required");
+    if (!formData.specification.trim())
+      errors.push("Specification is required");
     if (formData.quantity < 1) errors.push("Quantity must be at least 1");
-    if (formData.estimated_unit_price <= 0) errors.push("Estimated unit price must be greater than 0");
+    if (formData.estimated_unit_price <= 0)
+      errors.push("Estimated unit price must be greater than 0");
     if (!formData.budget_id) errors.push("Please select a budget");
 
     return errors;
@@ -145,7 +194,6 @@ export default function RequestBudgetForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate
     const errors = validateForm();
     if (errors.length > 0) {
       Swal.fire({
@@ -157,11 +205,14 @@ export default function RequestBudgetForm() {
       return;
     }
 
-    // Check budget remaining
-    if (budgetDetails && formData.estimated_total > budgetDetails.remaining_amount) {
+    // Check budget remaining (gunakan estimated_total_idr untuk pengecekan)
+    if (
+      budgetDetails &&
+      formData.estimated_total_idr > budgetDetails.remaining_amount
+    ) {
       Swal.fire({
         title: "Insufficient Budget",
-        html: `Request amount ${formatRupiah(formData.estimated_total)} exceeds remaining budget ${formatRupiah(budgetDetails.remaining_amount)}`,
+        html: `Request amount ${formatCurrency(formData.estimated_total, selectedCurrency)} (${formatRupiah(formData.estimated_total_idr)}) exceeds remaining budget ${formatRupiah(budgetDetails.remaining_amount)}`,
         icon: "error",
         confirmButtonColor: "#1e40af",
       });
@@ -175,7 +226,9 @@ export default function RequestBudgetForm() {
       <div class="text-left text-sm">
         <p><strong>Item:</strong> ${formData.item_name}</p>
         <p><strong>Quantity:</strong> ${formData.quantity}</p>
-        <p><strong>Total:</strong> ${formatRupiah(formData.estimated_total)}</p>
+        <p><strong>Unit Price:</strong> ${formatCurrency(formData.estimated_unit_price, selectedCurrency)}</p>
+        <p><strong>Total:</strong> ${formatCurrency(formData.estimated_total, selectedCurrency)}</p>
+        <p><strong>Total (IDR):</strong> ${formatRupiah(formData.estimated_total_idr)}</p>
         <p><strong>Budget:</strong> ${budgetDetails?.budget_name}</p>
       </div>
     `,
@@ -191,7 +244,6 @@ export default function RequestBudgetForm() {
 
     setSubmitting(true);
     try {
-      // Prepare data for API
       const requestData = {
         requester_name: formData.requester_name,
         requester_badge: formData.requester_badge,
@@ -200,16 +252,18 @@ export default function RequestBudgetForm() {
         item_name: formData.item_name,
         specification: formData.specification,
         quantity: parseInt(formData.quantity),
+        currency: selectedCurrency,
+        exchange_rate: exchangeRate,
         estimated_unit_price: parseFloat(formData.estimated_unit_price),
         estimated_total: formData.estimated_total,
+        estimated_total_idr: formData.estimated_total_idr, // Kirim juga nilai IDR
         budget_type: formData.budget_type,
         budget_id: parseInt(formData.budget_id),
         notes: formData.notes,
       };
 
-      const response = await budgetService.createRequest(requestData);
+      await budgetService.createRequest(requestData);
 
-      // ✅ SweetAlert sukses seperti di halaman login
       await Swal.fire({
         title: "Request Submitted Successfully",
         text: "Your budget request has been submitted for approval",
@@ -230,16 +284,17 @@ export default function RequestBudgetForm() {
         quantity: 1,
         estimated_unit_price: "",
         estimated_total: 0,
+        estimated_total_idr: 0,
         budget_type: "CAPEX",
         budget_id: "",
         notes: "",
       });
       setSelectedBudget(null);
       setBudgetDetails(null);
+      setSelectedCurrency("IDR");
+      setExchangeRate(1);
 
-      // ✅ Redirect ke halaman budget request list
       router.push("/budget_request_list");
-
     } catch (error) {
       console.error("Error submitting request:", error);
       Swal.fire({
@@ -255,7 +310,6 @@ export default function RequestBudgetForm() {
 
   // Handle save as draft
   const handleSaveDraft = async () => {
-    // Implement draft save functionality if needed
     Swal.fire({
       title: "Info",
       text: "Draft feature coming soon",
@@ -287,12 +341,15 @@ export default function RequestBudgetForm() {
           quantity: 1,
           estimated_unit_price: "",
           estimated_total: 0,
+          estimated_total_idr: 0,
           budget_type: "CAPEX",
           budget_id: "",
           notes: "",
         });
         setSelectedBudget(null);
         setBudgetDetails(null);
+        setSelectedCurrency("IDR");
+        setExchangeRate(1);
       }
     });
   };
@@ -323,14 +380,15 @@ export default function RequestBudgetForm() {
 
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          {/* Form Header - Tanpa Background Biru */}
+          {/* Form Header */}
           <div className="border-b border-gray-200 px-6 py-4">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
               Request Budget
             </h2>
             <p className="text-gray-500 text-sm mt-1">
-              Please fill all required fields marked with <span className="text-red-500">*</span>
+              Please fill all required fields marked with{" "}
+              <span className="text-red-500">*</span>
             </p>
           </div>
 
@@ -396,9 +454,15 @@ export default function RequestBudgetForm() {
                         className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                         required
                       >
-                        <option value="" className="text-gray-500">Select Department</option>
+                        <option value="" className="text-gray-500">
+                          Select Department
+                        </option>
                         {departments.map((dept) => (
-                          <option key={dept.id} value={dept.name} className="text-gray-800">
+                          <option
+                            key={dept.id}
+                            value={dept.name}
+                            className="text-gray-800"
+                          >
                             {dept.name}
                           </option>
                         ))}
@@ -433,7 +497,9 @@ export default function RequestBudgetForm() {
                           onChange={handleInputChange}
                           className="w-4 h-4 text-blue-600"
                         />
-                        <span className="ml-2 text-sm text-gray-700">Service</span>
+                        <span className="ml-2 text-sm text-gray-700">
+                          Service
+                        </span>
                       </label>
                     </div>
                   </div>
@@ -479,8 +545,33 @@ export default function RequestBudgetForm() {
                     />
                   </div>
 
-                  {/* Quantity and Unit Price */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Currency, Quantity, and Unit Price in one row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Currency Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Currency <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <select
+                          value={selectedCurrency}
+                          onChange={handleCurrencyChange}
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                        >
+                          {CURRENCIES.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                              {currency.code} - {currency.name} ({currency.symbol})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        Rate: 1 {selectedCurrency} = {exchangeRate.toLocaleString()} IDR
+                      </p>
+                    </div>
+
+                    {/* Quantity */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Quantity <span className="text-red-500">*</span>
@@ -495,9 +586,11 @@ export default function RequestBudgetForm() {
                         required
                       />
                     </div>
+
+                    {/* Unit Price */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Estimated Unit Price (Rp) <span className="text-red-500">*</span>
+                        Unit Price ({getCurrencySymbol(selectedCurrency)}) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -507,23 +600,57 @@ export default function RequestBudgetForm() {
                           value={formData.estimated_unit_price}
                           onChange={handleInputChange}
                           min="0"
+                          step="0.01"
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="1000000"
+                          placeholder="Enter unit price"
                           required
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Estimated Total (Read-only) */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  {/* Estimated Total in Selected Currency */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-600">Estimated Total:</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        Estimated Total ({selectedCurrency}):
+                      </span>
                       <span className="text-lg font-bold text-blue-600">
-                        {formatRupiah(formData.estimated_total)}
+                        {formatCurrency(formData.estimated_total, selectedCurrency)}
                       </span>
                     </div>
                   </div>
+
+                  {/* IDR Conversion (optional) */}
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowConverted(!showConverted)}
+                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      {showConverted ? "Hide" : "Show"} IDR Conversion
+                    </button>
+                  </div>
+
+                  {showConverted && formData.estimated_total > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500">In IDR:</p>
+                          <p className="text-base font-bold text-blue-600">
+                            {formatIDR(formData.estimated_total_idr)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Exchange Rate:</p>
+                          <p className="text-sm font-medium text-gray-800">
+                            1 {selectedCurrency} = {exchangeRate.toLocaleString()} IDR
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -547,11 +674,17 @@ export default function RequestBudgetForm() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                         required
                       >
-                        <option value="" className="text-gray-500">-- Select Budget --</option>
+                        <option value="" className="text-gray-500">
+                          -- Select Budget --
+                        </option>
                         {budgets
                           .filter((b) => b.is_active)
                           .map((budget) => (
-                            <option key={budget.id} value={budget.id} className="text-gray-800">
+                            <option
+                              key={budget.id}
+                              value={budget.id}
+                              className="text-gray-800"
+                            >
                               {budget.budget_name} - {formatRupiah(budget.remaining_amount)} remaining
                             </option>
                           ))}
@@ -560,10 +693,12 @@ export default function RequestBudgetForm() {
                     </div>
                   </div>
 
-                  {/* Budget Details (shown when budget selected) */}
+                  {/* Budget Details */}
                   {budgetDetails && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-4">Budget Details</h4>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-4">
+                        Budget Details
+                      </h4>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Budget Name</p>
@@ -572,10 +707,11 @@ export default function RequestBudgetForm() {
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Type</p>
                           <p className="text-sm font-medium">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${budgetDetails.budget_type === "CAPEX"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-green-100 text-green-800"
-                              }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              budgetDetails.budget_type === "CAPEX"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-green-100 text-green-800"
+                            }`}>
                               {budgetDetails.budget_type}
                             </span>
                           </p>
@@ -586,10 +722,11 @@ export default function RequestBudgetForm() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Remaining</p>
-                          <p className={`text-sm font-medium ${budgetDetails.remaining_amount < formData.estimated_total
-                            ? "text-red-600"
-                            : "text-green-600"
-                            }`}>
+                          <p className={`text-sm font-medium ${
+                            budgetDetails.remaining_amount < formData.estimated_total_idr
+                              ? "text-red-600"
+                              : "text-green-600"
+                          }`}>
                             {formatRupiah(budgetDetails.remaining_amount)}
                           </p>
                         </div>
@@ -604,11 +741,13 @@ export default function RequestBudgetForm() {
                       </div>
 
                       {/* Warning if insufficient budget */}
-                      {budgetDetails.remaining_amount < formData.estimated_total && (
+                      {budgetDetails.remaining_amount < formData.estimated_total_idr && (
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-red-700">
-                            Warning: Request amount exceeds remaining budget by {formatRupiah(formData.estimated_total - budgetDetails.remaining_amount)}
+                            Warning: Request amount {formatCurrency(formData.estimated_total, selectedCurrency)} 
+                            ({formatRupiah(formData.estimated_total_idr)}) exceeds remaining budget by{" "}
+                            {formatRupiah(formData.estimated_total_idr - budgetDetails.remaining_amount)}
                           </p>
                         </div>
                       )}
@@ -626,7 +765,9 @@ export default function RequestBudgetForm() {
                       readOnly
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
                     />
-                    <p className="text-xs text-gray-500 mt-1.5">Auto-filled based on selected budget</p>
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      Auto-filled based on selected budget
+                    </p>
                   </div>
                 </div>
               </div>
@@ -687,10 +828,11 @@ export default function RequestBudgetForm() {
                   <p className="font-medium mb-1">Request Process:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Fill in all required fields marked with *</li>
+                    <li>Select currency for your request</li>
+                    <li>Enter quantity and unit price - total will auto-calculate</li>
                     <li>Select the appropriate budget from available list</li>
-                    <li>System will automatically check budget availability</li>
+                    <li>System will automatically check budget availability in IDR</li>
                     <li>Submit for approval once all details are correct</li>
-                    <li>You can save as draft and continue later</li>
                   </ul>
                 </div>
               </div>

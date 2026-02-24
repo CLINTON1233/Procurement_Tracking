@@ -33,9 +33,10 @@ import {
   showEditBudgetModal,
   showDeleteBudgetModal,
   showBudgetDetailsModal,
-    showBulkEditBudgetModal, 
+  showBulkEditBudgetModal,
 } from "@/components/modals/BudgetManagementModals";
 import { departmentService } from "@/services/departmentService";
+import { formatTableCurrency, getSymbol } from "@/utils/currencyFormatter";
 
 export default function BudgetManagementPage() {
   const [budgets, setBudgets] = useState([]);
@@ -111,38 +112,38 @@ export default function BudgetManagementPage() {
     }
   };
 
-  const calculateStats = (data) => {
-    const total = data.length;
-    const CAPEX = data.filter((b) => b.budget_type === "CAPEX").length;
-    const OPEX = data.filter((b) => b.budget_type === "OPEX").length;
-    const totalAmount = data.reduce(
-      (sum, b) => sum + Number(b.total_amount || 0),
-      0,
-    );
-    const totalRemaining = data.reduce(
-      (sum, b) => sum + Number(b.remaining_amount || 0),
-      0,
-    );
-    const totalReserved = data.reduce(
-      (sum, b) => sum + Number(b.reserved_amount || 0),
-      0,
-    );
-    const totalUsed = data.reduce(
-      (sum, b) => sum + Number(b.used_amount || 0),
-      0,
-    );
+const calculateStats = (data) => {
+  const total = data.length;
+  const CAPEX = data.filter((b) => b.budget_type === "CAPEX").length;
+  const OPEX = data.filter((b) => b.budget_type === "OPEX").length;
+  
+  const totalAmount = data.reduce(
+    (sum, b) => sum + Number(b.total_amount_idr || 0),
+    0,
+  );
+  const totalRemaining = data.reduce(
+    (sum, b) => sum + Number(b.remaining_amount_idr || 0),
+    0,
+  );
+  const totalReserved = data.reduce(
+    (sum, b) => sum + Number(b.reserved_amount_idr || 0),
+    0,
+  );
+  const totalUsed = data.reduce(
+    (sum, b) => sum + Number(b.used_amount_idr || 0),
+    0,
+  );
 
-    setStats({
-      total,
-      CAPEX,
-      OPEX,
-      totalAmount,
-      totalRemaining,
-      totalReserved,
-      totalUsed,
-    });
-  };
-
+  setStats({
+    total,
+    CAPEX,
+    OPEX,
+    totalAmount,
+    totalRemaining,
+    totalReserved,
+    totalUsed,
+  });
+};
   const handleRefresh = () => {
     setRefreshing(true);
     fetchBudgets();
@@ -237,9 +238,9 @@ export default function BudgetManagementPage() {
   };
 
   const handleSelectBudget = (budgetId) => {
-    setSelectedBudgets(prev => {
+    setSelectedBudgets((prev) => {
       if (prev.includes(budgetId)) {
-        return prev.filter(id => id !== budgetId);
+        return prev.filter((id) => id !== budgetId);
       } else {
         return [...prev, budgetId];
       }
@@ -250,70 +251,70 @@ export default function BudgetManagementPage() {
     if (selectAll) {
       setSelectedBudgets([]);
     } else {
-      setSelectedBudgets(filteredBudgets.map(b => b.id));
+      setSelectedBudgets(filteredBudgets.map((b) => b.id));
     }
     setSelectAll(!selectAll);
   };
 
-const handleBulkEdit = () => {
-  if (selectedBudgets.length === 0) {
-    Swal.fire({
-      title: "No Selection",
-      text: "Please select at least one budget to edit",
-      icon: "warning",
-      confirmButtonColor: "#1e40af",
-    });
-    return;
-  }
-  const selectedData = budgets.filter(b => selectedBudgets.includes(b.id));
+  const handleBulkEdit = () => {
+    if (selectedBudgets.length === 0) {
+      Swal.fire({
+        title: "No Selection",
+        text: "Please select at least one budget to edit",
+        icon: "warning",
+        confirmButtonColor: "#1e40af",
+      });
+      return;
+    }
+    const selectedData = budgets.filter((b) => selectedBudgets.includes(b.id));
 
-  showBulkEditBudgetModal({
-    budgets: selectedData,
-    onSave: async (updatedBudgets) => {
-      try {
-        Swal.fire({
-          title: "Updating...",
-          text: "Please wait",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
+    showBulkEditBudgetModal({
+      budgets: selectedData,
+      onSave: async (updatedBudgets) => {
+        try {
+          Swal.fire({
+            title: "Updating...",
+            text: "Please wait",
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
 
-        let successCount = 0;
-        let errorCount = 0;
+          let successCount = 0;
+          let errorCount = 0;
 
-        for (const budget of updatedBudgets) {
-          try {
-            await budgetService.updateBudget(budget.id, budget);
-            successCount++;
-          } catch (error) {
-            errorCount++;
+          for (const budget of updatedBudgets) {
+            try {
+              await budgetService.updateBudget(budget.id, budget);
+              successCount++;
+            } catch (error) {
+              errorCount++;
+            }
           }
+
+          Swal.fire({
+            title: "Updated!",
+            text: `${successCount} Budgets updated successfully`,
+            icon: "success",
+            confirmButtonColor: "#1e40af",
+          });
+
+          fetchBudgets();
+          setSelectMode(false);
+          setSelectedBudgets([]);
+          setSelectAll(false);
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to update budgets",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
         }
-
-        Swal.fire({
-          title: "Updated!",
-          text: `${successCount} Budgets updated successfully`,
-          icon: "success",
-          confirmButtonColor: "#1e40af",
-        });
-
-        fetchBudgets();
-        setSelectMode(false);
-        setSelectedBudgets([]);
-        setSelectAll(false);
-      } catch (error) {
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to update budgets",
-          icon: "error",
-          confirmButtonColor: "#1e40af",
-        });
-      }
-    },
-  });
-};
+      },
+    });
+  };
 
   const handleBulkDelete = async () => {
     if (selectedBudgets.length === 0) {
@@ -326,23 +327,23 @@ const handleBulkEdit = () => {
       return;
     }
 
-const result = await Swal.fire({
-  title: `Delete ${selectedBudgets.length} Budgets?`,
-  text: `Are you sure you want to delete ${selectedBudgets.length} selected budgets? This action cannot be undone!`,
-  icon: "warning",
-  showCancelButton: true,
-  confirmButtonText: "Yes, Delete All!",
-  cancelButtonText: "Cancel",
+    const result = await Swal.fire({
+      title: `Delete ${selectedBudgets.length} Budgets?`,
+      text: `Are you sure you want to delete ${selectedBudgets.length} selected budgets? This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete All!",
+      cancelButtonText: "Cancel",
 
-  buttonsStyling: false,
-  customClass: {
-    actions: "flex gap-3 justify-center",
-    confirmButton:
-      "px-6 py-2 rounded-lg bg-red-600 text-white font-medium min-w-[140px] hover:bg-red-700 transition",
-    cancelButton:
-      "px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium min-w-[140px] hover:bg-gray-300 transition",
-  },
-});
+      buttonsStyling: false,
+      customClass: {
+        actions: "flex gap-3 justify-center",
+        confirmButton:
+          "px-6 py-2 rounded-lg bg-red-600 text-white font-medium min-w-[140px] hover:bg-red-700 transition",
+        cancelButton:
+          "px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium min-w-[140px] hover:bg-gray-300 transition",
+      },
+    });
     if (result.isConfirmed) {
       try {
         Swal.fire({
@@ -533,12 +534,8 @@ const result = await Swal.fire({
   };
 
   // ============ FORMAT RUPIAH ============
-  const formatRupiah = (number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(number || 0);
+  const formatBudgetCurrency = (amount, currencyCode) => {
+    return formatTableCurrency(amount, currencyCode);
   };
 
   // ============ GET ICON BY BUDGET TYPE ============
@@ -585,88 +582,100 @@ const result = await Swal.fire({
         </div>
 
         {/* STATS CARDS */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="border-b px-4 md:px-6 py-3 md:py-4">
-            <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-              <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
-              Budget Overview
-            </h2>
-            <p className="text-gray-500 text-xs md:text-sm mt-1">
-              Summary of all budgets
-            </p>
-          </div>
+ <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <div className="border-b px-4 md:px-6 py-3 md:py-4">
+    <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+      <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
+      Budget Overview
+    </h2>
+    <p className="text-gray-500 text-xs md:text-sm mt-1">
+      Summary of all budgets
+    </p>
+  </div>
 
-          <div className="p-4 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-            {/* Total Budgets Count */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-center">
-                <Wallet className="w-6 h-6 opacity-90" />
-                <span className="text-xl md:text-3xl font-bold">
-                  {stats.total}
-                </span>
-              </div>
-              <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Total Budgets
-              </p>
-              <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
-              </div>
-            </div>
+  <div className="p-4 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+    
+    {/* Total Budgets */}
+    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+      <div className="flex justify-between items-center min-h-[48px]">
+        <Wallet className="w-6 h-6 opacity-90" />
+        <span className="text-xl md:text-3xl font-bold">{stats.total}</span>
+      </div>
 
-            {/* Total Amount */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-center">
-                <DollarSign className="w-6 h-6 opacity-90" />
-                <span className="text-xl md:text-3xl font-bold">
-                  {formatRupiah(stats.totalAmount).replace("Rp", "")}
-                </span>
-              </div>
-              <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Total Amount
-              </p>
-              <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                Overall budget
-              </div>
-            </div>
-
-            {/* Remaining Amount */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-center">
-                <DollarSign className="w-6 h-6 opacity-90" />
-                <span className="text-xl md:text-3xl font-bold text-green-300">
-                  {formatRupiah(stats.totalRemaining).replace("Rp", "")}
-                </span>
-              </div>
-              <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Remaining
-              </p>
-              <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                Available to use
-              </div>
-            </div>
-
-            {/* Reserved + Used */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-center">
-                <DollarSign className="w-6 h-6 opacity-90" />
-                <div className="text-right">
-                  <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
-                    {formatRupiah(stats.totalReserved).replace("Rp", "")}
-                  </span>
-                  <span className="text-xl md:text-2xl font-bold text-blue-300 block">
-                    {formatRupiah(stats.totalUsed).replace("Rp", "")}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-                Reserved / Used
-              </p>
-              <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                Allocated vs Spent
-              </div>
-            </div>
-          </div>
+      <div>
+        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+          Total Budgets
+        </p>
+        <div className="text-[10px] md:text-xs opacity-80 mt-1">
+          {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
         </div>
+      </div>
+    </div>
+
+    {/* Total Amount */}
+    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+      <div className="flex justify-between items-center min-h-[48px]">
+        <DollarSign className="w-6 h-6 opacity-90" />
+        <span className="text-xl md:text-3xl font-bold">
+          {formatBudgetCurrency(stats.totalAmount, "IDR")}
+        </span>
+      </div>
+
+      <div>
+        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+          Total Amount
+        </p>
+        <div className="text-[10px] md:text-xs opacity-80 mt-1">
+          Overall budget
+        </div>
+      </div>
+    </div>
+
+    {/* Remaining */}
+    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+      <div className="flex justify-between items-center min-h-[48px]">
+        <DollarSign className="w-6 h-6 opacity-90" />
+        <span className="text-xl md:text-3xl font-bold text-green-300">
+          {formatBudgetCurrency(stats.totalRemaining, "IDR")}
+        </span>
+      </div>
+
+      <div>
+        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+          Remaining
+        </p>
+        <div className="text-[10px] md:text-xs opacity-80 mt-1">
+          Available to use
+        </div>
+      </div>
+    </div>
+
+    {/* Reserved / Used */}
+    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+      <div className="flex justify-between items-center min-h-[48px]">
+        <DollarSign className="w-6 h-6 opacity-90" />
+        <div className="text-right leading-tight">
+          <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
+            {formatBudgetCurrency(stats.totalReserved, "IDR")}
+          </span>
+          <span className="text-xl md:text-2xl font-bold text-blue-300 block">
+            {formatBudgetCurrency(stats.totalUsed, "IDR")}
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+          Reserved / Used
+        </p>
+        <div className="text-[10px] md:text-xs opacity-80 mt-1">
+          Allocated vs Spent
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
         {/* BUDGET LIST SECTION */}
         <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200">
@@ -675,7 +684,7 @@ const result = await Swal.fire({
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <ListIcon className="w-5 h-5 text-blue-600" />
-                  List Budget for Procurement 
+                  List Budget for Procurement
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   {budgets.length} Budgets available •{" "}
@@ -875,19 +884,38 @@ const result = await Swal.fire({
                 <button
                   onClick={toggleSelectMode}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
-                    selectMode 
-                      ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                      : 'bg-gray-600 text-white hover:bg-gray-600'
+                    selectMode
+                      ? "bg-orange-600 text-white hover:bg-orange-700"
+                      : "bg-gray-600 text-white hover:bg-gray-600"
                   }`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
                     {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
                     {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
                     {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
                     {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
                   </svg>
-                  <span>{selectMode ? 'Cancel Select' : 'Select Multiple'}</span>
+                  <span>
+                    {selectMode ? "Cancel Select" : "Select Multiple"}
+                  </span>
                 </button>
 
                 {/* TOMBOL ACTION BULK */}
@@ -897,15 +925,42 @@ const result = await Swal.fire({
                       onClick={handleSelectAll}
                       className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        {!selectAll && <line x1="3" y1="9" x2="21" y2="9"></line>}
-                        {!selectAll && <line x1="3" y1="15" x2="21" y2="15"></line>}
-                        {!selectAll && <line x1="9" y1="21" x2="9" y2="3"></line>}
-                        {!selectAll && <line x1="15" y1="21" x2="15" y2="3"></line>}
-                        {selectAll && <polyline points="20 6 9 17 4 12"></polyline>}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        ></rect>
+                        {!selectAll && (
+                          <line x1="3" y1="9" x2="21" y2="9"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="3" y1="15" x2="21" y2="15"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="9" y1="21" x2="9" y2="3"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="15" y1="21" x2="15" y2="3"></line>
+                        )}
+                        {selectAll && (
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        )}
                       </svg>
-                      <span>{selectAll ? 'Unselect All' : 'Select All'}</span>
+                      <span>{selectAll ? "Unselect All" : "Select All"}</span>
                     </button>
 
                     <button
@@ -1038,7 +1093,10 @@ const result = await Swal.fire({
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Total</span>
                         <span className="text-xs font-bold text-gray-900">
-                          {formatRupiah(budget.total_amount)}
+                          {formatBudgetCurrency(
+                            budget.total_amount,
+                            budget.currency,
+                          )}
                         </span>
                       </div>
 
@@ -1046,7 +1104,10 @@ const result = await Swal.fire({
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Reserved</span>
                         <span className="text-xs font-medium text-yellow-600">
-                          {formatRupiah(budget.reserved_amount)}
+                          {formatBudgetCurrency(
+                            budget.reserved_amount,
+                            budget.currency,
+                          )}
                         </span>
                       </div>
 
@@ -1054,7 +1115,10 @@ const result = await Swal.fire({
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Used</span>
                         <span className="text-xs font-medium text-blue-600">
-                          {formatRupiah(budget.used_amount)}
+                          {formatBudgetCurrency(
+                            budget.used_amount,
+                            budget.currency,
+                          )}
                         </span>
                       </div>
 
@@ -1062,7 +1126,10 @@ const result = await Swal.fire({
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">Remaining</span>
                         <span className="text-xs font-medium text-green-600">
-                          {formatRupiah(budget.remaining_amount)}
+                          {formatBudgetCurrency(
+                            budget.remaining_amount,
+                            budget.currency,
+                          )}
                         </span>
                       </div>
 
@@ -1302,16 +1369,28 @@ const result = await Swal.fire({
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {formatRupiah(budget.total_amount)}
+                          {formatBudgetCurrency(
+                            budget.total_amount,
+                            budget.currency,
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-yellow-600">
-                          {formatRupiah(budget.reserved_amount)}
+                          {formatBudgetCurrency(
+                            budget.reserved_amount,
+                            budget.currency,
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                          {formatRupiah(budget.used_amount)}
+                          {formatBudgetCurrency(
+                            budget.used_amount,
+                            budget.currency,
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-green-600">
-                          {formatRupiah(budget.remaining_amount)}
+                          {formatBudgetCurrency(
+                            budget.remaining_amount,
+                            budget.currency,
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-sm text-gray-600">

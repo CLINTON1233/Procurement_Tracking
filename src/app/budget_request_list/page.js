@@ -34,6 +34,12 @@ import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
 import { showRequestDetailsModal } from "@/components/modals/BudgetRequestModals";
+import {
+  CURRENCIES,
+  getCurrencySymbol,
+  formatCurrency,
+  formatIDR,
+} from "@/utils/currency";
 import Link from "next/link";
 
 export default function BudgetRequestListPage() {
@@ -123,9 +129,9 @@ export default function BudgetRequestListPage() {
     fetchData();
   };
 
-const handleViewDetails = (request) => {
-  showRequestDetailsModal(request);
-};
+  const handleViewDetails = (request) => {
+    showRequestDetailsModal(request);
+  };
 
   // Format Rupiah
   const formatRupiah = (number) => {
@@ -832,12 +838,20 @@ const handleViewDetails = (request) => {
                             Estimated Total
                           </p>
                           <p className="text-sm font-bold text-blue-600">
-                            {formatRupiah(request.estimated_total)}
+                            {formatCurrency(
+                              request.estimated_total,
+                              request.currency || "IDR",
+                            )}
                           </p>
+                          {request.currency !== "IDR" && (
+                            <p className="text-xs text-gray-500">
+                              ({formatIDR(request.estimated_total_idr)})
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
-
+                    
                     {/* Date and Notes */}
                     <div className="flex items-start gap-2">
                       <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />

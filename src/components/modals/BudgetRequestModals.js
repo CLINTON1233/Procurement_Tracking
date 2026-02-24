@@ -1,4 +1,5 @@
 import Swal from "sweetalert2";
+import { CURRENCIES, getCurrencySymbol } from "@/utils/currency";
 
 export const showRequestDetailsModal = (request) => {
   const formatRupiah = (number) => {
@@ -30,11 +31,19 @@ export const showRequestDetailsModal = (request) => {
       case "SUBMITTED":
         return { bg: "bg-blue-100", text: "text-blue-700", label: "Submitted" };
       case "BUDGET_APPROVED":
-        return { bg: "bg-green-100", text: "text-green-700", label: "Approved" };
+        return {
+          bg: "bg-green-100",
+          text: "text-green-700",
+          label: "Approved",
+        };
       case "BUDGET_REJECTED":
         return { bg: "bg-red-100", text: "text-red-700", label: "Rejected" };
       case "WAITING_SR_MR":
-        return { bg: "bg-purple-100", text: "text-purple-700", label: "Waiting SR/MR" };
+        return {
+          bg: "bg-purple-100",
+          text: "text-purple-700",
+          label: "Waiting SR/MR",
+        };
       default:
         return { bg: "bg-gray-100", text: "text-gray-700", label: status };
     }
@@ -139,12 +148,26 @@ export const showRequestDetailsModal = (request) => {
         </div>
 
         <!-- Baris 8: Notes (full width) -->
-        ${request.notes ? `
+        ${
+          request.notes
+            ? `
         <div class="col-span-2">
           <div class="${label}">Notes</div>
           <div class="${value}">${request.notes}</div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
+
+        <!-- Baris Currency (baru) -->
+        <div>
+          <div class="${label}">Currency</div>
+          <div class="${value}">${request.currency || "IDR"} (${getCurrencySymbol(request.currency || "IDR")})</div>
+        </div>
+        <div>
+          <div class="${label}">Exchange Rate</div>
+          <div class="${value}">1 ${request.currency || "IDR"} = ${(request.exchange_rate || 1).toLocaleString()} IDR</div>
+        </div>
 
         <!-- Baris 9: Created At & Updated At -->
         <div>
@@ -166,7 +189,8 @@ export const showRequestDetailsModal = (request) => {
       popup: "rounded-lg bg-white p-4",
       title: "!pb-1 !pt-0",
       htmlContainer: "!pb-1 !pt-1",
-      confirmButton: "!flex !items-center !justify-center w-[110px] h-[38px] bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium !leading-none mx-auto",
+      confirmButton:
+        "!flex !items-center !justify-center w-[110px] h-[38px] bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium !leading-none mx-auto",
     },
   });
 };
