@@ -24,6 +24,7 @@ import {
   User,
   Package,
   DollarSign,
+  Wallet,
   ArrowUp,
   ArrowDown,
   List as ListIcon,
@@ -164,42 +165,42 @@ export default function BudgetRequestListPage() {
         return {
           bg: "bg-gray-100",
           text: "text-gray-700",
-          icon: <FileText className="w-3 h-3 mr-1" />,
+          icon: <FileText className="w-3.5 h-3.5 mr-1" />,
           label: "Draft",
         };
       case "SUBMITTED":
         return {
           bg: "bg-blue-100",
           text: "text-blue-700",
-          icon: <Send className="w-3 h-3 mr-1" />,
+          icon: <Send className="w-3.5 h-3.5 mr-1" />,
           label: "Submitted",
         };
       case "BUDGET_APPROVED":
         return {
           bg: "bg-green-100",
           text: "text-green-700",
-          icon: <CheckCircle className="w-3 h-3 mr-1" />,
+          icon: <CheckCircle className="w-3.5 h-3.5 mr-1" />,
           label: "Approved",
         };
       case "BUDGET_REJECTED":
         return {
           bg: "bg-red-100",
           text: "text-red-700",
-          icon: <XCircle className="w-3 h-3 mr-1" />,
+          icon: <XCircle className="w-3.5 h-3.5 mr-1" />,
           label: "Rejected",
         };
       case "WAITING_SR_MR":
         return {
           bg: "bg-purple-100",
           text: "text-purple-700",
-          icon: <Clock className="w-3 h-3 mr-1" />,
+          icon: <Clock className="w-3.5 h-3.5 mr-1" />,
           label: "Waiting SR/MR",
         };
       default:
         return {
           bg: "bg-gray-100",
           text: "text-gray-700",
-          icon: <AlertCircle className="w-3 h-3 mr-1" />,
+          icon: <AlertCircle className="w-3.5 h-3.5 mr-1" />,
           label: status,
         };
     }
@@ -377,7 +378,7 @@ export default function BudgetRequestListPage() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-blue-600" />
+                <Wallet className="w-6 h-6 text-blue-600" />
                 Budget Request List
               </h1>
               <Link
@@ -519,18 +520,7 @@ export default function BudgetRequestListPage() {
                   }`}
                 />
               </button>
-              <div className="flex items-center gap-2">
-                {/* Refresh Button */}
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </button>
-              </div>
+              
             </div>
 
             {/* Mobile Filter Menu */}
@@ -656,18 +646,6 @@ export default function BudgetRequestListPage() {
                 )}
               </div>
 
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                />
-                {refreshing ? "Refreshing..." : "Refresh"}
-              </button>
-
               {/* Status Filter */}
               <select
                 value={statusFilter}
@@ -710,7 +688,7 @@ export default function BudgetRequestListPage() {
           </div>
         </div>
 
-        {/* CARD VIEW - Style seperti modal add budget */}
+        {/* CARD VIEW */}
         <div className="space-y-4">
           {filteredRequests.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-xl shadow-sm border border-gray-200">
@@ -737,163 +715,256 @@ export default function BudgetRequestListPage() {
               return (
                 <div
                   key={request.id}
-                  className="budget-entry border border-gray-200 rounded-lg p-4 md:p-5 bg-white hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  {/* Header with Request No and Status */}
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-sm font-semibold text-gray-700">
-                      Request #{request.request_no}
-                    </h4>
+                  {/* Header dengan background abu-abu muda */}
+                  <div className="bg-gray-50 px-4 md:px-5 py-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-semibold text-gray-800">
+                        Request #{request.request_no}
+                      </span>
+                    </div>
                     <span
-                      className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${status.bg} ${status.text}`}
+                      className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${status.bg} ${status.text}`}
                     >
                       {status.icon}
                       {status.label}
                     </span>
                   </div>
 
-                  {/* Content Grid */}
-                  <div className="space-y-3">
-                    {/* Requester Information */}
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-600" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">
-                            Requester Name
-                          </p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {request.requester_name}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Badge</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {request.requester_badge}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Item Details */}
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-blue-600" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <div className="md:col-span-2">
-                          <p className="text-xs text-gray-500">
-                            Item/Service Name
-                          </p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {request.item_name}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Quantity</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {request.quantity}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Type and Department */}
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-blue-600" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Request Type</p>
-                          <p className="text-sm font-medium">
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                request.request_type === "ITEM"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-purple-100 text-purple-800"
-                              }`}
-                            >
-                              {request.request_type}
-                            </span>
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Department</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {request.department}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Budget and Amount */}
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-blue-600" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Budget</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {getBudgetName(request.budget_id)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">
-                            Estimated Total
-                          </p>
-                          <p className="text-sm font-bold text-blue-600">
-                            {formatCurrency(
-                              request.estimated_total,
-                              request.currency || "IDR",
-                            )}
-                          </p>
-                          {request.currency !== "IDR" && (
-                            <p className="text-xs text-gray-500">
-                              ({formatIDR(request.estimated_total_idr)})
+                  {/* Content dengan padding yang konsisten */}
+                  <div className="p-4 md:p-5">
+                    {/* Grid 2 kolom untuk desktop, 1 kolom untuk mobile */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Kolom Kiri */}
+                      <div className="space-y-3">
+                        {/* Requester */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <User className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Requester Name
                             </p>
-                          )}
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {request.requester_name}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Badge */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-blue-600"
+                            >
+                              <rect
+                                x="2"
+                                y="7"
+                                width="20"
+                                height="14"
+                                rx="2"
+                                ry="2"
+                              ></rect>
+                              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Badge
+                            </p>
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {request.requester_badge}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Department */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <Building className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Department
+                            </p>
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {request.department}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Request Date */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Request Date
+                            </p>
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {formatDate(request.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Kolom Kanan */}
+                      <div className="space-y-3">
+                        {/* Item Name */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <Package className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Item/Service Name
+                            </p>
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {request.item_name}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Quantity & Type */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-blue-600"
+                            >
+                              <line x1="12" y1="5" x2="12" y2="19"></line>
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Quantity / Type
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-medium text-gray-800">
+                                {request.quantity} x
+                              </span>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
+                                  request.request_type === "ITEM"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-purple-100 text-purple-800"
+                                }`}
+                              >
+                                {request.request_type}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Budget */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <DollarSign className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Budget
+                            </p>
+                            <p className="text-sm font-medium text-gray-800 break-words">
+                              {getBudgetName(request.budget_id)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Estimated Total */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <DollarSign className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Estimated Total
+                            </p>
+                            <p className="text-base font-bold text-blue-600">
+                              {formatCurrency(
+                                request.estimated_total,
+                                request.currency || "IDR",
+                              )}
+                            </p>
+                            {request.currency !== "IDR" && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                ≈ {formatIDR(request.estimated_total_idr)}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Date and Notes */}
-                    <div className="flex items-start gap-2">
-                      <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Request Date</p>
-                          <p className="text-sm text-gray-600">
-                            {formatDate(request.created_at)}
-                          </p>
+
+                    {/* Specification (full width) */}
+                    {request.specification && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Specification
+                            </p>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                              {request.specification}
+                            </p>
+                          </div>
                         </div>
-                        {request.notes && (
-                          <div className="md:col-span-2">
-                            <p className="text-xs text-gray-500">Notes</p>
-                            <p className="text-sm text-gray-600">
+                      </div>
+                    )}
+
+                    {/* Notes (full width) */}
+                    {request.notes && (
+                      <div className="mt-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 flex-shrink-0 mt-0.5">
+                            <AlertCircle className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 mb-0.5">
+                              Notes
+                            </p>
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
                               {request.notes}
                             </p>
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Specification (if exists) */}
-                    {request.specification && (
-                      <div className="flex items-start gap-2 pt-2 border-t border-gray-100">
-                        <FileText className="w-4 h-4 text-blue-600 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500">Specification</p>
-                          <p className="text-sm text-gray-600">
-                            {request.specification}
-                          </p>
                         </div>
                       </div>
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-gray-200">
+                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-end">
                       <button
                         onClick={() => handleViewDetails(request)}
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
                         title="View Details"
                       >
                         <Eye className="w-4 h-4" />
+                        <span>View Details</span>
                       </button>
                     </div>
                   </div>

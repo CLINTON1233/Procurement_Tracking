@@ -803,184 +803,206 @@ const calculateStats = (data) => {
               )}
 
               {/* Desktop Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowExportDropdown(!showExportDropdown)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>Export Excel</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
+ {/* Desktop Action Buttons */}
+<div className="flex flex-wrap items-center gap-2">
+  {/* Export Dropdown */}
+  <div className="relative">
+    <button
+      onClick={() => setShowExportDropdown(!showExportDropdown)}
+      className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+    >
+      <FileSpreadsheet className="w-4 h-4" />
+      <span>Export Excel</span>
+      <ChevronDown className="w-4 h-4" />
+    </button>
 
-                  {showExportDropdown && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowExportDropdown(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-                        <div className="p-2">
-                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                            Export Options
-                          </div>
-                          <button
-                            onClick={() => exportToExcel("current")}
-                            className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                            <div className="text-left">
-                              <div className="font-medium">
-                                Export Current View
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {filteredBudgets.length} budgets
-                              </div>
-                            </div>
-                          </button>
-                          <button
-                            onClick={() => exportToExcel("all")}
-                            className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <FileSpreadsheet className="w-4 h-4 text-blue-600" />
-                            <div className="text-left">
-                              <div className="font-medium">
-                                Export All Budgets
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {budgets.length} total budgets
-                              </div>
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+    {showExportDropdown && (
+      <>
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowExportDropdown(false)}
+        />
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+          <div className="p-2">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
+              Export Options
+            </div>
+            <button
+              onClick={() => exportToExcel("current")}
+              className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <div className="text-left">
+                <div className="font-medium">
+                  Export Current View
                 </div>
-
-                {/* Refresh Button */}
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-all disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                  {refreshing ? "Refreshing..." : "Refresh"}
-                </button>
-
-                {/* Add Budget Button */}
-                <button
-                  onClick={handleAddClick}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-600 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Budget</span>
-                </button>
-
-                {/* TOMBOL SELECT - BARU */}
-                <button
-                  onClick={toggleSelectMode}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
-                    selectMode
-                      ? "bg-orange-600 text-white hover:bg-orange-700"
-                      : "bg-gray-600 text-white hover:bg-gray-600"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="2"
-                      ry="2"
-                    ></rect>
-                    {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
-                    {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
-                    {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
-                    {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
-                  </svg>
-                  <span>
-                    {selectMode ? "Cancel Select" : "Select Multiple"}
-                  </span>
-                </button>
-
-                {/* TOMBOL ACTION BULK */}
-                {selectMode && (
-                  <>
-                    <button
-                      onClick={handleSelectAll}
-                      className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect
-                          x="3"
-                          y="3"
-                          width="18"
-                          height="18"
-                          rx="2"
-                          ry="2"
-                        ></rect>
-                        {!selectAll && (
-                          <line x1="3" y1="9" x2="21" y2="9"></line>
-                        )}
-                        {!selectAll && (
-                          <line x1="3" y1="15" x2="21" y2="15"></line>
-                        )}
-                        {!selectAll && (
-                          <line x1="9" y1="21" x2="9" y2="3"></line>
-                        )}
-                        {!selectAll && (
-                          <line x1="15" y1="21" x2="15" y2="3"></line>
-                        )}
-                        {selectAll && (
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        )}
-                      </svg>
-                      <span>{selectAll ? "Unselect All" : "Select All"}</span>
-                    </button>
-
-                    <button
-                      onClick={handleBulkEdit}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span>Edit Selected ({selectedBudgets.length})</span>
-                    </button>
-
-                    <button
-                      onClick={handleBulkDelete}
-                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete Selected ({selectedBudgets.length})</span>
-                    </button>
-                  </>
-                )}
+                <div className="text-xs text-gray-500">
+                  {filteredBudgets.length} budgets
+                </div>
               </div>
+            </button>
+            <button
+              onClick={() => exportToExcel("all")}
+              className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+              <div className="text-left">
+                <div className="font-medium">
+                  Export All Budgets
+                </div>
+                <div className="text-xs text-gray-500">
+                  {budgets.length} total budgets
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+
+  {/* Add Budget Button */}
+  <button
+    onClick={handleAddClick}
+    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-600 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+  >
+    <Plus className="w-4 h-4" />
+    <span className="hidden sm:inline">Add Budget</span>
+    <span className="sm:hidden">Add</span>
+  </button>
+
+  {/* TOMBOL SELECT */}
+  <button
+    onClick={toggleSelectMode}
+    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
+      selectMode
+        ? "bg-orange-600 text-white hover:bg-orange-700"
+        : "bg-gray-600 text-white hover:bg-gray-600"
+    }`}
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="2"
+        ry="2"
+      ></rect>
+      {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
+      {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
+      {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
+      {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
+    </svg>
+    <span className="hidden sm:inline">
+      {selectMode ? "Cancel Select" : "Select Multiple"}
+    </span>
+    <span className="sm:hidden">{selectMode ? "Cancel" : "Select"}</span>
+  </button>
+    {/* TOMBOL GRID/LIST UNTUK DESKTOP - TAMBAHKAN DI SINI */}
+  <div className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden">
+    <button
+      onClick={() => setViewMode("list")}
+      className={`p-2.5 ${
+        viewMode === "list"
+          ? "bg-gray-100 text-blue-600"
+          : "bg-white text-gray-600 hover:bg-gray-50"
+      } transition-colors`}
+      title="List View"
+    >
+      <ListIcon className="w-4 h-4" />
+    </button>
+    <button
+      onClick={() => setViewMode("grid")}
+      className={`p-2.5 ${
+        viewMode === "grid"
+          ? "bg-gray-100 text-blue-600"
+          : "bg-white text-gray-600 hover:bg-gray-50"
+      } transition-colors border-l border-gray-300`}
+      title="Grid View"
+    >
+      <Grid className="w-4 h-4" />
+    </button>
+  </div>
+
+  {/* TOMBOL ACTION BULK */}
+  {selectMode && (
+    <>
+      <button
+        onClick={handleSelectAll}
+        className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="2"
+            ry="2"
+          ></rect>
+          {!selectAll && (
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+          )}
+          {!selectAll && (
+            <line x1="3" y1="15" x2="21" y2="15"></line>
+          )}
+          {!selectAll && (
+            <line x1="9" y1="21" x2="9" y2="3"></line>
+          )}
+          {!selectAll && (
+            <line x1="15" y1="21" x2="15" y2="3"></line>
+          )}
+          {selectAll && (
+            <polyline points="20 6 9 17 4 12"></polyline>
+          )}
+        </svg>
+        <span className="hidden sm:inline">{selectAll ? "Unselect All" : "Select All"}</span>
+        <span className="sm:hidden">{selectAll ? "Unselect" : "All"}</span>
+      </button>
+
+      <button
+        onClick={handleBulkEdit}
+        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
+      >
+        <Edit className="w-4 h-4" />
+        <span className="hidden sm:inline">Edit Selected ({selectedBudgets.length})</span>
+        <span className="sm:hidden">Edit</span>
+      </button>
+
+      <button
+        onClick={handleBulkDelete}
+        className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
+      >
+        <Trash2 className="w-4 h-4" />
+        <span className="hidden sm:inline">Delete Selected ({selectedBudgets.length})</span>
+        <span className="sm:hidden">Delete</span>
+      </button>
+
+      
+    </>
+  )}
+</div>
             </div>
           </div>
 

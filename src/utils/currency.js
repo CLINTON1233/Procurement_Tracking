@@ -70,9 +70,12 @@ export const convertCurrency = (amount, fromCurrency, toCurrency) => {
 
 // Format currency dengan simbol yang benar
 export const formatCurrency = (amount, currencyCode = 'IDR') => {
+  if (!amount && amount !== 0) return '-';
+  
   const currency = CURRENCIES.find(c => c.code === currencyCode);
   const symbol = currency ? currency.symbol : currencyCode;
   
+  // Format angka dengan pemisah ribuan
   const formatted = new Intl.NumberFormat('id-ID', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -81,20 +84,21 @@ export const formatCurrency = (amount, currencyCode = 'IDR') => {
   return `${symbol} ${formatted}`;
 };
 
-// Konversi ke IDR
-export const convertToIDR = (amount, fromCurrency) => {
-  if (fromCurrency === 'IDR') return amount;
-  const currency = CURRENCIES.find(c => c.code === fromCurrency);
-  return amount * (currency?.rate || 1);
-};
-
-// Format IDR
 export const formatIDR = (amount) => {
+  if (!amount && amount !== 0) return '-';
+  
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(amount || 0);
+};
+
+// Konversi ke IDR
+export const convertToIDR = (amount, fromCurrency) => {
+  if (fromCurrency === 'IDR') return amount;
+  const currency = CURRENCIES.find(c => c.code === fromCurrency);
+  return amount * (currency?.rate || 1);
 };
 
 // Format dengan opsi konversi

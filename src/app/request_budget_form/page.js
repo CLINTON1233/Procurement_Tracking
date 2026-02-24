@@ -17,13 +17,20 @@ import {
   ClipboardList,
   AlertCircle,
   CheckCircle,
+  Wallet,
   Info,
+  IdCard,
   RefreshCw,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
-import { CURRENCIES, getCurrencySymbol, formatCurrency, formatIDR } from "@/utils/currency";
+import {
+  CURRENCIES,
+  getCurrencySymbol,
+  formatCurrency,
+  formatIDR,
+} from "@/utils/currency";
 
 export default function RequestBudgetForm() {
   const router = useRouter();
@@ -33,7 +40,7 @@ export default function RequestBudgetForm() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [budgetDetails, setBudgetDetails] = useState(null);
-  
+
   // Currency states
   const [selectedCurrency, setSelectedCurrency] = useState("IDR");
   const [exchangeRate, setExchangeRate] = useState(1);
@@ -86,12 +93,12 @@ export default function RequestBudgetForm() {
   const handleCurrencyChange = (e) => {
     const currency = e.target.value;
     setSelectedCurrency(currency);
-    
+
     // Cari rate dari CURRENCIES
     const curr = CURRENCIES.find((c) => c.code === currency);
     const newRate = curr?.rate || 1;
     setExchangeRate(newRate);
-    
+
     // Recalculate totals with new currency
     calculateTotals(formData.quantity, formData.estimated_unit_price, newRate);
   };
@@ -100,17 +107,17 @@ export default function RequestBudgetForm() {
   const calculateTotals = (qty, unitPrice, rate = exchangeRate) => {
     const quantity = parseInt(qty) || 0;
     const price = parseFloat(unitPrice) || 0;
-    
+
     // Total dalam mata uang yang dipilih
     const totalInSelectedCurrency = quantity * price;
-    
+
     // Total dalam IDR (untuk pengecekan budget)
     const totalInIDR = totalInSelectedCurrency * rate;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       estimated_total: totalInSelectedCurrency,
-      estimated_total_idr: totalInIDR
+      estimated_total_idr: totalInIDR,
     }));
   };
 
@@ -123,15 +130,21 @@ export default function RequestBudgetForm() {
 
       // Calculate totals when quantity or unit price changes
       if (name === "quantity" || name === "estimated_unit_price") {
-        const qty = name === "quantity" ? parseInt(value) || 0 : parseInt(prev.quantity) || 0;
-        const price = name === "estimated_unit_price" ? parseFloat(value) || 0 : parseFloat(prev.estimated_unit_price) || 0;
-        
+        const qty =
+          name === "quantity"
+            ? parseInt(value) || 0
+            : parseInt(prev.quantity) || 0;
+        const price =
+          name === "estimated_unit_price"
+            ? parseFloat(value) || 0
+            : parseFloat(prev.estimated_unit_price) || 0;
+
         // Hitung total dalam mata uang yang dipilih
         const totalInSelectedCurrency = qty * price;
-        
+
         // Konversi ke IDR
         const totalInIDR = totalInSelectedCurrency * exchangeRate;
-        
+
         newData.estimated_total = totalInSelectedCurrency;
         newData.estimated_total_idr = totalInIDR;
       }
@@ -370,11 +383,11 @@ export default function RequestBudgetForm() {
         {/* Header */}
         <div className="flex flex-col gap-2">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-blue-600" />
+            <Wallet className="w-6 h-6 text-blue-600" />
             Budget Request
           </h1>
           <p className="text-gray-500 text-sm">
-            Submit a new budget request for CAPEX/OPEX items or services
+            Submit a new budget request for Capex/Opex items or services
           </p>
         </div>
 
@@ -407,18 +420,16 @@ export default function RequestBudgetForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Requester Name <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        name="requester_name"
-                        value={formData.requester_name}
-                        onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter Requester Name"
-                        required
-                      />
-                    </div>
+
+                    <input
+                      type="text"
+                      name="requester_name"
+                      value={formData.requester_name}
+                      onChange={handleInputChange}
+                      className="w-full pl-4 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter Requester Name"
+                      required
+                    />
                   </div>
 
                   {/* Requester Badge */}
@@ -426,49 +437,44 @@ export default function RequestBudgetForm() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Requester Badge <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <Badge className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        name="requester_badge"
-                        value={formData.requester_badge}
-                        onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="EMP-001"
-                        required
-                      />
-                    </div>
-                  </div>
 
+                    <input
+                      type="text"
+                      name="requester_badge"
+                      value={formData.requester_badge}
+                      onChange={handleInputChange}
+                      className="w-full pl-4 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="9090223"
+                      required
+                    />
+                  </div>
                   {/* Department */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Department <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                      <select
-                        name="department"
-                        value={formData.department}
-                        onChange={handleInputChange}
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-                        required
-                      >
-                        <option value="" className="text-gray-500">
-                          Select Department
+
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      required
+                    >
+                      <option value="" className="text-gray-500">
+                        Select Department
+                      </option>
+
+                      {departments.map((dept) => (
+                        <option
+                          key={dept.id}
+                          value={dept.name}
+                          className="text-gray-800"
+                        >
+                          {dept.name}
                         </option>
-                        {departments.map((dept) => (
-                          <option
-                            key={dept.id}
-                            value={dept.name}
-                            className="text-gray-800"
-                          >
-                            {dept.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    </div>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Request Type */}
@@ -561,13 +567,15 @@ export default function RequestBudgetForm() {
                         >
                           {CURRENCIES.map((currency) => (
                             <option key={currency.code} value={currency.code}>
-                              {currency.code} - {currency.name} ({currency.symbol})
+                              {currency.code} - {currency.name} (
+                              {currency.symbol})
                             </option>
                           ))}
                         </select>
                       </div>
                       <p className="text-xs text-gray-500 mt-1.5">
-                        Rate: 1 {selectedCurrency} = {exchangeRate.toLocaleString()} IDR
+                        Rate: 1 {selectedCurrency} ={" "}
+                        {exchangeRate.toLocaleString()} IDR
                       </p>
                     </div>
 
@@ -590,22 +598,21 @@ export default function RequestBudgetForm() {
                     {/* Unit Price */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Unit Price ({getCurrencySymbol(selectedCurrency)}) <span className="text-red-500">*</span>
+                        Unit Price ({getCurrencySymbol(selectedCurrency)}){" "}
+                        <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="number"
-                          name="estimated_unit_price"
-                          value={formData.estimated_unit_price}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter unit price"
-                          required
-                        />
-                      </div>
+
+                      <input
+                        type="number"
+                        name="estimated_unit_price"
+                        value={formData.estimated_unit_price}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter unit price"
+                        required
+                      />
                     </div>
                   </div>
 
@@ -616,7 +623,10 @@ export default function RequestBudgetForm() {
                         Estimated Total ({selectedCurrency}):
                       </span>
                       <span className="text-lg font-bold text-blue-600">
-                        {formatCurrency(formData.estimated_total, selectedCurrency)}
+                        {formatCurrency(
+                          formData.estimated_total,
+                          selectedCurrency,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -643,9 +653,12 @@ export default function RequestBudgetForm() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Exchange Rate:</p>
+                          <p className="text-xs text-gray-500">
+                            Exchange Rate:
+                          </p>
                           <p className="text-sm font-medium text-gray-800">
-                            1 {selectedCurrency} = {exchangeRate.toLocaleString()} IDR
+                            1 {selectedCurrency} ={" "}
+                            {exchangeRate.toLocaleString()} IDR
                           </p>
                         </div>
                       </div>
@@ -685,7 +698,8 @@ export default function RequestBudgetForm() {
                               value={budget.id}
                               className="text-gray-800"
                             >
-                              {budget.budget_name} - {formatRupiah(budget.remaining_amount)} remaining
+                              {budget.budget_name} -{" "}
+                              {formatRupiah(budget.remaining_amount)} remaining
                             </option>
                           ))}
                       </select>
@@ -701,53 +715,85 @@ export default function RequestBudgetForm() {
                       </h4>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Budget Name</p>
-                          <p className="text-sm font-medium text-gray-800">{budgetDetails.budget_name}</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Budget Name
+                          </p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {budgetDetails.budget_name}
+                          </p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Type</p>
                           <p className="text-sm font-medium">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              budgetDetails.budget_type === "CAPEX"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-green-100 text-green-800"
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                budgetDetails.budget_type === "CAPEX"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}
+                            >
                               {budgetDetails.budget_type}
                             </span>
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Total Amount</p>
-                          <p className="text-sm font-medium text-gray-800">{formatRupiah(budgetDetails.total_amount)}</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Total Amount
+                          </p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {formatRupiah(budgetDetails.total_amount)}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Remaining</p>
-                          <p className={`text-sm font-medium ${
-                            budgetDetails.remaining_amount < formData.estimated_total_idr
-                              ? "text-red-600"
-                              : "text-green-600"
-                          }`}>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Remaining
+                          </p>
+                          <p
+                            className={`text-sm font-medium ${
+                              budgetDetails.remaining_amount <
+                              formData.estimated_total_idr
+                                ? "text-red-600"
+                                : "text-green-600"
+                            }`}
+                          >
                             {formatRupiah(budgetDetails.remaining_amount)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Fiscal Year</p>
-                          <p className="text-sm font-medium text-gray-800">{budgetDetails.fiscal_year}</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Fiscal Year
+                          </p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {budgetDetails.fiscal_year}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Department</p>
-                          <p className="text-sm font-medium text-gray-800">{budgetDetails.department_name}</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Department
+                          </p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {budgetDetails.department_name}
+                          </p>
                         </div>
                       </div>
 
                       {/* Warning if insufficient budget */}
-                      {budgetDetails.remaining_amount < formData.estimated_total_idr && (
+                      {budgetDetails.remaining_amount <
+                        formData.estimated_total_idr && (
                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-red-700">
-                            Warning: Request amount {formatCurrency(formData.estimated_total, selectedCurrency)} 
-                            ({formatRupiah(formData.estimated_total_idr)}) exceeds remaining budget by{" "}
-                            {formatRupiah(formData.estimated_total_idr - budgetDetails.remaining_amount)}
+                            Warning: Request amount{" "}
+                            {formatCurrency(
+                              formData.estimated_total,
+                              selectedCurrency,
+                            )}
+                            ({formatRupiah(formData.estimated_total_idr)})
+                            exceeds remaining budget by{" "}
+                            {formatRupiah(
+                              formData.estimated_total_idr -
+                                budgetDetails.remaining_amount,
+                            )}
                           </p>
                         </div>
                       )}
@@ -829,9 +875,13 @@ export default function RequestBudgetForm() {
                   <ul className="list-disc list-inside space-y-1">
                     <li>Fill in all required fields marked with *</li>
                     <li>Select currency for your request</li>
-                    <li>Enter quantity and unit price - total will auto-calculate</li>
+                    <li>
+                      Enter quantity and unit price - total will auto-calculate
+                    </li>
                     <li>Select the appropriate budget from available list</li>
-                    <li>System will automatically check budget availability in IDR</li>
+                    <li>
+                      System will automatically check budget availability in IDR
+                    </li>
                     <li>Submit for approval once all details are correct</li>
                   </ul>
                 </div>
