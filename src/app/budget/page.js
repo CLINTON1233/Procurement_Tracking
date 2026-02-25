@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import {
   Plus,
@@ -29,8 +30,6 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import {
-  showAddBudgetModal,
-  showEditBudgetModal,
   showDeleteBudgetModal,
   showBudgetDetailsModal,
   showBulkEditBudgetModal,
@@ -39,6 +38,7 @@ import { departmentService } from "@/services/departmentService";
 import { formatTableCurrency, getSymbol } from "@/utils/currencyFormatter";
 
 export default function BudgetManagementPage() {
+  const router = useRouter();
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,104 +100,57 @@ export default function BudgetManagementPage() {
       setDepartments(data);
     } catch (error) {
       console.error("Error fetching departments:", error);
-      if (uniqueDepartments.length > 0) {
-        const fallbackDepts = uniqueDepartments.map((name, index) => ({
-          id: `temp-${index}`,
-          name: name,
-        }));
-        setDepartments(fallbackDepts);
-      }
     } finally {
       setLoadingDepartments(false);
     }
   };
 
-const calculateStats = (data) => {
-  const total = data.length;
-  const CAPEX = data.filter((b) => b.budget_type === "CAPEX").length;
-  const OPEX = data.filter((b) => b.budget_type === "OPEX").length;
-  
-  const totalAmount = data.reduce(
-    (sum, b) => sum + Number(b.total_amount_idr || 0),
-    0,
-  );
-  const totalRemaining = data.reduce(
-    (sum, b) => sum + Number(b.remaining_amount_idr || 0),
-    0,
-  );
-  const totalReserved = data.reduce(
-    (sum, b) => sum + Number(b.reserved_amount_idr || 0),
-    0,
-  );
-  const totalUsed = data.reduce(
-    (sum, b) => sum + Number(b.used_amount_idr || 0),
-    0,
-  );
+  const calculateStats = (data) => {
+    const total = data.length;
+    const CAPEX = data.filter((b) => b.budget_type === "CAPEX").length;
+    const OPEX = data.filter((b) => b.budget_type === "OPEX").length;
+    
+    const totalAmount = data.reduce(
+      (sum, b) => sum + Number(b.total_amount_idr || 0),
+      0,
+    );
+    const totalRemaining = data.reduce(
+      (sum, b) => sum + Number(b.remaining_amount_idr || 0),
+      0,
+    );
+    const totalReserved = data.reduce(
+      (sum, b) => sum + Number(b.reserved_amount_idr || 0),
+      0,
+    );
+    const totalUsed = data.reduce(
+      (sum, b) => sum + Number(b.used_amount_idr || 0),
+      0,
+    );
 
-  setStats({
-    total,
-    CAPEX,
-    OPEX,
-    totalAmount,
-    totalRemaining,
-    totalReserved,
-    totalUsed,
-  });
-};
+    setStats({
+      total,
+      CAPEX,
+      OPEX,
+      totalAmount,
+      totalRemaining,
+      totalReserved,
+      totalUsed,
+    });
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchBudgets();
   };
 
+  // Navigate to create budget page
   const handleAddClick = () => {
-    showAddBudgetModal({
-      onSave: async (formData) => {
-        try {
-          await budgetService.createBudget(formData);
-          Swal.fire({
-            title: "Success!",
-            text: "Budget added successfully",
-            icon: "success",
-            timer: 1500,
-            confirmButtonColor: "#1e40af",
-          });
-          fetchBudgets();
-        } catch (error) {
-          Swal.fire({
-            title: "Error!",
-            text: "Failed to add budget",
-            icon: "error",
-            confirmButtonColor: "#1e40af",
-          });
-        }
-      },
-    });
+    router.push("/manage_budget/create_budget");
   };
 
-  const handleEditClick = (budget) => {
-    showEditBudgetModal({
-      budget,
-      onSave: async (formData) => {
-        try {
-          await budgetService.updateBudget(budget.id, formData);
-          Swal.fire({
-            title: "Success!",
-            text: "Budget updated successfully",
-            icon: "success",
-            timer: 1500,
-            confirmButtonColor: "#1e40af",
-          });
-          fetchBudgets();
-        } catch (error) {
-          Swal.fire({
-            title: "Error!",
-            text: "Failed to update budget",
-            icon: "error",
-            confirmButtonColor: "#1e40af",
-          });
-        }
-      },
-    });
+  // Navigate to edit budget page
+  const handleEditClick = (budgetId) => {
+    router.push(`/manage_budget/edit_budget/${budgetId}`);
   };
 
   const handleDeleteClick = (budget) => {
@@ -334,7 +287,6 @@ const calculateStats = (data) => {
       showCancelButton: true,
       confirmButtonText: "Yes, Delete All!",
       cancelButtonText: "Cancel",
-
       buttonsStyling: false,
       customClass: {
         actions: "flex gap-3 justify-center",
@@ -344,6 +296,7 @@ const calculateStats = (data) => {
           "px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium min-w-[140px] hover:bg-gray-300 transition",
       },
     });
+
     if (result.isConfirmed) {
       try {
         Swal.fire({
@@ -355,7 +308,6 @@ const calculateStats = (data) => {
           },
         });
 
-        // Hapus satu per satu
         let successCount = 0;
         let errorCount = 0;
 
@@ -375,7 +327,6 @@ const calculateStats = (data) => {
           confirmButtonColor: "#1e40af",
         });
 
-        // Refresh data dan reset select mode
         fetchBudgets();
         setSelectMode(false);
         setSelectedBudgets([]);
@@ -547,10 +498,6 @@ const calculateStats = (data) => {
     }
   };
 
-  const getIconBackground = (type) => {
-    return type === "CAPEX" ? "bg-purple-100" : "bg-green-100";
-  };
-
   // ============ LOADING STATE ============
   if (loading) {
     return (
@@ -582,100 +529,94 @@ const calculateStats = (data) => {
         </div>
 
         {/* STATS CARDS */}
- <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-  <div className="border-b px-4 md:px-6 py-3 md:py-4">
-    <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-      <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
-      Budget Overview
-    </h2>
-    <p className="text-gray-500 text-xs md:text-sm mt-1">
-      Summary of all budgets
-    </p>
-  </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="border-b px-4 md:px-6 py-3 md:py-4">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+              <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
+              Budget Overview
+            </h2>
+            <p className="text-gray-500 text-xs md:text-sm mt-1">
+              Summary of all budgets
+            </p>
+          </div>
 
-  <div className="p-4 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-    
-    {/* Total Budgets */}
-    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
-      <div className="flex justify-between items-center min-h-[48px]">
-        <Wallet className="w-6 h-6 opacity-90" />
-        <span className="text-xl md:text-3xl font-bold">{stats.total}</span>
-      </div>
+          <div className="p-4 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            {/* Total Budgets */}
+            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+              <div className="flex justify-between items-center min-h-[48px]">
+                <Wallet className="w-6 h-6 opacity-90" />
+                <span className="text-xl md:text-3xl font-bold">{stats.total}</span>
+              </div>
+              <div>
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                  Total Budgets
+                </p>
+                <div className="text-[10px] md:text-xs opacity-80 mt-1">
+                  {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
+                </div>
+              </div>
+            </div>
 
-      <div>
-        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-          Total Budgets
-        </p>
-        <div className="text-[10px] md:text-xs opacity-80 mt-1">
-          {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
+            {/* Total Amount */}
+            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+              <div className="flex justify-between items-center min-h-[48px]">
+                <DollarSign className="w-6 h-6 opacity-90" />
+                <span className="text-xl md:text-3xl font-bold">
+                  {formatBudgetCurrency(stats.totalAmount, "IDR")}
+                </span>
+              </div>
+              <div>
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                  Total Amount
+                </p>
+                <div className="text-[10px] md:text-xs opacity-80 mt-1">
+                  Overall budget
+                </div>
+              </div>
+            </div>
+
+            {/* Remaining */}
+            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+              <div className="flex justify-between items-center min-h-[48px]">
+                <DollarSign className="w-6 h-6 opacity-90" />
+                <span className="text-xl md:text-3xl font-bold text-green-300">
+                  {formatBudgetCurrency(stats.totalRemaining, "IDR")}
+                </span>
+              </div>
+              <div>
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                  Remaining
+                </p>
+                <div className="text-[10px] md:text-xs opacity-80 mt-1">
+                  Available to use
+                </div>
+              </div>
+            </div>
+
+            {/* Reserved / Used */}
+            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+              <div className="flex justify-between items-center min-h-[48px]">
+                <DollarSign className="w-6 h-6 opacity-90" />
+                <div className="text-right leading-tight">
+                  <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
+                    {formatBudgetCurrency(stats.totalReserved, "IDR")}
+                  </span>
+                  <span className="text-xl md:text-2xl font-bold text-blue-300 block">
+                    {formatBudgetCurrency(stats.totalUsed, "IDR")}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                  Reserved / Used
+                </p>
+                <div className="text-[10px] md:text-xs opacity-80 mt-1">
+                  Allocated vs Spent
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    {/* Total Amount */}
-    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
-      <div className="flex justify-between items-center min-h-[48px]">
-        <DollarSign className="w-6 h-6 opacity-90" />
-        <span className="text-xl md:text-3xl font-bold">
-          {formatBudgetCurrency(stats.totalAmount, "IDR")}
-        </span>
-      </div>
-
-      <div>
-        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-          Total Amount
-        </p>
-        <div className="text-[10px] md:text-xs opacity-80 mt-1">
-          Overall budget
-        </div>
-      </div>
-    </div>
-
-    {/* Remaining */}
-    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
-      <div className="flex justify-between items-center min-h-[48px]">
-        <DollarSign className="w-6 h-6 opacity-90" />
-        <span className="text-xl md:text-3xl font-bold text-green-300">
-          {formatBudgetCurrency(stats.totalRemaining, "IDR")}
-        </span>
-      </div>
-
-      <div>
-        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-          Remaining
-        </p>
-        <div className="text-[10px] md:text-xs opacity-80 mt-1">
-          Available to use
-        </div>
-      </div>
-    </div>
-
-    {/* Reserved / Used */}
-    <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
-      <div className="flex justify-between items-center min-h-[48px]">
-        <DollarSign className="w-6 h-6 opacity-90" />
-        <div className="text-right leading-tight">
-          <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
-            {formatBudgetCurrency(stats.totalReserved, "IDR")}
-          </span>
-          <span className="text-xl md:text-2xl font-bold text-blue-300 block">
-            {formatBudgetCurrency(stats.totalUsed, "IDR")}
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
-          Reserved / Used
-        </p>
-        <div className="text-[10px] md:text-xs opacity-80 mt-1">
-          Allocated vs Spent
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
 
         {/* BUDGET LIST SECTION */}
         <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200">
@@ -803,206 +744,190 @@ const calculateStats = (data) => {
               )}
 
               {/* Desktop Action Buttons */}
- {/* Desktop Action Buttons */}
-<div className="flex flex-wrap items-center gap-2">
-  {/* Export Dropdown */}
-  <div className="relative">
-    <button
-      onClick={() => setShowExportDropdown(!showExportDropdown)}
-      className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
-    >
-      <FileSpreadsheet className="w-4 h-4" />
-      <span>Export Excel</span>
-      <ChevronDown className="w-4 h-4" />
-    </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Export Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportDropdown(!showExportDropdown)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Export Excel</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
 
-    {showExportDropdown && (
-      <>
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowExportDropdown(false)}
-        />
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-          <div className="p-2">
-            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-              Export Options
-            </div>
-            <button
-              onClick={() => exportToExcel("current")}
-              className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              <div className="text-left">
-                <div className="font-medium">
-                  Export Current View
+                  {showExportDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowExportDropdown(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+                        <div className="p-2">
+                          <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
+                            Export Options
+                          </div>
+                          <button
+                            onClick={() => exportToExcel("current")}
+                            className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                            <div className="text-left">
+                              <div className="font-medium">
+                                Export Current View
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {filteredBudgets.length} budgets
+                              </div>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => exportToExcel("all")}
+                            className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+                            <div className="text-left">
+                              <div className="font-medium">
+                                Export All Budgets
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {budgets.length} total budgets
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="text-xs text-gray-500">
-                  {filteredBudgets.length} budgets
+
+                {/* Add Budget Button - DIUBAH KE ROUTER PUSH */}
+                <button
+                  onClick={handleAddClick}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-600 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add Budget</span>
+                  <span className="sm:hidden">Add</span>
+                </button>
+
+                {/* TOMBOL SELECT */}
+                <button
+                  onClick={toggleSelectMode}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
+                    selectMode
+                      ? "bg-orange-600 text-white hover:bg-orange-700"
+                      : "bg-gray-600 text-white hover:bg-gray-600"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
+                    {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
+                    {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
+                    {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
+                  </svg>
+                  <span className="hidden sm:inline">
+                    {selectMode ? "Cancel Select" : "Select Multiple"}
+                  </span>
+                  <span className="sm:hidden">{selectMode ? "Cancel" : "Select"}</span>
+                </button>
+
+                {/* TOMBOL GRID/LIST UNTUK DESKTOP */}
+                <div className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2.5 ${
+                      viewMode === "list"
+                        ? "bg-gray-100 text-blue-600"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
+                    } transition-colors`}
+                    title="List View"
+                  >
+                    <ListIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2.5 ${
+                      viewMode === "grid"
+                        ? "bg-gray-100 text-blue-600"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
+                    } transition-colors border-l border-gray-300`}
+                    title="Grid View"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
                 </div>
+
+                {/* TOMBOL ACTION BULK */}
+                {selectMode && (
+                  <>
+                    <button
+                      onClick={handleSelectAll}
+                      className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        {!selectAll && (
+                          <line x1="3" y1="9" x2="21" y2="9"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="3" y1="15" x2="21" y2="15"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="9" y1="21" x2="9" y2="3"></line>
+                        )}
+                        {!selectAll && (
+                          <line x1="15" y1="21" x2="15" y2="3"></line>
+                        )}
+                        {selectAll && (
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        )}
+                      </svg>
+                      <span className="hidden sm:inline">{selectAll ? "Unselect All" : "Select All"}</span>
+                      <span className="sm:hidden">{selectAll ? "Unselect" : "All"}</span>
+                    </button>
+
+                    <button
+                      onClick={handleBulkEdit}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span className="hidden sm:inline">Edit Selected ({selectedBudgets.length})</span>
+                      <span className="sm:hidden">Edit</span>
+                    </button>
+
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Delete Selected ({selectedBudgets.length})</span>
+                      <span className="sm:hidden">Delete</span>
+                    </button>
+                  </>
+                )}
               </div>
-            </button>
-            <button
-              onClick={() => exportToExcel("all")}
-              className="w-full flex items-center gap-3 px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-blue-600" />
-              <div className="text-left">
-                <div className="font-medium">
-                  Export All Budgets
-                </div>
-                <div className="text-xs text-gray-500">
-                  {budgets.length} total budgets
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-
-  {/* Add Budget Button */}
-  <button
-    onClick={handleAddClick}
-    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-600 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
-  >
-    <Plus className="w-4 h-4" />
-    <span className="hidden sm:inline">Add Budget</span>
-    <span className="sm:hidden">Add</span>
-  </button>
-
-  {/* TOMBOL SELECT */}
-  <button
-    onClick={toggleSelectMode}
-    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
-      selectMode
-        ? "bg-orange-600 text-white hover:bg-orange-700"
-        : "bg-gray-600 text-white hover:bg-gray-600"
-    }`}
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect
-        x="3"
-        y="3"
-        width="18"
-        height="18"
-        rx="2"
-        ry="2"
-      ></rect>
-      {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
-      {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
-      {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
-      {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
-    </svg>
-    <span className="hidden sm:inline">
-      {selectMode ? "Cancel Select" : "Select Multiple"}
-    </span>
-    <span className="sm:hidden">{selectMode ? "Cancel" : "Select"}</span>
-  </button>
-    {/* TOMBOL GRID/LIST UNTUK DESKTOP - TAMBAHKAN DI SINI */}
-  <div className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden">
-    <button
-      onClick={() => setViewMode("list")}
-      className={`p-2.5 ${
-        viewMode === "list"
-          ? "bg-gray-100 text-blue-600"
-          : "bg-white text-gray-600 hover:bg-gray-50"
-      } transition-colors`}
-      title="List View"
-    >
-      <ListIcon className="w-4 h-4" />
-    </button>
-    <button
-      onClick={() => setViewMode("grid")}
-      className={`p-2.5 ${
-        viewMode === "grid"
-          ? "bg-gray-100 text-blue-600"
-          : "bg-white text-gray-600 hover:bg-gray-50"
-      } transition-colors border-l border-gray-300`}
-      title="Grid View"
-    >
-      <Grid className="w-4 h-4" />
-    </button>
-  </div>
-
-  {/* TOMBOL ACTION BULK */}
-  {selectMode && (
-    <>
-      <button
-        onClick={handleSelectAll}
-        className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect
-            x="3"
-            y="3"
-            width="18"
-            height="18"
-            rx="2"
-            ry="2"
-          ></rect>
-          {!selectAll && (
-            <line x1="3" y1="9" x2="21" y2="9"></line>
-          )}
-          {!selectAll && (
-            <line x1="3" y1="15" x2="21" y2="15"></line>
-          )}
-          {!selectAll && (
-            <line x1="9" y1="21" x2="9" y2="3"></line>
-          )}
-          {!selectAll && (
-            <line x1="15" y1="21" x2="15" y2="3"></line>
-          )}
-          {selectAll && (
-            <polyline points="20 6 9 17 4 12"></polyline>
-          )}
-        </svg>
-        <span className="hidden sm:inline">{selectAll ? "Unselect All" : "Select All"}</span>
-        <span className="sm:hidden">{selectAll ? "Unselect" : "All"}</span>
-      </button>
-
-      <button
-        onClick={handleBulkEdit}
-        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
-      >
-        <Edit className="w-4 h-4" />
-        <span className="hidden sm:inline">Edit Selected ({selectedBudgets.length})</span>
-        <span className="sm:hidden">Edit</span>
-      </button>
-
-      <button
-        onClick={handleBulkDelete}
-        className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
-      >
-        <Trash2 className="w-4 h-4" />
-        <span className="hidden sm:inline">Delete Selected ({selectedBudgets.length})</span>
-        <span className="sm:hidden">Delete</span>
-      </button>
-
-      
-    </>
-  )}
-</div>
             </div>
           </div>
 
@@ -1200,7 +1125,7 @@ const calculateStats = (data) => {
                       </div>
                     </div>
 
-                    {/* ACTION BUTTONS */}
+                    {/* ACTION BUTTONS - DIUBAH KE ROUTER PUSH UNTUK EDIT */}
                     <div className="flex justify-end items-center gap-1 mt-2 pt-2 border-t border-gray-200">
                       <button
                         onClick={() => handleViewDetails(budget)}
@@ -1210,7 +1135,7 @@ const calculateStats = (data) => {
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleEditClick(budget)}
+                        onClick={() => handleEditClick(budget.id)}
                         className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Edit Budget"
                       >
@@ -1442,7 +1367,7 @@ const calculateStats = (data) => {
                             </span>
                           )}
                         </td>
-                        {/* Actions */}
+                        {/* Actions - DIUBAH KE ROUTER PUSH UNTUK EDIT */}
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             <button
@@ -1453,14 +1378,16 @@ const calculateStats = (data) => {
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleEditClick(budget)}
+                              onClick={() => handleEditClick(budget.id)}
                               className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit Budget"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(budget)}
                               className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete Budget"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

@@ -52,6 +52,7 @@ export const logoutFromPortal = () => {
 export const API_ENDPOINTS = {
   // Budget Management
   BUDGET_LIST: `${API_BASE_URL}/api/budget/list`,
+  BUDGET_DETAIL: (id) => `${API_BASE_URL}/api/budget/detail/${id}`,
   BUDGET_CREATE: `${API_BASE_URL}/api/budget/create`,
   BUDGET_UPDATE: (id) => `${API_BASE_URL}/api/budget/update/${id}`,
   BUDGET_DELETE: (id) => `${API_BASE_URL}/api/budget/delete/${id}`,
@@ -66,7 +67,7 @@ export const API_ENDPOINTS = {
    // Revisions
   REVISIONS_LIST: `${API_BASE_URL}/api/budget/revisions/list`,
   REVISION_CREATE: `${API_BASE_URL}/api/budget/revision/create`,
-  
+
   // Dashboard
   DASHBOARD_STATS: `${API_BASE_URL}/api/budget/dashboard/stats`,
 

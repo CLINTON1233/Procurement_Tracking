@@ -181,7 +181,7 @@ export default function LayoutDashboard({ children, activeMenu }) {
         {
           icon: Wallet,
           label: "Budget Management",
-          href: "/budget_management",
+          href: "/budget",
         },
           {
           icon: Wallet,

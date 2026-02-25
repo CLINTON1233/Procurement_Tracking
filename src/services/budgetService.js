@@ -6,6 +6,10 @@ export const budgetService = {
     return await apiFetch(API_ENDPOINTS.BUDGET_LIST);
   },
 
+  getBudgetById: async (id) => {
+    return await apiFetch(API_ENDPOINTS.BUDGET_DETAIL(id));
+  },
+
   createBudget: async (budgetData) => {
     return await apiFetch(API_ENDPOINTS.BUDGET_CREATE, {
       method: "POST",
