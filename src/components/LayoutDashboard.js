@@ -102,12 +102,12 @@ export default function LayoutDashboard({ children, activeMenu }) {
     }
     const hasShown = localStorage.getItem("has_shown_welcome");
     const isFromPortal = sessionStorage.getItem("auth_source") === "portal";
-    
+
     if (!isFromPortal && hasShown) {
       localStorage.removeItem("has_shown_welcome");
       return;
     }
-    
+
     if (isFromPortal && !hasShown) {
       setTimeout(() => {
         Swal.fire({
@@ -181,22 +181,22 @@ export default function LayoutDashboard({ children, activeMenu }) {
         {
           icon: Wallet,
           label: "Budget Management",
-          href: "/budget",
+          href: "/manage_budget/budget_management",
         },
-          {
+        {
           icon: Wallet,
           label: "Request List",
-          href: "/budget_request_list",
+          href: "/manage_request/budget_request_list",
         },
         {
           icon: FilePenLine,
           label: "Revision",
-          href: "/budget_revision",
+          href: "/manage_revision/budget_revision",
         },
         {
           icon: FileText,
           label: "New Request",
-          href: "/request_budget_form",
+          href: "/manage_request/request_budget_form",
         },
       ],
     },
@@ -255,9 +255,8 @@ export default function LayoutDashboard({ children, activeMenu }) {
                 <User className="w-4 h-4" />
                 <span>{user.username}</span>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    userDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform ${userDropdownOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
@@ -322,9 +321,8 @@ export default function LayoutDashboard({ children, activeMenu }) {
                       <menu.icon className="w-4 h-4" />
                       <span>{menu.label}</span>
                       <ChevronDown
-                        className={`w-3 h-3 transition-transform ${
-                          openMenu === index ? "rotate-180" : ""
-                        }`}
+                        className={`w-3 h-3 transition-transform ${openMenu === index ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
 
@@ -400,17 +398,15 @@ export default function LayoutDashboard({ children, activeMenu }) {
                   ) : (
                     <>
                       <button
-                        className={`flex items-center w-full px-4 py-3 text-white hover:bg-blue-700 text-sm transition ${
-                          mobileSubmenuOpen[index] ? "bg-blue-700" : ""
-                        }`}
+                        className={`flex items-center w-full px-4 py-3 text-white hover:bg-blue-700 text-sm transition ${mobileSubmenuOpen[index] ? "bg-blue-700" : ""
+                          }`}
                         onClick={() => toggleMobileSubmenu(index)}
                       >
                         <item.icon className="w-5 h-5 mr-3" />
                         <span className="flex-1 text-left">{item.label}</span>
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform ${
-                            mobileSubmenuOpen[index] ? "rotate-180" : ""
-                          }`}
+                          className={`w-4 h-4 transition-transform ${mobileSubmenuOpen[index] ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
 

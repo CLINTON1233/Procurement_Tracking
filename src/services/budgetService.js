@@ -76,4 +76,9 @@ export const budgetService = {
   getDashboardStats: async () => {
     return await apiFetch(API_ENDPOINTS.DASHBOARD_STATS);
   },
+
+  // ===== DEPARTMENTS =====
+  getAllDepartments: async () => {
+    return await apiFetch(API_ENDPOINTS.DEPARTMENTS_LIST);
+  },
 };

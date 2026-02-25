@@ -52,7 +52,7 @@ export default function EditBudgetPage() {
   });
 
   useEffect(() => {
-    if (!budgetId) { router.push("/manage_budget"); return; }
+    if (!budgetId) { router.push("/manage_budget/budget_management"); return; }
     fetchData();
   }, [budgetId]);
 
@@ -112,7 +112,7 @@ export default function EditBudgetPage() {
 
   const toggleConvert = () => {
     setShowConvert((prev) => !prev);
-    setFormData((prev) => ({ ...prev, convert_to: showConvert ? "" : "USD", exchange_rate: "", converted_amount: "" }));
+    setFormData((prev) => ({ ...prev, convert_to: !prev ? "USD" : "", exchange_rate: "", converted_amount: "" }));
   };
 
   const getExchangeRate = () => {
@@ -175,7 +175,7 @@ export default function EditBudgetPage() {
       }
       await budgetService.updateBudget(budgetId, budgetData);
       await Swal.fire({ title: "Success!", text: "Budget updated successfully", icon: "success", timer: 1500, confirmButtonColor: "#1e40af" });
-      router.push("/manage_budget");
+      router.push("/manage_budget/budget_management");
     } catch {
       Swal.fire({ title: "Error!", text: "Failed to update budget", icon: "error", confirmButtonColor: "#1e40af" });
     } finally {
@@ -216,19 +216,10 @@ export default function EditBudgetPage() {
   );
   const Hint = ({ children }) => <p className="text-xs text-gray-400 mt-1">{children}</p>;
 
-  // Divider between sections inside the single card
-  const SectionDivider = ({ icon: Icon, label }) => (
-    <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
-      <Icon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</h3>
-    </div>
-  );
-
   return (
     <LayoutDashboard activeMenu={1}>
       <div className="min-h-screen bg-gray-50">
-
-        {/* ── Breadcrumb — full width, same px-6 as everything below ───── */}
+        {/* ── Breadcrumb — full width ───── */}
         <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-1.5 text-sm">
             <button
@@ -243,37 +234,35 @@ export default function EditBudgetPage() {
           </div>
         </div>
 
-        {/* ── Page header — same px-6 ──────────────────────────────────── */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-base font-bold text-gray-800 leading-tight">Edit Budget</h1>
-                <p className="text-xs text-gray-400 leading-tight">Update budget information</p>
-              </div>
-            </div>
-            {formData.budget_code && (
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-gray-300 text-gray-600">
-                {formData.budget_code}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ── Content area — same px-6 so card edge aligns with header ─── */}
+        {/* ── Content area with single card ─── */}
         <div className="px-6 py-5 pb-10">
-
-          {/* ══════════ ONE SINGLE CARD ══════════════════════════════════ */}
+          {/* Single Main Card */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-
-            {/* blue top stripe */}
+            {/* Blue top stripe */}
             <div className="h-1 w-full bg-blue-600" />
 
-            <div className="px-6 py-6">
+            {/* Card Header - Edit Budget */}
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-base font-bold text-gray-800 leading-tight">Edit Budget</h1>
+                    <p className="text-xs text-gray-400 leading-tight">Update budget information</p>
+                  </div>
+                </div>
+                {formData.budget_code && (
+                  <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-gray-300 text-gray-600">
+                    {formData.budget_code}
+                  </span>
+                )}
+              </div>
+            </div>
 
+            {/* Form Body */}
+            <div className="px-6 py-6">
               {/* ▸ BUDGET INFORMATION ─────────────────────────────────── */}
               <div className="flex items-center gap-2 mb-5">
                 <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -296,28 +285,41 @@ export default function EditBudgetPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <Label>Budget Code</Label>
-                  <input type="text" value={formData.budget_code}
+                  <input
+                    type="text"
+                    value={formData.budget_code}
                     onChange={(e) => handleChange("budget_code", e.target.value)}
-                    className={inputCls} placeholder="BUD-2026-001" />
+                    className={inputCls}
+                    placeholder="BUD-2026-001"
+                  />
                   <Hint>Optional internal budget code</Hint>
                 </div>
                 <div>
                   <Label required>Fiscal Year</Label>
-                  <input type="text" value={formData.fiscal_year}
+                  <input
+                    type="text"
+                    value={formData.fiscal_year}
                     onChange={(e) => handleChange("fiscal_year", e.target.value)}
-                    className={inputCls} placeholder="2026" />
+                    className={inputCls}
+                    placeholder="2026"
+                  />
                   <Hint>Budget allocation year</Hint>
                 </div>
               </div>
 
               {/* Budget Type */}
-              <div>
+              <div className="mb-4">
                 <Label required>Budget Type</Label>
                 <div className="flex gap-6 mt-1">
                   {["CAPEX", "OPEX"].map((type) => (
                     <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="budget_type" checked={formData.budget_type === type}
-                        onChange={() => handleChange("budget_type", type)} className="w-4 h-4 accent-blue-600" />
+                      <input
+                        type="radio"
+                        name="budget_type"
+                        checked={formData.budget_type === type}
+                        onChange={() => handleChange("budget_type", type)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
                       <span className="text-sm text-gray-700">{type}</span>
                     </label>
                   ))}
@@ -325,14 +327,20 @@ export default function EditBudgetPage() {
               </div>
 
               {/* ▸ DEPARTMENT & OWNER ─────────────────────────────────── */}
-              <SectionDivider icon={Building} label="Department & Owner" />
+              <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
+                <Building className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Department & Owner</h3>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <Label required>Department</Label>
                   <div className="relative">
-                    <select value={formData.department_name}
-                      onChange={(e) => handleChange("department_name", e.target.value)} className={selectCls}>
+                    <select
+                      value={formData.department_name}
+                      onChange={(e) => handleChange("department_name", e.target.value)}
+                      className={selectCls}
+                    >
                       <option value="">Select Department</option>
                       {departments.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
                     </select>
@@ -341,22 +349,32 @@ export default function EditBudgetPage() {
                 </div>
                 <div>
                   <Label>Budget Owner</Label>
-                  <input type="text" value={formData.budget_owner}
+                  <input
+                    type="text"
+                    value={formData.budget_owner}
                     onChange={(e) => handleChange("budget_owner", e.target.value)}
-                    className={inputCls} placeholder="Person responsible" />
+                    className={inputCls}
+                    placeholder="Person responsible"
+                  />
                   <Hint>Person responsible for this budget</Hint>
                 </div>
               </div>
 
               {/* ▸ BUDGET AMOUNT ──────────────────────────────────────── */}
-              <SectionDivider icon={DollarSign} label="Budget Amount" />
+              <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
+                <DollarSign className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Budget Amount</h3>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div>
                   <Label required>Currency</Label>
                   <div className="relative">
-                    <select value={formData.currency}
-                      onChange={(e) => handleChange("currency", e.target.value)} className={selectCls}>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => handleChange("currency", e.target.value)}
+                      className={selectCls}
+                    >
                       {CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>{c.code} — {c.name} ({c.symbol})</option>
                       ))}
@@ -366,35 +384,56 @@ export default function EditBudgetPage() {
                 </div>
                 <div>
                   <Label required>Total Amount ({getCurrencySymbol(formData.currency)})</Label>
-                  <input type="number" value={formData.total_amount}
+                  <input
+                    type="number"
+                    value={formData.total_amount}
                     onChange={(e) => handleChange("total_amount", e.target.value)}
-                    className={inputCls} placeholder="Enter total budget amount" min="0" />
+                    className={inputCls}
+                    placeholder="Enter total budget amount"
+                    min="0"
+                  />
                 </div>
               </div>
 
-              {/* Financial Status */}
-              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Financial Status</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Reserved", value: formData.reserved_amount, color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-100"   },
-                    { label: "Used",      value: formData.used_amount,     color: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-100"    },
-                    { label: "Remaining", value: formData.remaining_amount,color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-                  ].map(({ label, value, color, bg, border }) => (
-                    <div key={label} className={`rounded-md p-3 border ${bg} ${border}`}>
-                      <p className="text-xs text-gray-500 mb-1">{label}</p>
-                      <p className={`text-sm font-bold ${color}`}>{formatIDR(value)}</p>
+              {/* Financial Status - Minimalist Gray Design */}
+              <div className="rounded-lg border border-gray-200 bg-white p-4 mb-4">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Financial Status</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Reserved */}
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">Reserved</p>
+                    <p className="text-sm font-semibold text-gray-700">{formatIDR(formData.reserved_amount)}</p>
+                  </div>
+
+                  {/* Vertical Divider */}
+                  <div className="relative">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 mb-1">Used</p>
+                      <p className="text-sm font-semibold text-gray-700">{formatIDR(formData.used_amount)}</p>
                     </div>
-                  ))}
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200 hidden sm:block"></div>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200 hidden sm:block"></div>
+                  </div>
+
+                  {/* Remaining */}
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">Remaining</p>
+                    <p className="text-sm font-semibold text-gray-700">{formatIDR(formData.remaining_amount)}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Auto-calculated based on transactions</p>
+                <p className="text-xs text-gray-400 text-center mt-3 pt-2 border-t border-gray-100">
+                  Auto-calculated based on transactions
+                </p>
               </div>
 
               {/* Show IDR Equivalent */}
               {formData.total_amount > 0 && (
                 <div className="mb-4">
-                  <button type="button" onClick={() => setShowConverted(!showConverted)}
-                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition">
+                  <button
+                    type="button"
+                    onClick={() => setShowConverted(!showConverted)}
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition"
+                  >
                     <RefreshCw className="w-3 h-3" />
                     {showConverted ? "Hide" : "Show"} IDR Equivalent
                   </button>
@@ -415,8 +454,12 @@ export default function EditBudgetPage() {
               {/* Convert to another currency */}
               <div className="pt-4 border-t border-gray-100">
                 <label className="flex items-center gap-2 cursor-pointer w-fit mb-4">
-                  <input type="checkbox" checked={showConvert} onChange={toggleConvert}
-                    className="w-4 h-4 accent-blue-600 rounded" />
+                  <input
+                    type="checkbox"
+                    checked={showConvert}
+                    onChange={toggleConvert}
+                    className="w-4 h-4 accent-blue-600 rounded"
+                  />
                   <span className="text-sm text-gray-700">Convert to another currency for reference</span>
                 </label>
                 {showConvert && (
@@ -425,8 +468,11 @@ export default function EditBudgetPage() {
                       <div>
                         <Label>Convert to Currency</Label>
                         <div className="relative">
-                          <select value={formData.convert_to}
-                            onChange={(e) => handleChange("convert_to", e.target.value)} className={selectCls}>
+                          <select
+                            value={formData.convert_to}
+                            onChange={(e) => handleChange("convert_to", e.target.value)}
+                            className={selectCls}
+                          >
                             <option value="">Select Currency</option>
                             {CURRENCIES.filter((c) => c.code !== formData.currency).map((c) => (
                               <option key={c.code} value={c.code}>{c.code} — {c.name} ({c.symbol})</option>
@@ -437,14 +483,23 @@ export default function EditBudgetPage() {
                       </div>
                       <div>
                         <Label>Exchange Rate</Label>
-                        <input type="number" value={formData.exchange_rate || getExchangeRate()} readOnly className={readonlyCls} />
+                        <input
+                          type="number"
+                          value={formData.exchange_rate || getExchangeRate()}
+                          readOnly
+                          className={readonlyCls}
+                        />
                         <Hint>1 {formData.currency} = {getExchangeRate()} {formData.convert_to}</Hint>
                       </div>
                     </div>
                     <div>
                       <Label>Converted Amount ({formData.convert_to})</Label>
-                      <input type="number" value={formData.converted_amount || getConvertedAmount()} readOnly
-                        className="w-full px-3 py-2 text-sm border border-blue-200 rounded-md bg-blue-50 text-blue-800 font-medium cursor-not-allowed" />
+                      <input
+                        type="number"
+                        value={formData.converted_amount || getConvertedAmount()}
+                        readOnly
+                        className="w-full px-3 py-2 text-sm border border-blue-200 rounded-md bg-blue-50 text-blue-800 font-medium cursor-not-allowed"
+                      />
                       <Hint>Amount in {formData.convert_to} for reference only</Hint>
                     </div>
                   </div>
@@ -452,37 +507,52 @@ export default function EditBudgetPage() {
               </div>
 
               {/* ▸ BUDGET PERIOD ──────────────────────────────────────── */}
-              <SectionDivider icon={Calendar} label="Budget Period (Optional)" />
+              <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
+                <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Budget Period (Optional)</h3>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <Label>Period Start</Label>
-                  <input type="date" value={formData.period_start}
-                    onChange={(e) => handleChange("period_start", e.target.value)} className={inputCls} />
+                  <input
+                    type="date"
+                    value={formData.period_start}
+                    onChange={(e) => handleChange("period_start", e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
                 <div>
                   <Label>Period End</Label>
-                  <input type="date" value={formData.period_end}
-                    onChange={(e) => handleChange("period_end", e.target.value)} className={inputCls} />
+                  <input
+                    type="date"
+                    value={formData.period_end}
+                    onChange={(e) => handleChange("period_end", e.target.value)}
+                    className={inputCls}
+                  />
                 </div>
               </div>
 
               {/* ▸ ADDITIONAL INFORMATION ─────────────────────────────── */}
-              <SectionDivider icon={FileText} label="Additional Information" />
+              <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
+                <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Additional Information</h3>
+              </div>
 
               <div>
                 <Label>Description</Label>
-                <textarea value={formData.description}
+                <textarea
+                  value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
-                  rows="3" className={inputCls}
-                  placeholder="Additional notes, purpose of budget, scope, etc..." />
+                  rows="3"
+                  className={inputCls}
+                  placeholder="Additional notes, purpose of budget, scope, etc..."
+                />
               </div>
+            </div>
 
-            </div>{/* /px-6 py-6 */}
-
-            {/* ── Footer ─────────────────────────────────────────────── */}
+            {/* Form Actions */}
             <div className="border-t border-gray-100 px-6 py-5 bg-gray-50">
-
               {/* Info notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3 mb-5">
                 <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -501,23 +571,27 @@ export default function EditBudgetPage() {
                   <span className="text-red-500">*</span> Required fields
                 </p>
                 <div className="flex gap-3">
-                  <button type="button" onClick={handleReset}
-                    className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition shadow-sm"
+                  >
                     <RotateCcw className="w-4 h-4" />
                     Reset
                   </button>
-                  <button onClick={handleSubmit} disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                  >
                     <Save className="w-4 h-4" />
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
-
             </div>
-          </div>{/* /card */}
-
-        </div>{/* /content */}
+          </div>
+        </div>
       </div>
     </LayoutDashboard>
   );

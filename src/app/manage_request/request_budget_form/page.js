@@ -307,7 +307,7 @@ export default function RequestBudgetForm() {
       setSelectedCurrency("IDR");
       setExchangeRate(1);
 
-      router.push("/budget_request_list");
+      router.push("/manage_request/budget_request_list");
     } catch (error) {
       console.error("Error submitting request:", error);
       Swal.fire({
@@ -726,11 +726,10 @@ export default function RequestBudgetForm() {
                           <p className="text-xs text-gray-500 mb-1">Type</p>
                           <p className="text-sm font-medium">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                budgetDetails.budget_type === "CAPEX"
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${budgetDetails.budget_type === "CAPEX"
                                   ? "bg-purple-100 text-purple-800"
                                   : "bg-green-100 text-green-800"
-                              }`}
+                                }`}
                             >
                               {budgetDetails.budget_type}
                             </span>
@@ -749,12 +748,11 @@ export default function RequestBudgetForm() {
                             Remaining
                           </p>
                           <p
-                            className={`text-sm font-medium ${
-                              budgetDetails.remaining_amount <
-                              formData.estimated_total_idr
+                            className={`text-sm font-medium ${budgetDetails.remaining_amount <
+                                formData.estimated_total_idr
                                 ? "text-red-600"
                                 : "text-green-600"
-                            }`}
+                              }`}
                           >
                             {formatRupiah(budgetDetails.remaining_amount)}
                           </p>
@@ -780,23 +778,23 @@ export default function RequestBudgetForm() {
                       {/* Warning if insufficient budget */}
                       {budgetDetails.remaining_amount <
                         formData.estimated_total_idr && (
-                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-red-700">
-                            Warning: Request amount{" "}
-                            {formatCurrency(
-                              formData.estimated_total,
-                              selectedCurrency,
-                            )}
-                            ({formatRupiah(formData.estimated_total_idr)})
-                            exceeds remaining budget by{" "}
-                            {formatRupiah(
-                              formData.estimated_total_idr -
+                          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-red-700">
+                              Warning: Request amount{" "}
+                              {formatCurrency(
+                                formData.estimated_total,
+                                selectedCurrency,
+                              )}
+                              ({formatRupiah(formData.estimated_total_idr)})
+                              exceeds remaining budget by{" "}
+                              {formatRupiah(
+                                formData.estimated_total_idr -
                                 budgetDetails.remaining_amount,
-                            )}
-                          </p>
-                        </div>
-                      )}
+                              )}
+                            </p>
+                          </div>
+                        )}
                     </div>
                   )}
 

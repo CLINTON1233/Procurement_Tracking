@@ -257,7 +257,7 @@ export default function CreateBudgetPage() {
         confirmButtonColor: "#1e40af",
       });
 
-      router.push("/budget");
+      router.push("/manage_budget/budget_management");
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -325,7 +325,7 @@ export default function CreateBudgetPage() {
   return (
     <LayoutDashboard activeMenu={1}>
       <div className="min-h-screen bg-gray-50">
-        {/* ── Breadcrumb — full width, same px-6 as everything below ───── */}
+        {/* ── Breadcrumb — full width ───── */}
         <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-1.5 text-sm">
             <button
@@ -340,58 +340,66 @@ export default function CreateBudgetPage() {
           </div>
         </div>
 
-        {/* ── Page header — same px-6 ──────────────────────────────────── */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <Wallet className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-base font-bold text-gray-800 leading-tight">Create New Budget</h1>
-                <p className="text-xs text-gray-400 leading-tight">Add one or multiple Capex/Opex budget entries</p>
+        {/* ── Content area with single card containing header and forms ─── */}
+        <div className="px-6 py-5 pb-10">
+          {/* Single Main Card */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Blue top stripe */}
+            <div className="h-1 w-full bg-blue-600" />
+
+            {/* Card Header - Create New Budget */}
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-base font-bold text-gray-800 leading-tight">Create New Budget</h1>
+                    <p className="text-xs text-gray-400 leading-tight">Add one or multiple Capex/Opex budget entries</p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-gray-300 text-gray-600">
+                  Multiple Entries
+                </span>
               </div>
             </div>
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-gray-300 text-gray-600">
-              Multiple Entries
-            </span>
-          </div>
-        </div>
 
-        {/* ── Content area — same px-6 so card edge aligns with header ─── */}
-        <div className="px-6 py-5 pb-10 space-y-4">
-          {budgetEntries.map((entry, index) => (
-            <BudgetEntryForm
-              key={entry.id}
-              entry={entry}
-              index={index}
-              departments={departments}
-              onUpdate={updateEntry}
-              onRemove={removeEntry}
-              onToggleConvert={toggleConvert}
-              onToggleShowConverted={toggleShowConverted}
-              showRemove={budgetEntries.length > 1}
-              inputCls={inputCls}
-              selectCls={selectCls}
-              readonlyCls={readonlyCls}
-              Label={Label}
-              Hint={Hint}
-            />
-          ))}
+            {/* Budget Entries Container */}
+            <div className="divide-y divide-gray-100">
+              {budgetEntries.map((entry, index) => (
+                <BudgetEntryForm
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  departments={departments}
+                  onUpdate={updateEntry}
+                  onRemove={removeEntry}
+                  onToggleConvert={toggleConvert}
+                  onToggleShowConverted={toggleShowConverted}
+                  showRemove={budgetEntries.length > 1}
+                  inputCls={inputCls}
+                  selectCls={selectCls}
+                  readonlyCls={readonlyCls}
+                  Label={Label}
+                  Hint={Hint}
+                  isLast={index === budgetEntries.length - 1}
+                />
+              ))}
+            </div>
 
-          {/* Add Entry Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={addNewEntry}
-              className="flex items-center gap-2 px-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
-            >
-              <Plus className="w-4 h-4" />
-              Add Another Budget Entry
-            </button>
-          </div>
+            {/* Add Entry Button - inside the card */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+              <button
+                onClick={addNewEntry}
+                className="flex items-center gap-2 px-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center"
+              >
+                <Plus className="w-4 h-4" />
+                Add Another Budget Entry
+              </button>
+            </div>
 
-          {/* Form Actions */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Form Actions */}
             <div className="border-t border-gray-100 px-6 py-5 bg-gray-50">
               {/* Info notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3 mb-5">
@@ -454,6 +462,7 @@ function BudgetEntryForm({
   readonlyCls,
   Label,
   Hint,
+  isLast,
 }) {
   const getExchangeRate = () => {
     if (entry.currency && entry.convert_to && entry.currency !== entry.convert_to) {
@@ -503,12 +512,9 @@ function BudgetEntryForm({
   );
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {/* blue top stripe with entry number */}
-      <div className="h-1 w-full bg-blue-600" />
-      
+    <div className={!isLast ? "border-b border-gray-100" : ""}>
       {/* Form Header */}
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold">
             {index + 1}
