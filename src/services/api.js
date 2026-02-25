@@ -60,7 +60,12 @@ export const API_ENDPOINTS = {
   REQUESTS_LIST: `${API_BASE_URL}/api/budget/requests`,
   REQUEST_CREATE: `${API_BASE_URL}/api/budget/request/create`,
   REQUEST_SUBMIT: (id) => `${API_BASE_URL}/api/budget/request/submit/${id}`,
+  REQUEST_DELETE: (id) => `${API_BASE_URL}/api/budget/request/delete/${id}`,
   REQUEST_CHOOSE_SRMR: (id, tipe) => `${API_BASE_URL}/api/budget/request/choose/${id}/${tipe}`,
+  
+   // Revisions
+  REVISIONS_LIST: `${API_BASE_URL}/api/budget/revisions/list`,
+  REVISION_CREATE: `${API_BASE_URL}/api/budget/revision/create`,
   
   // Dashboard
   DASHBOARD_STATS: `${API_BASE_URL}/api/budget/dashboard/stats`,

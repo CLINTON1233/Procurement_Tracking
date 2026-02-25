@@ -194,3 +194,58 @@ export const showRequestDetailsModal = (request) => {
     },
   });
 };
+
+const handleDeleteRequest = async (request) => {
+  const result = await Swal.fire({
+    title: `Delete Request #${request.request_no}?`,
+    text: `Are you sure you want to delete this request? This action cannot be undone!`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Delete!",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#6b7280",
+
+    customClass: {
+      popup: "rounded-lg",
+      title: "!text-lg !font-semibold",
+      htmlContainer: "!text-sm text-gray-600",
+      confirmButton:
+        "!bg-red-600 hover:!bg-red-700 !px-5 !py-2 !min-w-[110px] !text-sm",
+      cancelButton:
+        "!bg-gray-500 hover:!bg-gray-600 !px-5 !py-2 !min-w-[110px] !text-sm",
+    },
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    Swal.fire({
+      title: "Deleting...",
+      text: "Please wait",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    await budgetService.deleteRequest(request.id);
+    await fetchData();
+
+    Swal.fire({
+      title: "Deleted!",
+      text: "Request has been deleted successfully",
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  } catch (error) {
+    console.error("Error deleting request:", error);
+    Swal.fire({
+      title: "Error!",
+      text: error.message || "Failed to delete request",
+      icon: "error",
+      confirmButtonColor: "#1e40af",
+    });
+  }
+};

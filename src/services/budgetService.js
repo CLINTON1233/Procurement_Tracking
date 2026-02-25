@@ -38,6 +38,12 @@ export const budgetService = {
     });
   },
 
+  deleteRequest: async (id) => {
+    return await apiFetch(API_ENDPOINTS.REQUEST_DELETE(id), {
+      method: "DELETE",
+    });
+  },
+
   submitRequest: async (id) => {
     return await apiFetch(API_ENDPOINTS.REQUEST_SUBMIT(id), {
       method: "PUT",
@@ -47,6 +53,18 @@ export const budgetService = {
   chooseSRMR: async (id, type) => {
     return await apiFetch(API_ENDPOINTS.REQUEST_CHOOSE_SRMR(id, type), {
       method: "PUT",
+    });
+  },
+
+  // ===== REVISIONS =====
+  getAllRevisions: async () => {
+    return await apiFetch(API_ENDPOINTS.REVISIONS_LIST);
+  },
+
+  createRevision: async (revisionData) => {
+    return await apiFetch(API_ENDPOINTS.REVISION_CREATE, {
+      method: "POST",
+      body: JSON.stringify(revisionData),
     });
   },
 
