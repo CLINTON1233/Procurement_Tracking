@@ -24,12 +24,16 @@ import {
   XCircle,
   Server,
   Building,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { formatCurrency, formatIDR } from "@/utils/currency";
 import Link from "next/link";
 import { formatTableCurrency } from "@/utils/currencyFormatter";
+// IMPORT MODAL DELETE
+import { showDeleteRevisionModal, showDeleteMultipleRevisionsModal } from "@/components/modals/BudgetRevisionModals";
 
 export default function BudgetRevisionPage() {
   const [revisions, setRevisions] = useState([]);
@@ -37,6 +41,7 @@ export default function BudgetRevisionPage() {
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [sorting, setSorting] = useState([]);
@@ -126,6 +131,135 @@ export default function BudgetRevisionPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  // ============ FUNGSI DELETE REVISION ============
+  const handleDeleteRevision = async (revision) => {
+    const requestNo = getRequestNo(revision.request_id);
+    const budgetName = getBudgetName(revision.budget_id);
+
+    showDeleteRevisionModal({
+      revision,
+      requestNo,
+      budgetName,
+      onConfirm: async () => {
+        try {
+          // Filter revision yang dihapus
+          setRevisions(prev => prev.filter(r => r.id !== revision.id));
+          
+          // Recalculate stats
+          const newRevisions = revisions.filter(r => r.id !== revision.id);
+          calculateStats(newRevisions, budgets);
+
+          Swal.fire({
+            title: "Deleted!",
+            text: "Revision has been deleted successfully",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          console.error("Error deleting revision:", error);
+          Swal.fire({
+            title: "Error!",
+            text: error.message || "Failed to delete revision",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        }
+      },
+    });
+  };
+
+  // ============ FUNGSI DELETE BULK ============
+  const [selectedRevisions, setSelectedRevisions] = useState([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
+
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedRevisions([]);
+    setSelectAll(false);
+  };
+
+  const handleSelectRevision = (revisionId) => {
+    setSelectedRevisions((prev) => {
+      if (prev.includes(revisionId)) {
+        return prev.filter((id) => id !== revisionId);
+      } else {
+        return [...prev, revisionId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRevisions([]);
+    } else {
+      setSelectedRevisions(filteredRevisions.map((r) => r.id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRevisions.length === 0) {
+      Swal.fire({
+        title: "No Selection",
+        text: "Please select at least one revision to delete",
+        icon: "warning",
+        confirmButtonColor: "#1e40af",
+      });
+      return;
+    }
+
+    const selectedData = revisions.filter(r => selectedRevisions.includes(r.id));
+    const requestNos = selectedData.map(r => getRequestNo(r.request_id));
+    const budgetNames = selectedData.map(r => getBudgetName(r.budget_id));
+
+    showDeleteMultipleRevisionsModal({
+      revisions: selectedData,
+      requestNos,
+      budgetNames,
+      onConfirm: async () => {
+        setDeleting(true);
+        try {
+          let successCount = 0;
+          for (const revisionId of selectedRevisions) {
+            try {
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to delete revision ${revisionId}:`, error);
+            }
+          }
+
+          setRevisions(prev => prev.filter(r => !selectedRevisions.includes(r.id)));
+          const newRevisions = revisions.filter(r => !selectedRevisions.includes(r.id));
+          calculateStats(newRevisions, budgets);
+
+          setSelectedRevisions([]);
+          setSelectAll(false);
+          setSelectMode(false);
+
+          Swal.fire({
+            title: "Deleted!",
+            text: `${successCount} revision(s) deleted successfully`,
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          console.error("Error bulk deleting revisions:", error);
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete revisions",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   // Format Date
@@ -267,7 +401,7 @@ export default function BudgetRevisionPage() {
   return (
     <LayoutDashboard activeMenu={4}>
       <div className="space-y-6 p-3 md:p-6 bg-gray-50 min-h-screen">
-        {/* HEADER SECTION */}
+        {/* HEADER SECTION - TANPA TOMBOL */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -275,13 +409,6 @@ export default function BudgetRevisionPage() {
                 <RotateCcw className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                 Budget Revision History
               </h1>
-              <Link
-                href="/request_budget_list"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Back to Requests</span>
-              </Link>
             </div>
             <p className="text-gray-500 text-sm">
               Track all budget revisions and changes
@@ -289,7 +416,7 @@ export default function BudgetRevisionPage() {
           </div>
         </div>
 
-        {/* STATS CARDS - Menggunakan desain seperti Budget Management */}
+        {/* STATS CARDS */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b px-4 md:px-6 py-3 md:py-4">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
@@ -374,7 +501,7 @@ export default function BudgetRevisionPage() {
           </div>
         </div>
 
-        {/* FILTER SECTION - Menggunakan desain seperti Budget Management */}
+        {/* FILTER SECTION - DENGAN TOMBOL DI DALAMNYA */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-4 md:p-6 border-b border-gray-200">
             <div className="flex flex-col gap-4">
@@ -494,13 +621,13 @@ export default function BudgetRevisionPage() {
                 </div>
               )}
 
-              {/* Desktop Actions */}
-              <div className="hidden md:flex items-center gap-3">
+              {/* Desktop Actions - SEMUA TOMBOL DI SINI */}
+              <div className="hidden md:flex flex-wrap items-center gap-2">
                 {/* Type Filter */}
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]"
                 >
                   <option value="all">All Types</option>
                   <option value="CAPEX">CAPEX</option>
@@ -539,6 +666,47 @@ export default function BudgetRevisionPage() {
                   {refreshing ? "Refreshing..." : "Refresh"}
                 </button>
 
+                {/* Tombol Select Multiple */}
+                <button
+                  onClick={toggleSelectMode}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
+                    selectMode
+                      ? "bg-orange-600 text-white hover:bg-orange-700"
+                      : "bg-gray-600 text-white hover:bg-gray-700"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    {selectMode && <line x1="3" y1="9" x2="21" y2="9"></line>}
+                    {selectMode && <line x1="3" y1="15" x2="21" y2="15"></line>}
+                    {selectMode && <line x1="9" y1="21" x2="9" y2="3"></line>}
+                    {selectMode && <line x1="15" y1="21" x2="15" y2="3"></line>}
+                  </svg>
+                  <span className="hidden sm:inline">
+                    {selectMode ? "Cancel Select" : "Select Multiple"}
+                  </span>
+                  <span className="sm:hidden">{selectMode ? "Cancel" : "Select"}</span>
+                </button>
+
+                {/* Tombol Back to Requests */}
+                <Link
+                  href="/request_budget_list"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Back to Requests</span>
+                </Link>
+
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden">
                   <button
@@ -562,7 +730,111 @@ export default function BudgetRevisionPage() {
                     <Grid className="w-4 h-4" />
                   </button>
                 </div>
+
+                {/* Bulk Delete Button (muncul saat select mode) */}
+                {selectMode && selectedRevisions.length > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={deleting}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected ({selectedRevisions.length})
+                  </button>
+                )}
               </div>
+
+              {/* Mobile Actions - Untuk tampilan mobile */}
+              <div className="md:hidden flex flex-wrap items-center gap-2">
+                {/* Type Filter (mobile) */}
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="CAPEX">CAPEX</option>
+                  <option value="OPEX">OPEX</option>
+                </select>
+
+                {/* Department Filter (mobile) */}
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Departments</option>
+                  {departments.length > 0
+                    ? departments.map((dept) => (
+                      <option key={dept.id} value={dept.name}>
+                        {dept.name}
+                      </option>
+                    ))
+                    : uniqueDepartments.map((dept, index) => (
+                      <option key={index} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                </select>
+
+                {/* Refresh Button (mobile) */}
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center justify-center px-3 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-all"
+                  title="Refresh"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
+
+                {/* Select Multiple Button (mobile) */}
+                <button
+                  onClick={toggleSelectMode}
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg text-sm transition-all ${
+                    selectMode
+                      ? "bg-orange-600 text-white"
+                      : "bg-gray-600 text-white"
+                  }`}
+                  title={selectMode ? "Cancel" : "Select"}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  </svg>
+                </button>
+
+                {/* Back to Requests (mobile) */}
+                <Link
+                  href="/request_budget_list"
+                  className="flex items-center justify-center px-3 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+                  title="Back to Requests"
+                >
+                  <FileText className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Bulk Delete Button Mobile (muncul saat select mode) */}
+              {selectMode && selectedRevisions.length > 0 && (
+                <div className="md:hidden mt-2">
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={deleting}
+                    className="w-full flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Selected ({selectedRevisions.length})
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -615,10 +887,22 @@ export default function BudgetRevisionPage() {
                   return (
                     <div
                       key={revision.id}
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-3 md:p-4 hover:shadow-sm transition-shadow"
+                      className="bg-gray-50 border border-gray-200 rounded-xl p-3 md:p-4 hover:shadow-sm transition-shadow relative"
                     >
+                      {/* Checkbox untuk select mode */}
+                      {selectMode && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedRevisions.includes(revision.id)}
+                            onChange={() => handleSelectRevision(revision.id)}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
+
                       {/* HEADER */}
-                      <div className="flex justify-between items-start mb-3">
+                      <div className={`flex justify-between items-start mb-3 ${selectMode ? 'ml-6' : ''}`}>
                         <div className="flex items-center gap-2 flex-1">
                           <div className="p-1.5 md:p-2 rounded-lg bg-blue-100">
                             {getBudgetIcon(budgetType)}
@@ -695,8 +979,8 @@ export default function BudgetRevisionPage() {
                         </div>
                       </div>
 
-                      {/* ACTION BUTTON */}
-                      <div className="flex justify-end items-center mt-2 pt-2 border-t border-gray-200">
+                      {/* ACTION BUTTONS */}
+                      <div className="flex justify-end items-center gap-1 mt-2 pt-2 border-t border-gray-200">
                         <button
                           onClick={() => {
                             Swal.fire({
@@ -723,6 +1007,16 @@ export default function BudgetRevisionPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        
+                        {/* Tombol Delete */}
+                        <button
+                          onClick={() => handleDeleteRevision(revision)}
+                          disabled={deleting}
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Revision"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -734,6 +1028,16 @@ export default function BudgetRevisionPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      {selectMode && (
+                        <th className="px-2 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() => setSorting([{ id: "created_at", desc: true }])}>
                         <div className="flex items-center">
@@ -838,6 +1142,16 @@ export default function BudgetRevisionPage() {
 
                       return (
                         <tr key={revision.id} className="hover:bg-gray-50">
+                          {selectMode && (
+                            <td className="px-2 py-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedRevisions.includes(revision.id)}
+                                onChange={() => handleSelectRevision(revision.id)}
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              />
+                            </td>
+                          )}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center text-sm text-gray-600">
                               <Clock className="w-3.5 h-3.5 text-gray-400 mr-1.5" />
@@ -892,32 +1206,44 @@ export default function BudgetRevisionPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => {
-                                Swal.fire({
-                                  title: "Revision Details",
-                                  html: `
-                                    <div class="text-left space-y-3">
-                                      <p><strong>Request:</strong> ${getRequestNo(revision.request_id)}</p>
-                                      <p><strong>Budget:</strong> ${getBudgetName(revision.budget_id)}</p>
-                                      <p><strong>Department:</strong> ${getBudgetDepartment(revision.budget_id)}</p>
-                                      <p><strong>Type:</strong> ${budgetType}</p>
-                                      <p style="background-color: #dbeafe; padding: 8px; border-radius: 6px; border-left: 4px solid #3b82f6;"><strong style="color: #1e40af;">Original Amount:</strong> <span style="color: #1e40af; font-weight: bold;">${formatBudgetCurrency(revision.original_amount, currency)}</span></p>
-                                      <p style="background-color: #dcfce7; padding: 8px; border-radius: 6px; border-left: 4px solid #22c55e;"><strong style="color: #166534;">New Amount:</strong> <span style="color: #166534; font-weight: bold;">${formatBudgetCurrency(revision.new_amount, currency)}</span></p>
-                                      <p style="background-color: #fed7aa; padding: 8px; border-radius: 6px; border-left: 4px solid #f97316;"><strong style="color: #92400e;">Reduction:</strong> <span style="color: #92400e; font-weight: bold;">${reductionPercent}% (${formatBudgetCurrency(reductionAmount, currency)})</span></p>
-                                      <p><strong>Reason:</strong> ${revision.reason}</p>
-                                      <p><strong>Date:</strong> ${formatDate(revision.created_at)}</p>
-                                    </div>
-                                  `,
-                                  confirmButtonText: "Close",
-                                  confirmButtonColor: "#2563eb",
-                                });
-                              }}
-                              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: "Revision Details",
+                                    html: `
+                                      <div class="text-left space-y-3">
+                                        <p><strong>Request:</strong> ${getRequestNo(revision.request_id)}</p>
+                                        <p><strong>Budget:</strong> ${getBudgetName(revision.budget_id)}</p>
+                                        <p><strong>Department:</strong> ${getBudgetDepartment(revision.budget_id)}</p>
+                                        <p><strong>Type:</strong> ${budgetType}</p>
+                                        <p style="background-color: #dbeafe; padding: 8px; border-radius: 6px; border-left: 4px solid #3b82f6;"><strong style="color: #1e40af;">Original Amount:</strong> <span style="color: #1e40af; font-weight: bold;">${formatBudgetCurrency(revision.original_amount, currency)}</span></p>
+                                        <p style="background-color: #dcfce7; padding: 8px; border-radius: 6px; border-left: 4px solid #22c55e;"><strong style="color: #166534;">New Amount:</strong> <span style="color: #166534; font-weight: bold;">${formatBudgetCurrency(revision.new_amount, currency)}</span></p>
+                                        <p style="background-color: #fed7aa; padding: 8px; border-radius: 6px; border-left: 4px solid #f97316;"><strong style="color: #92400e;">Reduction:</strong> <span style="color: #92400e; font-weight: bold;">${reductionPercent}% (${formatBudgetCurrency(reductionAmount, currency)})</span></p>
+                                        <p><strong>Reason:</strong> ${revision.reason}</p>
+                                        <p><strong>Date:</strong> ${formatDate(revision.created_at)}</p>
+                                      </div>
+                                    `,
+                                    confirmButtonText: "Close",
+                                    confirmButtonColor: "#2563eb",
+                                  });
+                                }}
+                                className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              
+                              {/* Tombol Delete */}
+                              <button
+                                onClick={() => handleDeleteRevision(revision)}
+                                disabled={deleting}
+                                className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Revision"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -935,6 +1261,11 @@ export default function BudgetRevisionPage() {
                 <div className="text-xs md:text-sm text-gray-500 text-center sm:text-left">
                   Showing {filteredRevisions.length} of {revisions.length} Revisions
                 </div>
+                {selectMode && (
+                  <div className="text-xs font-medium text-gray-500">
+                    {selectedRevisions.length} Revisions Selected
+                  </div>
+                )}
                 <div className="text-xs font-medium text-blue-600">
                   Total Reduction: {formatBudgetCurrency(stats.totalReduction, "IDR")}
                 </div>

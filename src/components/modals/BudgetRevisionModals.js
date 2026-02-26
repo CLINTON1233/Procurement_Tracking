@@ -363,3 +363,89 @@ export const showRevisionModal = async ({ request, budgets, onSave }) => {
     }
   });
 };
+
+// Delete Revision Modal
+export const showDeleteRevisionModal = ({ revision, requestNo, budgetName, onConfirm }) => {
+  Swal.fire({
+    title: `Delete Revision?`,
+    text: `Are you sure you want to delete this revision? This data cannot be recovered!`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, Delete!",
+    cancelButtonText: "Cancel",
+    customClass: {
+      popup: "rounded-xl",
+      confirmButton:
+        "!bg-red-600 hover:!bg-red-700 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+      cancelButton:
+        "!bg-gray-500 hover:!bg-gray-600 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        Swal.fire({
+          title: "Deleting...",
+          text: "Please wait",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        await onConfirm();
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: error.message || "Failed to delete revision",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
+        });
+      }
+    }
+  });
+};
+
+// Delete Multiple Revisions Modal - SEDERHANAKAN SEPERTI SINGLE DELETE
+export const showDeleteMultipleRevisionsModal = ({ revisions, requestNos, budgetNames, onConfirm }) => {
+  Swal.fire({
+    title: `Delete ${revisions.length} Revisions?`,
+    text: `Are you sure you want to delete ${revisions.length} selected revisions? This data cannot be recovered!`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: `Yes, Delete All!`,
+    cancelButtonText: "Cancel",
+    customClass: {
+      popup: "rounded-xl",
+      confirmButton:
+        "!bg-red-600 hover:!bg-red-700 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+      cancelButton:
+        "!bg-gray-500 hover:!bg-gray-600 !px-6 !py-2.5 !min-w-[120px] !text-sm !font-medium",
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        Swal.fire({
+          title: "Deleting...",
+          text: "Please wait",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        await onConfirm();
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: error.message || "Failed to delete revisions",
+          icon: "error",
+          confirmButtonColor: "#1e40af",
+        });
+      }
+    }
+  });
+};

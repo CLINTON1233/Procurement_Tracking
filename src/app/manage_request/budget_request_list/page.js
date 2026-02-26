@@ -566,7 +566,7 @@ export default function BudgetRequestListPage() {
                 Budget Request List
               </h1>
               <Link
-                href="/request_budget_form"
+                href="/manage_request/request_budget_form"
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
               >
                 <Plus className="w-4 h-4" />
