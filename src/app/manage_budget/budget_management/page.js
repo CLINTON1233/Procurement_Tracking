@@ -25,6 +25,17 @@ import {
   BarChart3,
   Eye,
   Server,
+  Loader2,
+  AlertCircle,
+  Box,
+  Info,
+  MapPin,
+  ScanLine,
+  Cpu,
+  Cable,
+  Barcode,
+  Hash,
+  X,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
@@ -498,12 +509,31 @@ export default function BudgetManagementPage() {
     }
   };
 
+  // Helper functions for status colors
+  const getBudgetTypeColor = (type) => {
+    return type === "CAPEX" 
+      ? "bg-purple-100 text-purple-700 border-purple-200" 
+      : "bg-green-100 text-green-700 border-green-200";
+  };
+
+  const getStatusColor = (isActive) => {
+    return isActive
+      ? "bg-green-100 text-green-700 border-green-200"
+      : "bg-gray-100 text-gray-700 border-gray-200";
+  };
+
+  const getBudgetTypeIcon = (type) => {
+    return type === "CAPEX" 
+      ? <Cpu className="w-4 h-4 text-purple-600" />
+      : <Cable className="w-4 h-4 text-green-600" />;
+  };
+
   // ============ LOADING STATE ============
   if (loading) {
     return (
       <LayoutDashboard activeMenu={1}>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
         </div>
       </LayoutDashboard>
     );
@@ -511,25 +541,20 @@ export default function BudgetManagementPage() {
 
   return (
     <LayoutDashboard activeMenu={1}>
-      <div className="space-y-6 p-3 md:p-6 bg-gray-50">
-        {/* HEADER SECTION */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <Wallet className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                Budget Management
-              </h1>
-            </div>
-            <p className="text-gray-500 text-sm">
-              Manage Capex/Opex budgets, track allocations, and monitor
-              remaining funds
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-2 space-y-4 sm:space-y-6">
+        {/* Header dengan gaya scanning */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+          <h1 className="text-xl sm:text-2xl font-semibold flex items-center">
+            <Wallet className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+            BUDGET MANAGEMENT
+          </h1>
+          <p className="text-blue-100 text-xs sm:text-sm mt-1 sm:mt-2">
+            Manage Capex/Opex budgets, track allocations, and monitor remaining funds
+          </p>
         </div>
 
-        {/* STATS CARDS */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* STATS CARDS dengan gaya scanning */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="border-b px-4 md:px-6 py-3 md:py-4">
             <h2 className="font-semibold text-gray-800 flex items-center gap-2 text-sm md:text-base">
               <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
@@ -542,23 +567,25 @@ export default function BudgetManagementPage() {
 
           <div className="p-4 md:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {/* Total Budgets */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
               <div className="flex justify-between items-center min-h-[48px]">
                 <Wallet className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">{stats.total}</span>
               </div>
               <div>
-                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase tracking-wider">
                   Total Budgets
                 </p>
-                <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                  {stats.CAPEX} CAPEX • {stats.OPEX} OPEX
+                <div className="text-[10px] md:text-xs opacity-80 mt-1 flex items-center gap-2">
+                  <span className="flex items-center"><Cpu className="w-3 h-3 mr-1" />{stats.CAPEX}</span>
+                  <span>•</span>
+                  <span className="flex items-center"><Cable className="w-3 h-3 mr-1" />{stats.OPEX}</span>
                 </div>
               </div>
             </div>
 
             {/* Total Amount */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
               <div className="flex justify-between items-center min-h-[48px]">
                 <DollarSign className="w-6 h-6 opacity-90" />
                 <span className="text-xl md:text-3xl font-bold">
@@ -566,25 +593,25 @@ export default function BudgetManagementPage() {
                 </span>
               </div>
               <div>
-                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase tracking-wider">
                   Total Amount
                 </p>
                 <div className="text-[10px] md:text-xs opacity-80 mt-1">
-                  Overall budget
+                  Overall budget allocation
                 </div>
               </div>
             </div>
 
             {/* Remaining */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+            <div className="bg-gradient-to-br from-green-600 to-green-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
               <div className="flex justify-between items-center min-h-[48px]">
                 <DollarSign className="w-6 h-6 opacity-90" />
-                <span className="text-xl md:text-3xl font-bold text-green-300">
+                <span className="text-xl md:text-3xl font-bold text-green-200">
                   {formatBudgetCurrency(stats.totalRemaining, "IDR")}
                 </span>
               </div>
               <div>
-                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase tracking-wider">
                   Remaining
                 </p>
                 <div className="text-[10px] md:text-xs opacity-80 mt-1">
@@ -594,20 +621,20 @@ export default function BudgetManagementPage() {
             </div>
 
             {/* Reserved / Used */}
-            <div className="bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
+            <div className="bg-gradient-to-br from-amber-600 to-amber-700 text-white rounded-xl p-3 md:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[130px]">
               <div className="flex justify-between items-center min-h-[48px]">
                 <DollarSign className="w-6 h-6 opacity-90" />
                 <div className="text-right leading-tight">
-                  <span className="text-xl md:text-2xl font-bold text-yellow-300 block">
+                  <span className="text-xl md:text-2xl font-bold text-yellow-200 block">
                     {formatBudgetCurrency(stats.totalReserved, "IDR")}
                   </span>
-                  <span className="text-xl md:text-2xl font-bold text-blue-300 block">
+                  <span className="text-xl md:text-2xl font-bold text-blue-200 block">
                     {formatBudgetCurrency(stats.totalUsed, "IDR")}
                   </span>
                 </div>
               </div>
               <div>
-                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase">
+                <p className="mt-2 text-xs md:text-sm opacity-90 uppercase tracking-wider">
                   Reserved / Used
                 </p>
                 <div className="text-[10px] md:text-xs opacity-80 mt-1">
@@ -618,13 +645,13 @@ export default function BudgetManagementPage() {
           </div>
         </div>
 
-        {/* BUDGET LIST SECTION */}
-        <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200">
+        {/* BUDGET LIST SECTION dengan gaya scanning */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200">
           <div className="p-4 md:p-6 border-b border-gray-200">
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <ListIcon className="w-5 h-5 text-blue-600" />
+                  <ScanLine className="w-5 h-5 text-blue-600" />
                   List Budget for Procurement
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
@@ -633,7 +660,7 @@ export default function BudgetManagementPage() {
                 </p>
               </div>
 
-              {/* Search Bar */}
+              {/* Search Bar - gaya scanning */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -641,7 +668,7 @@ export default function BudgetManagementPage() {
                   placeholder="Search budget name, department, description, owner..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
 
@@ -649,7 +676,7 @@ export default function BudgetManagementPage() {
               <div className="flex items-center justify-between md:hidden">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700"
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition"
                 >
                   <Filter className="w-4 h-4" />
                   Filters
@@ -662,20 +689,20 @@ export default function BudgetManagementPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg ${
+                    className={`p-2 rounded-lg transition ${
                       viewMode === "grid"
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600"
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     <Grid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`p-2 rounded-lg ${
+                    className={`p-2 rounded-lg transition ${
                       viewMode === "list"
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600"
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     <ListIcon className="w-4 h-4" />
@@ -698,14 +725,14 @@ export default function BudgetManagementPage() {
                             setTypeFilter(type);
                             setShowFilters(false);
                           }}
-                          className={`px-3 py-1.5 text-xs rounded-lg ${
+                          className={`px-3 py-1.5 text-xs rounded-lg transition ${
                             typeFilter === type
                               ? type === "CAPEX"
                                 ? "bg-purple-600 text-white"
                                 : type === "OPEX"
                                   ? "bg-green-600 text-white"
                                   : "bg-blue-600 text-white"
-                              : "bg-white border text-gray-700"
+                              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
                           }`}
                         >
                           {type === "all" ? "All" : type}
@@ -724,7 +751,7 @@ export default function BudgetManagementPage() {
                         setDepartmentFilter(e.target.value);
                         setShowFilters(false);
                       }}
-                      className="w-full border rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="all">All Departments</option>
                       {departments.length > 0
@@ -749,7 +776,7 @@ export default function BudgetManagementPage() {
                 <div className="relative">
                   <button
                     onClick={() => setShowExportDropdown(!showExportDropdown)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all shadow-sm"
                   >
                     <FileSpreadsheet className="w-4 h-4" />
                     <span>Export Excel</span>
@@ -801,10 +828,10 @@ export default function BudgetManagementPage() {
                   )}
                 </div>
 
-                {/* Add Budget Button - DIUBAH KE ROUTER PUSH */}
+                {/* Add Budget Button */}
                 <button
                   onClick={handleAddClick}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-600 text-white px-4 py-2.5 rounded-lg text-sm transition-all"
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2.5 rounded-lg text-sm transition-all shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Add Budget</span>
@@ -814,10 +841,10 @@ export default function BudgetManagementPage() {
                 {/* TOMBOL SELECT */}
                 <button
                   onClick={toggleSelectMode}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all shadow-sm ${
                     selectMode
                       ? "bg-orange-600 text-white hover:bg-orange-700"
-                      : "bg-gray-600 text-white hover:bg-gray-600"
+                      : "bg-gray-600 text-white hover:bg-gray-700"
                   }`}
                 >
                   <svg
@@ -849,7 +876,7 @@ export default function BudgetManagementPage() {
                     onClick={() => setViewMode("list")}
                     className={`p-2.5 ${
                       viewMode === "list"
-                        ? "bg-gray-100 text-blue-600"
+                        ? "bg-blue-100 text-blue-600"
                         : "bg-white text-gray-600 hover:bg-gray-50"
                     } transition-colors`}
                     title="List View"
@@ -860,7 +887,7 @@ export default function BudgetManagementPage() {
                     onClick={() => setViewMode("grid")}
                     className={`p-2.5 ${
                       viewMode === "grid"
-                        ? "bg-gray-100 text-blue-600"
+                        ? "bg-blue-100 text-blue-600"
                         : "bg-white text-gray-600 hover:bg-gray-50"
                     } transition-colors border-l border-gray-300`}
                     title="Grid View"
@@ -874,7 +901,7 @@ export default function BudgetManagementPage() {
                   <>
                     <button
                       onClick={handleSelectAll}
-                      className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all"
+                      className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-all shadow-sm"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -910,7 +937,7 @@ export default function BudgetManagementPage() {
 
                     <button
                       onClick={handleBulkEdit}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all"
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-blue-700 transition-all shadow-sm"
                     >
                       <Edit className="w-4 h-4" />
                       <span className="hidden sm:inline">Edit Selected ({selectedBudgets.length})</span>
@@ -919,7 +946,7 @@ export default function BudgetManagementPage() {
 
                     <button
                       onClick={handleBulkDelete}
-                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all"
+                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-red-700 transition-all shadow-sm"
                     >
                       <Trash2 className="w-4 h-4" />
                       <span className="hidden sm:inline">Delete Selected ({selectedBudgets.length})</span>
@@ -936,7 +963,7 @@ export default function BudgetManagementPage() {
             {budgets.length === 0 ? (
               <div className="py-16 text-center">
                 <div className="max-w-md mx-auto">
-                  <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <Box className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <h3 className="text-gray-700 font-medium text-base mb-1">
                     No budget available
                   </h3>
@@ -945,7 +972,7 @@ export default function BudgetManagementPage() {
                   </p>
                   <button
                     onClick={handleAddClick}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2 text-xs transition-colors"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2 text-xs transition-colors shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add First Budget
@@ -976,12 +1003,12 @@ export default function BudgetManagementPage() {
                 </div>
               </div>
             ) : viewMode === "grid" ? (
-              /* GRID VIEW */
+              /* GRID VIEW - gaya scanning */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                 {filteredBudgets.map((budget) => (
                   <div
                     key={budget.id}
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-3 md:p-4 hover:shadow-sm transition-shadow"
+                    className="bg-white border border-gray-200 rounded-xl p-3 md:p-4 hover:shadow-md transition-shadow"
                   >
                     {/* HEADER dengan checkbox jika select mode */}
                     <div className="flex justify-between items-start mb-3">
@@ -996,18 +1023,24 @@ export default function BudgetManagementPage() {
                         </div>
                       )}
                       <div className="flex items-center gap-2 flex-1">
-                        <div className="p-1.5 md:p-2 rounded-lg bg-blue-100">
+                        <div className={`p-1.5 md:p-2 rounded-lg ${
+                          budget.budget_type === "CAPEX" ? "bg-purple-100" : "bg-green-100"
+                        }`}>
                           {budget.budget_type === "CAPEX" ? (
-                            <Calendar className="w-5 h-5 text-blue-600" />
+                            <Cpu className="w-5 h-5 text-purple-600" />
                           ) : (
-                            <Server className="w-5 h-5 text-blue-600" />
+                            <Cable className="w-5 h-5 text-green-600" />
                           )}
                         </div>
                         <div className="max-w-[140px] md:max-w-[160px] flex-1">
                           <h4 className="font-medium text-gray-900 truncate text-sm">
                             {budget.budget_name}
                           </h4>
-                          <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                          <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                            budget.budget_type === "CAPEX" 
+                              ? "bg-purple-100 text-purple-700" 
+                              : "bg-green-100 text-green-700"
+                          }`}>
                             {budget.budget_type}
                           </span>
                         </div>
@@ -1018,10 +1051,11 @@ export default function BudgetManagementPage() {
                     <div className="space-y-2">
                       {/* Department */}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Building className="w-3 h-3 mr-1" />
                           Department
                         </span>
-                        <span className="text-xs font-medium text-gray-900">
+                        <span className="text-xs font-medium text-gray-900 truncate max-w-[120px]">
                           {budget.department_name}
                         </span>
                       </div>
@@ -1029,7 +1063,10 @@ export default function BudgetManagementPage() {
                       {/* Budget Code */}
                       {budget.budget_code && (
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">Code</span>
+                          <span className="text-xs text-gray-500 flex items-center">
+                            <Hash className="w-3 h-3 mr-1" />
+                            Code
+                          </span>
                           <span className="text-xs font-medium text-gray-900">
                             {budget.budget_code}
                           </span>
@@ -1038,7 +1075,10 @@ export default function BudgetManagementPage() {
 
                       {/* Total */}
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Total</span>
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          Total
+                        </span>
                         <span className="text-xs font-bold text-gray-900">
                           {formatBudgetCurrency(
                             budget.total_amount,
@@ -1084,7 +1124,7 @@ export default function BudgetManagementPage() {
                       {budget.budget_owner && (
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500">Owner</span>
-                          <span className="text-xs font-medium text-gray-900">
+                          <span className="text-xs font-medium text-gray-900 truncate max-w-[120px]">
                             {budget.budget_owner}
                           </span>
                         </div>
@@ -1096,8 +1136,8 @@ export default function BudgetManagementPage() {
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
                             budget.is_active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-700"
                           }`}
                         >
                           {budget.is_active ? (
@@ -1115,8 +1155,9 @@ export default function BudgetManagementPage() {
                       </div>
 
                       {/* Fiscal Year */}
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Calendar className="w-3 h-3 mr-1" />
                           Fiscal Year
                         </span>
                         <span className="text-xs font-medium text-gray-900">
@@ -1125,25 +1166,25 @@ export default function BudgetManagementPage() {
                       </div>
                     </div>
 
-                    {/* ACTION BUTTONS - DIUBAH KE ROUTER PUSH UNTUK EDIT */}
-                    <div className="flex justify-end items-center gap-1 mt-2 pt-2 border-t border-gray-200">
+                    {/* ACTION BUTTONS */}
+                    <div className="flex justify-end items-center gap-1 mt-2 pt-2 border-t border-gray-100">
                       <button
                         onClick={() => handleViewDetails(budget)}
-                        className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="View Budget Details"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleEditClick(budget.id)}
-                        className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Edit Budget"
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(budget)}
-                        className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Delete Budget"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1153,7 +1194,7 @@ export default function BudgetManagementPage() {
                 ))}
               </div>
             ) : (
-              /* LIST VIEW */
+              /* LIST VIEW - gaya scanning dengan tabel modern */
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1178,73 +1219,73 @@ export default function BudgetManagementPage() {
                         Code
                       </th>
                       <th
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "total_amount", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-end gap-1">
                           Total
                           {sorting[0]?.id === "total_amount" &&
                             (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
+                              <ArrowDown className="w-3 h-3" />
                             ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
+                              <ArrowUp className="w-3 h-3" />
                             ))}
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "reserved_amount", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-end gap-1">
                           Reserved
                           {sorting[0]?.id === "reserved_amount" &&
                             (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
+                              <ArrowDown className="w-3 h-3" />
                             ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
+                              <ArrowUp className="w-3 h-3" />
                             ))}
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "used_amount", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-end gap-1">
                           Used
                           {sorting[0]?.id === "used_amount" &&
                             (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
+                              <ArrowDown className="w-3 h-3" />
                             ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
+                              <ArrowUp className="w-3 h-3" />
                             ))}
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                        className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
                         onClick={() =>
                           setSorting([{ id: "remaining_amount", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-end gap-1">
                           Remaining
                           {sorting[0]?.id === "remaining_amount" &&
                             (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
+                              <ArrowDown className="w-3 h-3" />
                             ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
+                              <ArrowUp className="w-3 h-3" />
                             ))}
                         </div>
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Department
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Owner
                       </th>
                       <th
@@ -1253,13 +1294,13 @@ export default function BudgetManagementPage() {
                           setSorting([{ id: "fiscal_year", desc: false }])
                         }
                       >
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-1">
                           Fiscal Year
                           {sorting[0]?.id === "fiscal_year" &&
                             (sorting[0]?.desc ? (
-                              <ArrowDown className="w-3 h-3 ml-1" />
+                              <ArrowDown className="w-3 h-3" />
                             ) : (
-                              <ArrowUp className="w-3 h-3 ml-1" />
+                              <ArrowUp className="w-3 h-3" />
                             ))}
                         </div>
                       </th>
@@ -1271,11 +1312,11 @@ export default function BudgetManagementPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200 text-center">
+                  <tbody className="bg-white divide-y divide-gray-200">
                     {filteredBudgets.map((budget) => (
-                      <tr key={budget.id} className="hover:bg-gray-50">
+                      <tr key={budget.id} className="hover:bg-gray-50 transition">
                         {selectMode && (
-                          <td className="px-2 py-3">
+                          <td className="px-2 py-3 text-center">
                             <input
                               type="checkbox"
                               checked={selectedBudgets.includes(budget.id)}
@@ -1284,17 +1325,19 @@ export default function BudgetManagementPage() {
                             />
                           </td>
                         )}
-                        <td className="px-4 py-3 text-left">
+                        <td className="px-4 py-3">
                           <div className="flex items-center">
-                            <div className="p-1.5 rounded-lg mr-2 bg-blue-100">
+                            <div className={`p-1.5 rounded-lg mr-2 ${
+                              budget.budget_type === "CAPEX" ? "bg-purple-100" : "bg-green-100"
+                            }`}>
                               {budget.budget_type === "CAPEX" ? (
-                                <Calendar className="w-4 h-4 text-blue-600" />
+                                <Cpu className="w-4 h-4 text-purple-600" />
                               ) : (
-                                <Server className="w-4 h-4 text-blue-600" />
+                                <Cable className="w-4 h-4 text-green-600" />
                               )}
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
                                 {budget.budget_name}
                               </div>
                               {budget.description && (
@@ -1305,88 +1348,96 @@ export default function BudgetManagementPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-gray-600">
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                            budget.budget_type === "CAPEX"
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-green-100 text-green-700"
+                          }`}>
                             {budget.budget_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-gray-600">
-                            {budget.budget_code || "-"}
-                          </span>
+                        <td className="px-4 py-3 text-center text-sm text-gray-600">
+                          {budget.budget_code || "-"}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
                           {formatBudgetCurrency(
                             budget.total_amount,
                             budget.currency,
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-yellow-600">
+                        <td className="px-4 py-3 text-right text-sm font-medium text-yellow-600">
                           {formatBudgetCurrency(
                             budget.reserved_amount,
                             budget.currency,
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-blue-600">
+                        <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">
                           {formatBudgetCurrency(
                             budget.used_amount,
                             budget.currency,
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-green-600">
+                        <td className="px-4 py-3 text-right text-sm font-medium text-green-600">
                           {formatBudgetCurrency(
                             budget.remaining_amount,
                             budget.currency,
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-left">
                           <span className="text-sm text-gray-600">
                             {budget.department_name}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-left">
                           <span className="text-sm text-gray-600">
                             {budget.budget_owner || "-"}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <span className="text-sm text-gray-600">
                             {budget.fiscal_year}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          {budget.is_active ? (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Inactive
-                            </span>
-                          )}
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                            budget.is_active
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}>
+                            {budget.is_active ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </span>
                         </td>
-                        {/* Actions - DIUBAH KE ROUTER PUSH UNTUK EDIT */}
-                        <td className="px-4 py-3">
+                        {/* Actions */}
+                        <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => handleViewDetails(budget)}
-                              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="View Budget Details"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleEditClick(budget.id)}
-                              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Edit Budget"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(budget)}
-                              className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete Budget"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1426,6 +1477,7 @@ export default function BudgetManagementPage() {
             -apple-system,
             sans-serif;
           background: white;
+          border-radius: 1rem !important;
         }
         .swal2-title {
           color: #111827;
