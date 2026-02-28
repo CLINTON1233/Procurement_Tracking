@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const [budgets, setBudgets] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [recentBudgets, setRecentBudgets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [departmentChartData, setDepartmentChartData] = useState([]);
 
@@ -80,7 +80,6 @@ export default function DashboardPage() {
   }, []);
 
   const fetchDashboardData = async () => {
-    setLoading(true);
     try {
       const budgetsData = await budgetService.getAllBudgets();
       setBudgets(budgetsData);
@@ -153,7 +152,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -243,16 +241,6 @@ export default function DashboardPage() {
       </div>
     </Link>
   );
-
-  if (loading) {
-    return (
-      <LayoutDashboard activeMenu={0}>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-        </div>
-      </LayoutDashboard>
-    );
-  }
 
   return (
     <LayoutDashboard activeMenu={0}>
@@ -436,10 +424,10 @@ export default function DashboardPage() {
                     borderRadius: "0.5rem",
                     padding: "0.75rem",
                     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    color: "#4b5563", 
+                    color: "#4b5563",
                   }}
                   labelStyle={{
-                    color: "#4b5563", 
+                    color: "#4b5563",
                     fontWeight: 400,
                     marginBottom: "0.25rem",
                   }}
@@ -523,11 +511,10 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          budget.budget_type === "CAPEX"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${budget.budget_type === "CAPEX"
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-green-100 text-green-800"
+                          }`}
                       >
                         {budget.budget_type}
                       </span>
@@ -603,11 +590,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      budget.budget_type === "CAPEX"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${budget.budget_type === "CAPEX"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-green-100 text-green-800"
+                      }`}
                   >
                     {budget.budget_type}
                   </span>
@@ -622,11 +608,10 @@ export default function DashboardPage() {
                   <div>
                     <span className="text-gray-500">Remaining:</span>
                     <span
-                      className={`ml-2 font-medium ${
-                        budget.remaining_amount < budget.total_amount * 0.2
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
+                      className={`ml-2 font-medium ${budget.remaining_amount < budget.total_amount * 0.2
+                        ? "text-red-600"
+                        : "text-green-600"
+                        }`}
                     >
                       {formatRupiah(budget.remaining_amount)}
                     </span>
@@ -684,9 +669,9 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold text-gray-800 mt-2">
                 {stats.total_amount > 0
                   ? (
-                      (stats.total_remaining / stats.total_amount) *
-                      100
-                    ).toFixed(1)
+                    (stats.total_remaining / stats.total_amount) *
+                    100
+                  ).toFixed(1)
                   : 0}
                 %
               </div>

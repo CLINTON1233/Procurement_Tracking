@@ -14,6 +14,7 @@ export const verifyPortalToken = async (token) => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({ token }),
       }
     );
@@ -22,6 +23,20 @@ export const verifyPortalToken = async (token) => {
   } catch (error) {
     console.error("Error verifying portal token:", error);
     throw error;
+  }
+};
+
+export const checkPortalSession = async () => {
+  try {
+    const response = await fetch(`${PORTAL_API_URL}/users/check-session`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error checking portal session:", error);
+    return { authenticated: false };
   }
 };
 
@@ -56,15 +71,15 @@ export const API_ENDPOINTS = {
   BUDGET_CREATE: `${API_BASE_URL}/api/budget/create`,
   BUDGET_UPDATE: (id) => `${API_BASE_URL}/api/budget/update/${id}`,
   BUDGET_DELETE: (id) => `${API_BASE_URL}/api/budget/delete/${id}`,
-  
+
   // Budget Requests
   REQUESTS_LIST: `${API_BASE_URL}/api/budget/requests`,
   REQUEST_CREATE: `${API_BASE_URL}/api/budget/request/create`,
   REQUEST_SUBMIT: (id) => `${API_BASE_URL}/api/budget/request/submit/${id}`,
   REQUEST_DELETE: (id) => `${API_BASE_URL}/api/budget/request/delete/${id}`,
   REQUEST_CHOOSE_SRMR: (id, tipe) => `${API_BASE_URL}/api/budget/request/choose/${id}/${tipe}`,
-  
-   // Revisions
+
+  // Revisions
   REVISIONS_LIST: `${API_BASE_URL}/api/budget/revisions/list`,
   REVISION_CREATE: `${API_BASE_URL}/api/budget/revision/create`,
 
@@ -76,6 +91,7 @@ export const API_ENDPOINTS = {
   DEPARTMENTS_SEED: `${API_BASE_URL}/api/departments/seed`,
 };
 
+// Fungsi apiFetch yang sudah include credentials
 export const apiFetch = async (url, options = {}) => {
   try {
     const response = await fetch(url, {
@@ -83,6 +99,7 @@ export const apiFetch = async (url, options = {}) => {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Penting: untuk mengirim cookie
       ...options,
     });
 
