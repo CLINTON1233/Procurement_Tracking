@@ -27,8 +27,8 @@ export default function AuthCallbackPage() {
           localStorage.setItem("budget_token", token);
           localStorage.setItem("budget_login_time", Date.now().toString());
 
-          // Cookie untuk middleware (expire 30 menit)
-          const expireTime = new Date(Date.now() + 30 * 60 * 1000);
+          // Cookie untuk middleware (expire 24 jam)
+          const expireTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
           document.cookie = `budget_token=${token}; path=/; expires=${expireTime.toUTCString()}`;
           document.cookie = `budget_user=${encodeURIComponent(
             JSON.stringify(data.user)
