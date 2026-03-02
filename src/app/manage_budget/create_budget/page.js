@@ -542,7 +542,7 @@ export default function CreateBudgetPage() {
                     className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
                   >
                     <Save className="w-4 h-4" />
-                    {loading ? "Saving..." : `Save ${budgetEntries.length} Budget(s)`}
+                    {loading ? "Saving..." : `Save ${budgetEntries.length} Budgets`}
                   </button>
                 </div>
               </div>

@@ -3,707 +3,615 @@
 import { useState, useEffect } from "react";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import {
-  Wallet,
-  Clock,
-  CheckCircle,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Filter,
-  FileText,
-  ChevronDown,
-  Calendar,
-  Building,
-  BarChart3,
-  PieChart,
-  Eye,
-  AlertTriangle,
-  Home,
-  Plus,
-  RefreshCw,
-  Users,
-  Briefcase,
-  Layers,
+  Wallet, Clock, CheckCircle, DollarSign, TrendingUp, TrendingDown,
+  FileText, Calendar, Building, BarChart3, Eye, AlertTriangle, Home,
+  Plus, Users, Briefcase, Layers, RotateCcw, Package, Server, Send,
+  XCircle, RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [stats, setStats] = useState({
-    total_budgets: 0,
-    total_amount: 0,
-    total_remaining: 0,
-    total_reserved: 0,
-    total_used: 0,
-    capex_count: 0,
-    opex_count: 0,
-    pending_requests: 0,
-    approved_requests: 0,
-    budget_used_percentage: 0,
-  });
-
-  const [budgets, setBudgets] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [recentBudgets, setRecentBudgets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [departmentChartData, setDepartmentChartData] = useState([]);
-
-  const activityData = [
-    { name: "Jan", Budget: 85, Used: 65 },
-    { name: "Feb", Budget: 90, Used: 70 },
-    { name: "Mar", Budget: 95, Used: 75 },
-    { name: "Apr", Budget: 88, Used: 68 },
-    { name: "May", Budget: 92, Used: 72 },
-    { name: "Jun", Budget: 96, Used: 78 },
-  ];
-
-  const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#6366f1", "#ec4899"];
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const budgetsData = await budgetService.getAllBudgets();
-      setBudgets(budgetsData);
-
-      const deptsData = await departmentService.getAllDepartments();
-      setDepartments(deptsData);
-
-      const statsData = await budgetService.getDashboardStats();
-      const totalAmount = budgetsData.reduce(
-        (sum, b) => sum + Number(b.total_amount || 0),
-        0,
-      );
-      const totalRemaining = budgetsData.reduce(
-        (sum, b) => sum + Number(b.remaining_amount || 0),
-        0,
-      );
-      const totalReserved = budgetsData.reduce(
-        (sum, b) => sum + Number(b.reserved_amount || 0),
-        0,
-      );
-      const totalUsed = budgetsData.reduce(
-        (sum, b) => sum + Number(b.used_amount || 0),
-        0,
-      );
-      const capexCount = budgetsData.filter(
-        (b) => b.budget_type === "CAPEX",
-      ).length;
-      const opexCount = budgetsData.filter(
-        (b) => b.budget_type === "OPEX",
-      ).length;
-
-      const budgetUsedPercentage =
-        totalAmount > 0 ? (totalUsed / totalAmount) * 100 : 0;
-
-      setStats({
-        total_budgets: budgetsData.length,
-        total_amount: totalAmount,
-        total_remaining: totalRemaining,
-        total_reserved: totalReserved,
-        total_used: totalUsed,
-        capex_count: capexCount,
-        opex_count: opexCount,
-        pending_requests: statsData?.pending_requests || 0,
-        approved_requests: statsData?.approved_requests || 0,
-        budget_used_percentage: budgetUsedPercentage,
-      });
-
-      const sorted = [...budgetsData]
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 5);
-      setRecentBudgets(sorted);
-
-      const deptMap = new Map();
-      budgetsData.forEach((budget) => {
-        const dept = budget.department_name;
-        const amount = Number(budget.total_amount || 0);
-        if (deptMap.has(dept)) {
-          deptMap.set(dept, deptMap.get(dept) + amount);
-        } else {
-          deptMap.set(dept, amount);
-        }
-      });
-
-      const deptChartData = Array.from(deptMap.entries())
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-
-      setDepartmentChartData(deptChartData);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-  };
-
-  const formatRupiah = (number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(number || 0);
-  };
-
-  const formatCompactNumber = (number) => {
-    if (number >= 1000000000) {
-      return (number / 1000000000).toFixed(1) + "B";
-    }
-    if (number >= 1000000) {
-      return (number / 1000000).toFixed(1) + "M";
-    }
-    if (number >= 1000) {
-      return (number / 1000).toFixed(1) + "K";
-    }
-    return number.toString();
-  };
-
-  const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    color,
-    bgColor,
-    trend,
-    trendValue,
-    subtitle,
-  }) => (
-    <div
-      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all p-5 flex flex-col border-l-4"
-      style={{ borderColor: color.replace("text-", "").replace("600", "600") }}
-    >
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm text-gray-500 font-medium mb-1">{title}</p>
-          <div className="text-2xl font-bold text-gray-800">{value}</div>
-          {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
-        </div>
-        <div className={`${bgColor} p-3 rounded-lg`}>
-          <Icon className={`w-6 h-6 ${color}`} />
-        </div>
-      </div>
-      {trend && (
-        <div className="flex items-center mt-3 text-xs font-semibold">
-          {trend === "up" ? (
-            <>
-              <TrendingUp className="w-3 h-3 mr-1 text-green-600" />
-              <span className="text-green-600">
-                {trendValue} dari bulan lalu
-              </span>
-            </>
-          ) : trend === "down" ? (
-            <>
-              <TrendingDown className="w-3 h-3 mr-1 text-red-600" />
-              <span className="text-red-600">{trendValue} dari bulan lalu</span>
-            </>
-          ) : null}
-        </div>
-      )}
+// ─── Inline Donut ─────────────────────────────────────────────────────────────
+const InlineDonut = ({ pct, color, size = 110, stroke = 12 }) => {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const off = circ * (1 - Math.min(pct, 100) / 100);
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ position: "absolute", transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+      </svg>
+      <span style={{ fontSize: 22, fontWeight: 700, color: "#111827", zIndex: 1 }}>{pct.toFixed(0)}%</span>
     </div>
   );
+};
 
-  const QuickAction = ({ title, href, icon: Icon, color, description }) => (
-    <Link href={href}>
-      <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all p-5 cursor-pointer border border-gray-100 hover:border-blue-200">
-        <div className="flex items-center space-x-4">
-          <div className={`${color} p-3 rounded-xl`}>
-            <Icon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-800">{title}</h3>
-            <p className="text-xs text-gray-500 mt-1">{description}</p>
-          </div>
-        </div>
+// ─── Horizontal Stacked Bar ───────────────────────────────────────────────────
+const StackedBar = ({ segments }) => (
+  <div style={{ display: "flex", borderRadius: 99, overflow: "hidden", height: 28, width: "100%" }}>
+    {segments.map((s, i) => (
+      <div key={i} style={{ width: `${s.pct}%`, background: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", transition: "all 0.3s" }}>
+        {s.pct > 12 ? `${s.pct.toFixed(0)}%` : ""}
       </div>
-    </Link>
-  );
+    ))}
+  </div>
+);
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [budgets, setBudgets] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [revisions, setRevisions] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [recentBudgets, setRecentBudgets] = useState([]);
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [recentRevisions, setRecentRevisions] = useState([]);
+  const [departmentChartData, setDepartmentChartData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+
+  const [stats, setStats] = useState({
+    total_budgets: 0, total_amount: 0, total_remaining: 0, total_reserved: 0, total_used: 0,
+    capex_count: 0, opex_count: 0, active_budgets: 0, budget_used_percentage: 0,
+    total_requests: 0, draft_requests: 0, submitted_requests: 0, approved_requests: 0,
+    rejected_requests: 0, waiting_requests: 0, item_requests: 0, service_requests: 0,
+    total_request_amount: 0, total_revisions: 0, total_reduction: 0,
+    capex_revisions: 0, opex_revisions: 0,
+  });
+
+  useEffect(() => { fetchAllDashboardData(); }, []);
+
+  const fetchAllDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [budgetsData, requestsData, revisionsData, deptsData] = await Promise.all([
+        budgetService.getAllBudgets(),
+        budgetService.getAllRequests(),
+        budgetService.getAllRevisions(),
+        departmentService.getAllDepartments(),
+      ]);
+      setBudgets(budgetsData); setRequests(requestsData);
+      setRevisions(revisionsData); setDepartments(deptsData);
+      calculateAllStats(budgetsData, requestsData, revisionsData);
+      setRecentItems(budgetsData, requestsData, revisionsData);
+      prepareChartData(budgetsData, requestsData);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefreshing(false); }
+  };
+
+  const calculateAllStats = (b, r, rv) => {
+    const totalAmount = b.reduce((s, x) => s + Number(x.total_amount || 0), 0);
+    const totalRemaining = b.reduce((s, x) => s + Number(x.remaining_amount || 0), 0);
+    const totalReserved = b.reduce((s, x) => s + Number(x.reserved_amount || 0), 0);
+    const totalUsed = b.reduce((s, x) => s + Number(x.used_amount || 0), 0);
+    const totalRequestAmount = r.reduce((s, x) => s + Number(x.estimated_total_idr || 0), 0);
+    const totalReduction = rv.reduce((s, x) => s + (Number(x.original_amount) - Number(x.new_amount)), 0);
+    setStats({
+      total_budgets: b.length, total_amount: totalAmount, total_remaining: totalRemaining,
+      total_reserved: totalReserved, total_used: totalUsed,
+      capex_count: b.filter(x => x.budget_type === "CAPEX").length,
+      opex_count: b.filter(x => x.budget_type === "OPEX").length,
+      active_budgets: b.filter(x => x.is_active).length,
+      budget_used_percentage: totalAmount > 0 ? (totalUsed / totalAmount) * 100 : 0,
+      total_requests: r.length,
+      draft_requests: r.filter(x => x.status === "DRAFT").length,
+      submitted_requests: r.filter(x => x.status === "SUBMITTED").length,
+      approved_requests: r.filter(x => x.status === "BUDGET_APPROVED").length,
+      rejected_requests: r.filter(x => x.status === "BUDGET_REJECTED").length,
+      waiting_requests: r.filter(x => x.status === "WAITING_SR_MR").length,
+      item_requests: r.filter(x => x.request_type === "ITEM").length,
+      service_requests: r.filter(x => x.request_type === "SERVICE").length,
+      total_request_amount: totalRequestAmount,
+      total_revisions: rv.length,
+      total_reduction: totalReduction,
+      capex_revisions: rv.filter(x => b.find(bd => bd.id === x.budget_id)?.budget_type === "CAPEX").length,
+      opex_revisions: rv.filter(x => b.find(bd => bd.id === x.budget_id)?.budget_type === "OPEX").length,
+    });
+  };
+
+  const setRecentItems = (b, r, rv) => {
+    setRecentBudgets([...b].sort((a, x) => new Date(x.created_at) - new Date(a.created_at)).slice(0, 5));
+    setRecentRequests([...r].sort((a, x) => new Date(x.created_at) - new Date(a.created_at)).slice(0, 5));
+    setRecentRevisions([...rv].sort((a, x) => new Date(x.created_at) - new Date(a.created_at)).slice(0, 5));
+  };
+
+  const prepareChartData = (b, r) => {
+    const deptMap = new Map();
+    b.forEach(bd => {
+      const d = bd.department_name; const v = Number(bd.total_amount || 0);
+      deptMap.set(d, (deptMap.get(d) || 0) + v);
+    });
+    setDepartmentChartData(
+      Array.from(deptMap.entries()).map(([name, value]) => ({ name, value }))
+        .sort((a, x) => x.value - a.value).slice(0, 6)
+    );
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthly = months.map((m, i) => {
+      const monthReqs = r.filter(rq => new Date(rq.created_at).getMonth() === i);
+      const approved = monthReqs.filter(rq => rq.status === "BUDGET_APPROVED")
+        .reduce((s, rq) => s + Number(rq.estimated_total_idr || 0), 0);
+      const total = monthReqs.reduce((s, rq) => s + Number(rq.estimated_total_idr || 0), 0);
+      return { month: m, Total: Math.round(total / 1e6), Approved: Math.round(approved / 1e6) };
+    });
+    setMonthlyData(monthly);
+  };
+
+  const fmt = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
+  const fmtCompact = (n) => {
+    if (n >= 1e12) return (n / 1e12).toFixed(1) + "T";
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+    return (n || 0).toString();
+  };
+  const fmtDate = (d) => {
+    if (!d) return "-";
+    try { return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); }
+    catch { return "-"; }
+  };
+
+  const getStatusBadge = (status) => {
+    const map = {
+      DRAFT: { bg: "#f3f4f6", text: "#6b7280", label: "Draft" },
+      SUBMITTED: { bg: "#dbeafe", text: "#1d4ed8", label: "Submitted" },
+      BUDGET_APPROVED: { bg: "#d1fae5", text: "#065f46", label: "Approved" },
+      BUDGET_REJECTED: { bg: "#fee2e2", text: "#b91c1c", label: "Rejected" },
+      WAITING_SR_MR: { bg: "#ede9fe", text: "#6d28d9", label: "Waiting SR/MR" },
+    };
+    return map[status] || { bg: "#f3f4f6", text: "#6b7280", label: status };
+  };
+
+  const opexTotal = stats.total_requests > 0 ? stats.total_requests : 1;
+  const draftPct = Math.round((stats.draft_requests / opexTotal) * 100);
+  const submittedPct = Math.round((stats.submitted_requests / opexTotal) * 100);
+  const approvedPct = Math.round((stats.approved_requests / opexTotal) * 100);
+  const rejectedPct = Math.max(0, 100 - draftPct - submittedPct - approvedPct);
+
+  const remainingPct = stats.total_amount > 0 ? (stats.total_remaining / stats.total_amount) * 100 : 0;
+  const usedPct = stats.budget_used_percentage;
+  const reservedPct = stats.total_amount > 0 ? (stats.total_reserved / stats.total_amount) * 100 : 0;
+  const approvalRate = stats.total_requests > 0 ? (stats.approved_requests / stats.total_requests) * 100 : 0;
+  const capexRatio = stats.total_budgets > 0 ? (stats.capex_count / stats.total_budgets) * 100 : 0;
+
+  const incomeRows = [
+    { label: "Total Budget", value: stats.total_amount },
+    { label: "Used Amount", value: stats.total_used },
+    { label: "Reserved Amount", value: stats.total_reserved },
+    { label: "Remaining Budget", value: stats.total_remaining, bold: true, color: "#059669" },
+    { label: "Total Requests", value: stats.total_request_amount },
+    { label: "  • Draft", value: stats.draft_requests, isCount: true },
+    { label: "  • Submitted", value: stats.submitted_requests, isCount: true },
+    { label: "  • Approved", value: stats.approved_requests, isCount: true, color: "#059669" },
+    { label: "  • Rejected", value: stats.rejected_requests, isCount: true, color: "#dc2626" },
+    { label: "  • Waiting", value: stats.waiting_requests, isCount: true, color: "#7c3aed" },
+    { label: "Total Revisions", value: stats.total_revisions, isCount: true },
+    { label: "Budget Reduction", value: stats.total_reduction, bold: true, color: "#dc2626" },
+    { label: "Active Budgets", value: stats.active_budgets, isCount: true, bold: true, color: "#1d4ed8" },
+  ];
+
+  if (loading) {
+    return (
+      <LayoutDashboard activeMenu={0}>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
+        </div>
+      </LayoutDashboard>
+    );
+  }
+
+  /* ── shared inline styles ── */
+  const card = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb" };
+  const sectionTitle = { fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 };
+  const tblTh = { padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", background: "#f9fafb", whiteSpace: "nowrap" };
+  const tblTd = { padding: "14px 20px", fontSize: 14, color: "#374151", borderBottom: "1px solid #f3f4f6" };
+  const badge = (bg, color) => ({ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: bg, color });
 
   return (
     <LayoutDashboard activeMenu={0}>
-      <div className="space-y-6 md:space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 14 }}>
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className="text-2xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Home className="w-6 h-6 text-blue-600" />
-              Home
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Monitor and manage Capex/Opex budgets across all departments
-            </p>
-          </div>
-        </div>
-
-        {/* Statistik Cepat */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Budgets"
-            value={stats.total_budgets}
-            icon={Layers}
-            color="text-blue-600"
-            bgColor="bg-blue-50"
-            trend="up"
-            trendValue="+2"
-            subtitle={`${stats.capex_count} CAPEX • ${stats.opex_count} OPEX`}
-          />
-          <StatCard
-            title="Total Amount"
-            value={formatRupiah(stats.total_amount).replace("Rp", "")}
-            icon={DollarSign}
-            color="text-green-600"
-            bgColor="bg-green-50"
-            subtitle="Overall budget allocation"
-          />
-          <StatCard
-            title="Remaining"
-            value={formatRupiah(stats.total_remaining).replace("Rp", "")}
-            icon={Wallet}
-            color="text-emerald-600"
-            bgColor="bg-emerald-50"
-            subtitle="Available to use"
-          />
-          <StatCard
-            title="Reserved / Used"
-            value={
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-600">
-                  {formatCompactNumber(stats.total_reserved)}
-                </span>
-                <span className="text-gray-400">/</span>
-                <span className="text-blue-600">
-                  {formatCompactNumber(stats.total_used)}
-                </span>
-              </div>
-            }
-            icon={BarChart3}
-            color="text-purple-600"
-            bgColor="bg-purple-50"
-            subtitle="Allocated vs Spent"
-          />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction
-            title="Add Budget"
-            href="/budget_management"
-            icon={Plus}
-            color="bg-blue-600"
-            description="Create new CAPEX/OPEX budget"
-          />
-          <QuickAction
-            title="Budget List"
-            href="/budget_management"
-            icon={Wallet}
-            color="bg-green-600"
-            description="View and manage all budgets"
-          />
-          <QuickAction
-            title="Approval Queue"
-            href="/approval"
-            icon={Clock}
-            color="bg-yellow-600"
-            description={`${stats.pending_requests} pending requests`}
-          />
-          <QuickAction
-            title="SR/MR Selection"
-            href="/selection"
-            icon={CheckCircle}
-            color="bg-purple-600"
-            description={`${stats.approved_requests} ready for selection`}
-          />
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 text-blue-600 mr-2" />
-              Budget Usage
-            </h2>
-            <div className="flex flex-col items-center justify-center h-[200px]">
-              <div className="relative w-40 h-40">
-                <svg className="w-full h-full" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="12"
-                  />
-
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="12"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 40}`}
-                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - stats.budget_used_percentage / 100)}`}
-                    transform="rotate(-90 50 50)"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-gray-800">
-                    {stats.budget_used_percentage.toFixed(1)}%
-                  </span>
-                  <span className="text-xs text-gray-500">Used</span>
-                </div>
-              </div>
-              <div className="flex gap-4 mt-4 text-sm font-normal">
-                <div className="flex items-center text-blue-600">
-                  <span className="w-3 h-3 rounded-full bg-blue-600 mr-2"></span>
-                  <span>Used: {formatCompactNumber(stats.total_used)}</span>
-                </div>
-
-                <div className="flex items-center text-green-600">
-                  <span className="w-3 h-3 rounded-full bg-green-600 mr-2"></span>
-                  <span>
-                    Remaining: {formatCompactNumber(stats.total_remaining)}
-                  </span>
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>Budget Management Dashboard</h1>
+              <span style={{ background: "#1e3a5f", color: "#fff", padding: "4px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
+                Period — {new Date().getFullYear()}
+              </span>
             </div>
+            <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>Monitor CAPEX/OPEX budgets, requests & revisions</p>
           </div>
-
-          {/* Department Budget Distribution */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <TrendingUp className="w-5 h-5 text-blue-600 mr-2" />
-              Top 5 Departments by Budget
-            </h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart
-                data={departmentChartData}
-                layout="vertical"
-                margin={{ left: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tickFormatter={(value) => formatCompactNumber(value)}
-                  tick={{ fontSize: 11, fill: "#6b7280" }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={120}
-                  tick={{ fontSize: 11, fill: "#6b7280" }}
-                />
-                <Tooltip
-                  formatter={(value) => formatRupiah(value)}
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "0.5rem",
-                    padding: "0.75rem",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    color: "#4b5563",
-                  }}
-                  labelStyle={{
-                    color: "#4b5563",
-                    fontWeight: 400,
-                    marginBottom: "0.25rem",
-                  }}
-                  itemStyle={{
-                    color: "#2563eb",
-                    fontWeight: 500,
-                  }}
-                />
-                <Bar dataKey="value" fill="#2563eb" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <button
+            onClick={() => { setRefreshing(true); fetchAllDashboardData(); }}
+            disabled={refreshing}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "#374151", cursor: "pointer" }}
+          >
+            <RefreshCw style={{ width: 16, height: 16 }} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
         </div>
 
-        {/* Recent Budgets Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-              <FileText className="w-5 h-5 text-blue-600 mr-2" />
-              Recent Budgets
-            </h2>
-            <Link
-              href="/budget_management"
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View All &rarr;
-            </Link>
-          </div>
+        {/* ── Main Layout ── */}
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
 
-          {/* Desktop View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Budget Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Remaining
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {recentBudgets.map((budget) => (
-                  <tr key={budget.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="p-1.5 rounded-lg bg-blue-100 mr-3">
-                          {budget.budget_type === "CAPEX" ? (
-                            <Building className="w-4 h-4 text-blue-600" />
-                          ) : (
-                            <Calendar className="w-4 h-4 text-blue-600" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {budget.budget_name}
-                          </div>
-                          {budget.budget_code && (
-                            <div className="text-xs text-gray-500">
-                              {budget.budget_code}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${budget.budget_type === "CAPEX"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-green-100 text-green-800"
-                          }`}
-                      >
-                        {budget.budget_type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {budget.department_name}
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium text-gray-900">
-                      {formatRupiah(budget.total_amount)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span
-                        className={
-                          budget.remaining_amount < budget.total_amount * 0.2
-                            ? "text-red-600 font-medium"
-                            : "text-green-600 font-medium"
-                        }
-                      >
-                        {formatRupiah(budget.remaining_amount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {budget.is_active ? (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => router.push(`/budget_management/`)}
-                        className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
+          {/* ══ LEFT COLUMN ══ */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+
+            {/* ── Row 1: 4 Donut KPIs ── */}
+            <div style={card}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+                {[
+                  { title: "Budget Used", pct: usedPct, color: "#2563eb", sub: `${fmtCompact(stats.total_used)} / ${fmtCompact(stats.total_amount)}` },
+                  { title: "CAPEX Ratio", pct: capexRatio, color: "#1e3a5f", sub: `${stats.capex_count} CAPEX • ${stats.opex_count} OPEX` },
+                  { title: "Approval Rate", pct: approvalRate, color: "#10b981", sub: `${stats.approved_requests} of ${stats.total_requests} requests` },
+                  { title: "Budget Health", pct: remainingPct, color: "#f59e0b", sub: `${fmtCompact(stats.total_remaining)} remaining` },
+                ].map((d, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 12px 16px", borderRight: i < 3 ? "1px solid #f3f4f6" : "none" }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", textAlign: "center", marginBottom: 12 }}>{d.title}</div>
+                    <InlineDonut pct={d.pct} color={d.color} size={115} stroke={13} />
+                    <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 10, textAlign: "center" }}>{d.sub}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            {/* ── Row 2: Bar Chart + Distribution ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20 }}>
+
+              {/* Bar Chart */}
+              <div style={{ ...card, padding: 20 }}>
+                <div style={sectionTitle}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#1e3a5f", display: "inline-block", flexShrink: 0 }} />
+                  Budget by Department
+                </div>
+                <ResponsiveContainer width="100%" height={195}>
+                  <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                      tickFormatter={v => v.length > 9 ? v.slice(0, 9) + "…" : v} />
+                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                      tickFormatter={v => fmtCompact(v)} />
+                    <Tooltip formatter={(v) => [fmtCompact(v), "Amount"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                    <Bar dataKey="value" fill="#1e3a5f" radius={[5, 5, 0, 0]} barSize={28} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Stacked Distribution */}
+              <div style={{ ...card, padding: 20 }}>
+                <div style={sectionTitle}>Request Distribution</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {[
+                    {
+                      label: "By Type",
+                      bar: [
+                        { pct: stats.total_requests > 0 ? Math.round((stats.item_requests / stats.total_requests) * 100) : 50, color: "#1e3a5f" },
+                        { pct: stats.total_requests > 0 ? Math.round((stats.service_requests / stats.total_requests) * 100) : 50, color: "#60a5fa" },
+                      ],
+                      legend: [{ label: `Item (${stats.item_requests})` }, { label: `Service (${stats.service_requests})` }],
+                    },
+                    {
+                      label: "By Status",
+                      bar: [
+                        { pct: Math.max(draftPct, 1), color: "#9ca3af" },
+                        { pct: Math.max(submittedPct, 1), color: "#2563eb" },
+                        { pct: Math.max(approvedPct, 1), color: "#10b981" },
+                        { pct: Math.max(rejectedPct, 0), color: "#ef4444" },
+                      ],
+                      legend: [{ label: `Draft (${stats.draft_requests})` }, { label: `Submitted (${stats.submitted_requests})` }, { label: `Approved (${stats.approved_requests})` }, { label: `Rejected (${stats.rejected_requests})` }],
+                      grid: true,
+                    },
+                    {
+                      label: "Budget Allocation",
+                      bar: [
+                        { pct: Math.max(Math.round(usedPct), 1), color: "#2563eb" },
+                        { pct: Math.max(Math.round(reservedPct), 1), color: "#f59e0b" },
+                        { pct: Math.max(Math.round(remainingPct), 1), color: "#10b981" },
+                      ],
+                      legend: [{ label: "Used" }, { label: "Reserved" }, { label: "Free" }],
+                    },
+                  ].map((section, si) => (
+                    <div key={si}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>{section.label}</div>
+                      <StackedBar segments={section.bar} />
+                      <div style={{ display: section.grid ? "grid" : "flex", gridTemplateColumns: section.grid ? "1fr 1fr" : undefined, justifyContent: !section.grid ? "space-between" : undefined, marginTop: 8, gap: 4, fontSize: 12, color: "#6b7280" }}>
+                        {section.legend.map((l, li) => <span key={li}>● {l.label}</span>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Row 3: Monthly Trend + Revision Stats ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20 }}>
+
+              {/* Monthly Trend */}
+              <div style={{ ...card, padding: 20 }}>
+                <div style={sectionTitle}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb", display: "inline-block", flexShrink: 0 }} />
+                  Monthly Request Trend (IDR Jt)
+                </div>
+                <ResponsiveContainer width="100%" height={185}>
+                  <LineChart data={monthlyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                    <Tooltip formatter={(v) => [`${v}M IDR`, ""]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                    <Line type="monotone" dataKey="Total" stroke="#1e3a5f" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 3" />
+                    <Line type="monotone" dataKey="Approved" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: "#2563eb" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div style={{ display: "flex", gap: 24, justifyContent: "center", marginTop: 10 }}>
+                  {[["#1e3a5f", "Total"], ["#2563eb", "Approved"]].map(([c, l]) => (
+                    <span key={l} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6b7280" }}>
+                      <span style={{ width: 20, height: 2, background: c, display: "inline-block" }} />{l}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Revision & System Stats — CLEAN, no colorful cards ── */}
+              <div style={{ ...card, padding: 20 }}>
+                <div style={sectionTitle}>Revision & System Stats</div>
+
+                {/* 4 neutral stat boxes — same style as BudgetManagement overview */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                  {[
+                    { label: "Total Revisions", value: stats.total_revisions, sub: `${stats.capex_revisions} CAPEX • ${stats.opex_revisions} OPEX` },
+                    { label: "Departments", value: departments.length, sub: "Active departments" },
+                    { label: "Active Budgets", value: stats.active_budgets, sub: `of ${stats.total_budgets} total` },
+                    { label: "Approval Rate", value: `${approvalRate.toFixed(0)}%`, sub: `${stats.approved_requests} approved` },
+                  ].map((s, i) => (
+                    <div key={i} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px" }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "#111827", lineHeight: 1 }}>{s.value}</div>
+                      <div style={{ fontSize: 13, color: "#374151", fontWeight: 600, marginTop: 5 }}>{s.label}</div>
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 3 }}>{s.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Budget Reduction Summary — simple row list */}
+                <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>Budget Reduction Summary</div>
+                  {[
+                    { label: "Total Reduction", value: fmt(stats.total_reduction), highlight: true },
+                    { label: "Avg per Revision", value: fmt(stats.total_revisions > 0 ? stats.total_reduction / stats.total_revisions : 0) },
+                    { label: "CAPEX Revisions", value: stats.capex_revisions },
+                    { label: "OPEX Revisions", value: stats.opex_revisions },
+                  ].map((row, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: i < 3 ? "1px solid #f3f4f6" : "none", fontSize: 14 }}>
+                      <span style={{ color: "#6b7280" }}>{row.label}</span>
+                      <span style={{ fontWeight: 700, color: row.highlight ? "#dc2626" : "#111827" }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Recent Budgets Table ── */}
+            <div style={{ ...card, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+                  <Wallet style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Budgets
+                </h3>
+                <Link href="/budget_management" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["Budget Name", "Type", "Department", "Total Amount", "Remaining", "Status"].map(h => (
+                        <th key={h} style={tblTh}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentBudgets.map(b => (
+                      <tr key={b.id} onClick={() => router.push("/budget_management")} style={{ cursor: "pointer" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                        onMouseLeave={e => e.currentTarget.style.background = ""}>
+                        <td style={tblTd}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 8, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {b.budget_type === "CAPEX" ? <Building style={{ width: 16, height: 16, color: "#2563eb" }} /> : <Calendar style={{ width: 16, height: 16, color: "#2563eb" }} />}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{b.budget_name}</div>
+                              {b.budget_code && <div style={{ fontSize: 12, color: "#9ca3af" }}>{b.budget_code}</div>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={tblTd}>
+                          <span style={badge(b.budget_type === "CAPEX" ? "#f3e8ff" : "#d1fae5", b.budget_type === "CAPEX" ? "#7c3aed" : "#065f46")}>
+                            {b.budget_type}
+                          </span>
+                        </td>
+                        <td style={{ ...tblTd, color: "#6b7280" }}>{b.department_name}</td>
+                        <td style={{ ...tblTd, fontWeight: 700, color: "#111827" }}>{fmt(b.total_amount)}</td>
+                        <td style={{ ...tblTd, fontWeight: 700, color: b.remaining_amount < b.total_amount * 0.2 ? "#dc2626" : "#059669" }}>
+                          {fmt(b.remaining_amount)}
+                        </td>
+                        <td style={tblTd}>
+                          {b.is_active
+                            ? <span style={badge("#d1fae5", "#065f46")}><CheckCircle style={{ width: 12, height: 12 }} />Active</span>
+                            : <span style={badge("#f3f4f6", "#6b7280")}><AlertTriangle style={{ width: 12, height: 12 }} />Inactive</span>}
+                        </td>
+                      </tr>
+                    ))}
+                    {recentBudgets.length === 0 && (
+                      <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No budgets found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── Recent Requests Table ── */}
+            <div style={{ ...card, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+                  <FileText style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Requests
+                </h3>
+                <Link href="/request_budget_list" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["Request No", "Requester", "Item", "Type", "Amount", "Status", "Date"].map(h => (
+                        <th key={h} style={tblTh}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentRequests.map(req => {
+                      const s = getStatusBadge(req.status);
+                      return (
+                        <tr key={req.id} onClick={() => router.push("/request_budget_list")} style={{ cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                          onMouseLeave={e => e.currentTarget.style.background = ""}>
+                          <td style={{ ...tblTd, fontWeight: 700, color: "#111827" }}>{req.request_no}</td>
+                          <td style={{ ...tblTd, color: "#6b7280" }}>{req.requester_name}</td>
+                          <td style={{ ...tblTd, color: "#6b7280", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.item_name}</td>
+                          <td style={tblTd}>
+                            <span style={badge(req.request_type === "ITEM" ? "#dbeafe" : "#ede9fe", req.request_type === "ITEM" ? "#1d4ed8" : "#6d28d9")}>
+                              {req.request_type === "ITEM" ? <Package style={{ width: 12, height: 12 }} /> : <Server style={{ width: 12, height: 12 }} />}
+                              {req.request_type}
+                            </span>
+                          </td>
+                          <td style={{ ...tblTd, fontWeight: 700, color: "#1d4ed8" }}>{fmt(req.estimated_total)}</td>
+                          <td style={tblTd}>
+                            <span style={badge(s.bg, s.text)}>{s.label}</span>
+                          </td>
+                          <td style={{ ...tblTd, color: "#9ca3af" }}>{fmtDate(req.created_at)}</td>
+                        </tr>
+                      );
+                    })}
+                    {recentRequests.length === 0 && (
+                      <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No requests found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── Recent Revisions Table ── */}
+            <div style={{ ...card, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+                  <RotateCcw style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Revisions
+                </h3>
+                <Link href="/revision_list" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["Budget", "Request", "Original", "New Amount", "Reduction", "Reason", "Date"].map(h => (
+                        <th key={h} style={tblTh}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentRevisions.map(rv => {
+                      const bd = budgets.find(b => b.id === rv.budget_id);
+                      const rq = requests.find(r => r.id === rv.request_id);
+                      const reduction = Number(rv.original_amount) - Number(rv.new_amount);
+                      const pct = Number(rv.original_amount) > 0
+                        ? ((reduction / Number(rv.original_amount)) * 100).toFixed(1) : "0.0";
+                      return (
+                        <tr key={rv.id} onClick={() => router.push("/revision_list")} style={{ cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                          onMouseLeave={e => e.currentTarget.style.background = ""}>
+                          <td style={tblTd}>
+                            <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{bd?.budget_name || `ID: ${rv.budget_id}`}</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af" }}>{bd?.budget_type}</div>
+                          </td>
+                          <td style={{ ...tblTd, color: "#6b7280" }}>{rq?.request_no || `ID: ${rv.request_id}`}</td>
+                          <td style={{ ...tblTd, fontWeight: 600, color: "#111827" }}>{fmt(rv.original_amount)}</td>
+                          <td style={{ ...tblTd, fontWeight: 700, color: "#1d4ed8" }}>{fmt(rv.new_amount)}</td>
+                          <td style={tblTd}>
+                            <span style={badge("#fee2e2", "#b91c1c")}>
+                              <TrendingDown style={{ width: 12, height: 12 }} />{pct}%
+                            </span>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 3 }}>({fmtCompact(reduction)})</div>
+                          </td>
+                          <td style={{ ...tblTd, color: "#6b7280", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rv.reason}</td>
+                          <td style={{ ...tblTd, color: "#9ca3af" }}>{fmtDate(rv.created_at)}</td>
+                        </tr>
+                      );
+                    })}
+                    {recentRevisions.length === 0 && (
+                      <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No revisions found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
-          {/* Mobile View */}
-          <div className="md:hidden space-y-3 p-4">
-            {recentBudgets.map((budget) => (
-              <div
-                key={budget.id}
-                className="border border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className="p-1.5 rounded-lg bg-blue-100 mr-2">
-                      {budget.budget_type === "CAPEX" ? (
-                        <Building className="w-4 h-4 text-blue-600" />
-                      ) : (
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {budget.budget_name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {budget.department_name}
-                      </div>
-                    </div>
-                  </div>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${budget.budget_type === "CAPEX"
-                      ? "bg-purple-100 text-purple-800"
-                      : "bg-green-100 text-green-800"
-                      }`}
-                  >
-                    {budget.budget_type}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-                  <div>
-                    <span className="text-gray-500">Total:</span>
-                    <span className="ml-2 font-medium text-gray-900">
-                      {formatRupiah(budget.total_amount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Remaining:</span>
-                    <span
-                      className={`ml-2 font-medium ${budget.remaining_amount < budget.total_amount * 0.2
-                        ? "text-red-600"
-                        : "text-green-600"
-                        }`}
-                    >
-                      {formatRupiah(budget.remaining_amount)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                  {budget.is_active ? (
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-full">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">
-                      <AlertTriangle className="w-3 h-3 mr-1" />
-                      Inactive
-                    </span>
-                  )}
-                  <button
-                    onClick={() => router.push(`/budget_management`)}
-                    className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                </div>
+          {/* ══ RIGHT COLUMN — Budget Statement ══ */}
+          <div style={{ width: 285, flexShrink: 0, position: "sticky", top: 16 }}>
+            <div style={{ ...card, overflow: "hidden" }}>
+              {/* Header */}
+              <div style={{ background: "#1e3a5f", color: "#fff", textAlign: "center", padding: "13px 16px", fontWeight: 700, fontSize: 15, letterSpacing: "0.02em" }}>
+                Budget Statement
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* System Status */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <BarChart3 className="w-5 h-5 text-blue-600 mr-2" />
-            Budget Management System Status
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition">
-              <div className="text-sm font-semibold text-blue-700">
-                Total Departments
+              {/* Rows */}
+              <div style={{ padding: "4px 16px 10px" }}>
+                {incomeRows.map((row, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: i < incomeRows.length - 1 ? "1px solid #f3f4f6" : "none", fontSize: 13 }}>
+                    <span style={{ fontWeight: row.bold ? 700 : 400, color: row.bold ? "#111827" : "#6b7280", display: "flex", alignItems: "center", gap: 6 }}>
+                      {row.isCount && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#d1d5db", display: "inline-block", flexShrink: 0 }} />}
+                      {row.label}
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: row.color || "#111827" }}>
+                      {row.isCount ? row.value : fmtCompact(row.value)}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div className="text-xs text-gray-600 mt-1">
-                Active Departments
-              </div>
-              <div className="text-2xl font-bold text-gray-800 mt-2">
-                {departments.length}
-              </div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition">
-              <div className="text-sm font-semibold text-green-700">
-                Budget Health
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                Remaining vs Total
-              </div>
-              <div className="text-2xl font-bold text-gray-800 mt-2">
-                {stats.total_amount > 0
-                  ? (
-                    (stats.total_remaining / stats.total_amount) *
-                    100
-                  ).toFixed(1)
-                  : 0}
-                %
-              </div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition">
-              <div className="text-sm font-semibold text-purple-700">
-                CAPEX / OPEX
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Budget Types</div>
-              <div className="text-2xl font-bold text-gray-800 mt-2">
-                {stats.capex_count} / {stats.opex_count}
-              </div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition">
-              <div className="text-sm font-semibold text-yellow-700">
-                Active Budgets
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Currently Active</div>
-              <div className="text-2xl font-bold text-gray-800 mt-2">
-                {budgets.filter((b) => b.is_active).length}
+
+              {/* Quick Actions */}
+              <div style={{ borderTop: "1px solid #e5e7eb", padding: "14px 16px 16px" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, margin: "0 0 10px 0" }}>
+                  Quick Actions
+                </p>
+                {[
+                  { label: "Add Budget", href: "/manage_budget/create_budget", icon: Plus, color: "#2563eb", bg: "#dbeafe" },
+                  { label: "View Budgets", href: "/budget_management", icon: Wallet, color: "#059669", bg: "#d1fae5" },
+                  { label: "New Request", href: "/manage_request/request_budget_form", icon: FileText, color: "#7c3aed", bg: "#ede9fe" },
+                  { label: "Request List", href: "/request_budget_list", icon: Send, color: "#d97706", bg: "#fef3c7" },
+                ].map((a, i) => (
+                  <Link key={i} href={a.href} style={{ textDecoration: "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 10px", borderRadius: 10, cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                      onMouseLeave={e => e.currentTarget.style.background = ""}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: a.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <a.icon style={{ width: 15, height: 15, color: a.color }} />
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{a.label}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
-          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-            <p className="text-sm text-blue-800">
-              <strong>System Overview:</strong> Total budget allocation of{" "}
-              {formatRupiah(stats.total_amount)} across {stats.total_budgets}{" "}
-              budgets in {departments.length} departments. Current usage is at{" "}
-              {stats.budget_used_percentage.toFixed(1)}% with{" "}
-              {formatRupiah(stats.total_remaining)} remaining.
-            </p>
-          </div>
+
         </div>
       </div>
     </LayoutDashboard>
