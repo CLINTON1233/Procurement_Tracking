@@ -35,14 +35,14 @@ const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) =>
           strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 0.6s ease" }} />
       </svg>
-      <span className="text-xl font-bold text-gray-800 z-10">{isNaN(pct) ? 0 : pct.toFixed(0)}%</span>
+      <span className="text-2xl font-bold text-gray-900 z-10">{isNaN(pct) ? 0 : pct.toFixed(0)}%</span>
     </div>
   );
 };
 
 // ─── Stacked Bar ─────────────────────────────────────────────────────────────
 const StackedBar = ({ segments }) => (
-  <div className="flex rounded-full overflow-hidden h-6 w-full">
+  <div className="flex rounded-full overflow-hidden h-7 w-full">
     {segments.map((s, i) => (
       <div key={i} style={{ width: `${s.pct}%`, background: s.color }}
         className="flex items-center justify-center text-xs font-bold text-white transition-all">
@@ -267,95 +267,83 @@ export default function BudgetRequestListPage() {
 
   return (
     <LayoutDashboard activeMenu={2}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-        .br-root { font-family: 'DM Sans', sans-serif; }
-        .br-root .mono { font-family: 'DM Mono', monospace; }
-        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
-        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-        .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
-        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
-        .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-      `}</style>
-
-      <div className="br-root space-y-5">
+      <div className="text-sm">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900">Budget Request List</h1>
-              <span className="period-badge">ITEM / SERVICE — {new Date().getFullYear()}</span>
+            <div className="flex items-center gap-3">
+                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Request List</h1>
+              <span className="bg-[#1e3a5f] text-white px-4 py-1 rounded-full text-sm font-semibold">
+                Period — {new Date().getFullYear()}
+              </span>
             </div>
             <p className="text-sm text-gray-500 mt-1">View and manage all budget requests, track status and approvals</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => { setRefreshing(true); fetchData(); }} disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm">
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
             <Link href="/manage_request/request_budget_form"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
               <Plus className="w-4 h-4" />New Request
             </Link>
           </div>
         </div>
 
         {/* ── Row 1: 4 Donut KPIs ── */}
-        <div className="card p-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-gray-100">
-            <div className="donut-card">
-              <h4>Approval Rate</h4>
-              <InlineDonut pct={approvalRate} color="#10b981" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.approved} of {stats.total} approved</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
+            <div className="flex flex-col items-center p-5">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Approval Rate</h4>
+              <InlineDonut pct={approvalRate} color="#10b981" size={115} stroke={13} />
+              <p className="text-xs text-gray-400 mt-2.5">{stats.approved} of {stats.total} approved</p>
             </div>
-            <div className="donut-card">
-              <h4>Item Ratio</h4>
-              <InlineDonut pct={itemPct} color="#1e3a5f" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.itemRequests} Item • {stats.serviceRequests} Service</p>
+            <div className="flex flex-col items-center p-5">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Item Ratio</h4>
+              <InlineDonut pct={itemPct} color="#1e3a5f" size={115} stroke={13} />
+              <p className="text-xs text-gray-400 mt-2.5">{stats.itemRequests} Item • {stats.serviceRequests} Service</p>
             </div>
-            <div className="donut-card">
-              <h4>Pending Rate</h4>
-              <InlineDonut pct={submittedPct + draftPct} color="#f59e0b" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.draft} Draft • {stats.submitted} Submitted</p>
+            <div className="flex flex-col items-center p-5">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Pending Rate</h4>
+              <InlineDonut pct={submittedPct + draftPct} color="#f59e0b" size={115} stroke={13} />
+              <p className="text-xs text-gray-400 mt-2.5">{stats.draft} Draft • {stats.submitted} Submitted</p>
             </div>
-            <div className="donut-card">
-              <h4>Rejected Rate</h4>
-              <InlineDonut pct={rejectedPct} color="#ef4444" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.rejected} rejected of {stats.total}</p>
+            <div className="flex flex-col items-center p-5">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Rejected Rate</h4>
+              <InlineDonut pct={rejectedPct} color="#ef4444" size={115} stroke={13} />
+              <p className="text-xs text-gray-400 mt-2.5">{stats.rejected} rejected of {stats.total}</p>
             </div>
           </div>
         </div>
 
         {/* ── Row 2: Charts ── */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mb-5">
           {/* Bar chart by dept */}
-          <div className="card p-5 md:col-span-3">
-            <p className="section-title flex items-center gap-2">
-              <span className="bullet-dot bg-blue-800" />Request Amount by Department (IDR Jt)
-            </p>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 md:col-span-3">
+            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3.5 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#1e3a5f] inline-block" />
+              Request Amount by Department (IDR Jt)
+            </h3>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
                   tickFormatter={v => v.length > 8 ? v.slice(0, 8) + "…" : v} />
-                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v) => [`${v}M IDR`, "Total"]} />
-                <Bar dataKey="value" fill="#1e3a5f" radius={[4, 4, 0, 0]} barSize={22} />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v) => [`${v}M IDR`, "Total"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                <Bar dataKey="value" fill="#1e3a5f" radius={[5, 5, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Distribution panel */}
-          <div className="card p-5 md:col-span-2 space-y-4">
-            <p className="section-title">Request Distribution</p>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 md:col-span-2 space-y-4">
+            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3.5">
+              Request Distribution
+            </h3>
 
             {/* Type pie */}
             <div className="flex items-center gap-4">
@@ -372,9 +360,9 @@ export default function BudgetRequestListPage() {
             </div>
 
             {/* Status bars */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">By Status</p>
+                <p className="text-xs font-semibold text-gray-700 mb-2">By Status</p>
                 <StackedBar segments={[
                   { pct: Math.max(Math.round(draftPct), 1), color: "#9ca3af" },
                   { pct: Math.max(Math.round(submittedPct), 1), color: "#2563eb" },
@@ -392,19 +380,19 @@ export default function BudgetRequestListPage() {
               {/* Summary cards */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-700 mono">{stats.approved}</div>
+                  <div className="text-lg font-bold text-emerald-700">{stats.approved}</div>
                   <div className="text-xs text-emerald-500">Approved</div>
                 </div>
                 <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-red-600 mono">{stats.rejected}</div>
+                  <div className="text-lg font-bold text-red-600">{stats.rejected}</div>
                   <div className="text-xs text-red-400">Rejected</div>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700 mono">{stats.submitted}</div>
+                  <div className="text-lg font-bold text-blue-700">{stats.submitted}</div>
                   <div className="text-xs text-blue-500">Submitted</div>
                 </div>
                 <div className="bg-purple-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-purple-700 mono">{stats.waiting}</div>
+                  <div className="text-lg font-bold text-purple-700">{stats.waiting}</div>
                   <div className="text-xs text-purple-400">Waiting</div>
                 </div>
               </div>
@@ -413,7 +401,7 @@ export default function BudgetRequestListPage() {
         </div>
 
         {/* ── Request List ── */}
-        <div className="card overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex flex-col gap-4">
@@ -587,7 +575,7 @@ export default function BudgetRequestListPage() {
 
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between"><span className="text-gray-400">Requester</span><span className="font-medium text-gray-700">{request.requester_name}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Badge</span><span className="font-medium text-gray-700 mono">{request.requester_badge}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Badge</span><span className="font-medium text-gray-700">{request.requester_badge}</span></div>
                         <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{request.department}</span></div>
                         <div className="flex justify-between"><span className="text-gray-400">Item</span><span className="font-medium text-gray-700 truncate max-w-[120px]">{request.item_name}</span></div>
                         <div className="flex justify-between">
@@ -600,7 +588,7 @@ export default function BudgetRequestListPage() {
                           </div>
                         </div>
                         <div className="flex justify-between"><span className="text-gray-400">Budget</span><span className="font-medium text-gray-700 truncate max-w-[120px]">{getBudgetName(request.budget_id)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-blue-600 mono">{formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-blue-600">{formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}</span></div>
                         <div className="flex justify-between pt-1.5 border-t border-gray-100">
                           <span className="text-gray-400">Date</span>
                           <span className="font-medium text-gray-700">{formatDate(request.created_at)}</span>
@@ -644,7 +632,7 @@ export default function BudgetRequestListPage() {
                       ].map((col, i) => (
                         <th key={i}
                           onClick={col.id ? () => setSorting([{ id: col.id, desc: sorting[0]?.id === col.id ? !sorting[0].desc : false }]) : undefined}
-                          className={`px-4 py-3 text-${col.align} text-xs font-semibold text-gray-500 uppercase tracking-wide ${col.id ? "cursor-pointer hover:text-gray-700" : ""}`}>
+                          className={`px-4 py-3 text-${col.align} text-xs font-bold text-gray-500 uppercase tracking-wider ${col.id ? "cursor-pointer hover:text-gray-700" : ""}`}>
                           <div className={`flex items-center ${col.align === "center" ? "justify-center" : ""} gap-1`}>
                             {col.label}
                             {col.id && sorting[0]?.id === col.id ? (sorting[0].desc ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : null}
@@ -674,7 +662,7 @@ export default function BudgetRequestListPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{request.requester_name}</td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-500 mono">{request.requester_badge}</td>
+                          <td className="px-4 py-3 text-center text-xs text-gray-500">{request.requester_badge}</td>
                           <td className="px-4 py-3 text-center text-xs text-gray-600">{request.department}</td>
                           <td className="px-4 py-3 text-sm text-gray-600 max-w-[140px] truncate">{request.item_name}</td>
                           <td className="px-4 py-3 text-center text-xs font-medium text-gray-700">{request.quantity}</td>
@@ -683,7 +671,7 @@ export default function BudgetRequestListPage() {
                               {request.request_type}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600 mono">{formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}</td>
+                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600">{formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}</td>
                           <td className="px-4 py-3 text-xs text-gray-600 max-w-[120px] truncate">{getBudgetName(request.budget_id)}</td>
                           <td className="px-4 py-3 text-center">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${s.bg} ${s.text}`}>

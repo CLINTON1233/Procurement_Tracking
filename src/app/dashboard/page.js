@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line,
+  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
 } from "recharts";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
@@ -31,16 +31,17 @@ const InlineDonut = ({ pct, color, size = 110, stroke = 12 }) => {
           style={{ transition: "stroke-dashoffset 0.6s ease" }}
         />
       </svg>
-      <span style={{ fontSize: 22, fontWeight: 700, color: "#111827", zIndex: 1 }}>{pct.toFixed(0)}%</span>
+      <span className="text-xl font-bold text-gray-800 z-10">{pct.toFixed(0)}%</span>
     </div>
   );
 };
 
 // ─── Horizontal Stacked Bar ───────────────────────────────────────────────────
 const StackedBar = ({ segments }) => (
-  <div style={{ display: "flex", borderRadius: 99, overflow: "hidden", height: 28, width: "100%" }}>
+  <div className="flex rounded-full overflow-hidden h-6 w-full">
     {segments.map((s, i) => (
-      <div key={i} style={{ width: `${s.pct}%`, background: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", transition: "all 0.3s" }}>
+      <div key={i} style={{ width: `${s.pct}%`, background: s.color }} 
+        className="flex items-center justify-center text-xs font-bold text-white transition-all">
         {s.pct > 12 ? `${s.pct.toFixed(0)}%` : ""}
       </div>
     ))}
@@ -133,7 +134,7 @@ export default function DashboardPage() {
       deptMap.set(d, (deptMap.get(d) || 0) + v);
     });
     setDepartmentChartData(
-      Array.from(deptMap.entries()).map(([name, value]) => ({ name, value }))
+      Array.from(deptMap.entries()).map(([name, value]) => ({ name, value: Math.round(value / 1e6) }))
         .sort((a, x) => x.value - a.value).slice(0, 6)
     );
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -200,6 +201,13 @@ export default function DashboardPage() {
     { label: "Active Budgets", value: stats.active_budgets, isCount: true, bold: true, color: "#1d4ed8" },
   ];
 
+  // Pie data for budget distribution
+  const pieData = [
+    { name: "CAPEX", value: stats.capex_count },
+    { name: "OPEX", value: stats.opex_count },
+  ];
+  const PIE_COLORS = ["#1e3a5f", "#2563eb"];
+
   if (loading) {
     return (
       <LayoutDashboard activeMenu={0}>
@@ -210,190 +218,205 @@ export default function DashboardPage() {
     );
   }
 
-  /* ── shared inline styles ── */
-  const card = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb" };
-  const sectionTitle = { fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 };
-  const tblTh = { padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", background: "#f9fafb", whiteSpace: "nowrap" };
-  const tblTd = { padding: "14px 20px", fontSize: 14, color: "#374151", borderBottom: "1px solid #f3f4f6" };
-  const badge = (bg, color) => ({ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: bg, color });
-
   return (
     <LayoutDashboard activeMenu={0}>
-      <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: 14 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .bm-root { font-family: 'DM Sans', sans-serif; }
+        .bm-root .mono { font-family: 'DM Mono', monospace; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
+        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
+        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
+        .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+      `}</style>
+
+      <div className="bm-root space-y-5">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>Budget Management Dashboard</h1>
-              <span style={{ background: "#1e3a5f", color: "#fff", padding: "4px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
-                Period — {new Date().getFullYear()}
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Management Dashboard</h1>
+              <span className="period-badge">Period — {new Date().getFullYear()}</span>
             </div>
-            <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>Monitor CAPEX/OPEX budgets, requests & revisions</p>
+            <p className="text-sm text-gray-500 mt-1">Monitor CAPEX/OPEX budgets, requests & revisions</p>
           </div>
           <button
             onClick={() => { setRefreshing(true); fetchAllDashboardData(); }}
             disabled={refreshing}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 16px", background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "#374151", cursor: "pointer" }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto justify-center"
           >
-            <RefreshCw style={{ width: 16, height: 16 }} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
         {/* ── Main Layout ── */}
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        <div className="flex flex-col xl:flex-row gap-5">
 
           {/* ══ LEFT COLUMN ══ */}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="flex-1 min-w-0 space-y-5">
 
             {/* ── Row 1: 4 Donut KPIs ── */}
-            <div style={card}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+            <div className="card">
+              <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-100">
                 {[
                   { title: "Budget Used", pct: usedPct, color: "#2563eb", sub: `${fmtCompact(stats.total_used)} / ${fmtCompact(stats.total_amount)}` },
                   { title: "CAPEX Ratio", pct: capexRatio, color: "#1e3a5f", sub: `${stats.capex_count} CAPEX • ${stats.opex_count} OPEX` },
                   { title: "Approval Rate", pct: approvalRate, color: "#10b981", sub: `${stats.approved_requests} of ${stats.total_requests} requests` },
                   { title: "Budget Health", pct: remainingPct, color: "#f59e0b", sub: `${fmtCompact(stats.total_remaining)} remaining` },
                 ].map((d, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 12px 16px", borderRight: i < 3 ? "1px solid #f3f4f6" : "none" }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", textAlign: "center", marginBottom: 12 }}>{d.title}</div>
-                    <InlineDonut pct={d.pct} color={d.color} size={115} stroke={13} />
-                    <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 10, textAlign: "center" }}>{d.sub}</div>
+                  <div key={i} className="donut-card">
+                    <h4>{d.title}</h4>
+                    <InlineDonut pct={d.pct} color={d.color} size={window.innerWidth < 640 ? 90 : 110} stroke={13} />
+                    <p className="text-xs text-gray-500 mt-3 text-center">{d.sub}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* ── Row 2: Bar Chart + Distribution ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
               {/* Bar Chart */}
-              <div style={{ ...card, padding: 20 }}>
-                <div style={sectionTitle}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#1e3a5f", display: "inline-block", flexShrink: 0 }} />
-                  Budget by Department
-                </div>
-                <ResponsiveContainer width="100%" height={195}>
+              <div className="card p-5 lg:col-span-3">
+                <p className="section-title flex items-center gap-2">
+                  <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
+                </p>
+                <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                      tickFormatter={v => v.length > 9 ? v.slice(0, 9) + "…" : v} />
-                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                      tickFormatter={v => fmtCompact(v)} />
-                    <Tooltip formatter={(v) => [fmtCompact(v), "Amount"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
-                    <Bar dataKey="value" fill="#1e3a5f" radius={[5, 5, 0, 0]} barSize={28} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                      tickFormatter={v => v?.length > 8 ? v.slice(0, 8) + "…" : v} />
+                    <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                      tickFormatter={v => fmtCompact(v * 1e6)} />
+                    <Tooltip formatter={(v) => [fmtCompact(v * 1e6), "Amount"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
+                    <Bar dataKey="value" fill="#1e3a5f" radius={[5, 5, 0, 0]} barSize={window.innerWidth < 640 ? 18 : 28} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Stacked Distribution */}
-              <div style={{ ...card, padding: 20 }}>
-                <div style={sectionTitle}>Request Distribution</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {[
-                    {
-                      label: "By Type",
-                      bar: [
-                        { pct: stats.total_requests > 0 ? Math.round((stats.item_requests / stats.total_requests) * 100) : 50, color: "#1e3a5f" },
-                        { pct: stats.total_requests > 0 ? Math.round((stats.service_requests / stats.total_requests) * 100) : 50, color: "#60a5fa" },
-                      ],
-                      legend: [{ label: `Item (${stats.item_requests})` }, { label: `Service (${stats.service_requests})` }],
-                    },
-                    {
-                      label: "By Status",
-                      bar: [
-                        { pct: Math.max(draftPct, 1), color: "#9ca3af" },
-                        { pct: Math.max(submittedPct, 1), color: "#2563eb" },
-                        { pct: Math.max(approvedPct, 1), color: "#10b981" },
-                        { pct: Math.max(rejectedPct, 0), color: "#ef4444" },
-                      ],
-                      legend: [{ label: `Draft (${stats.draft_requests})` }, { label: `Submitted (${stats.submitted_requests})` }, { label: `Approved (${stats.approved_requests})` }, { label: `Rejected (${stats.rejected_requests})` }],
-                      grid: true,
-                    },
-                    {
-                      label: "Budget Allocation",
-                      bar: [
-                        { pct: Math.max(Math.round(usedPct), 1), color: "#2563eb" },
-                        { pct: Math.max(Math.round(reservedPct), 1), color: "#f59e0b" },
-                        { pct: Math.max(Math.round(remainingPct), 1), color: "#10b981" },
-                      ],
-                      legend: [{ label: "Used" }, { label: "Reserved" }, { label: "Free" }],
-                    },
-                  ].map((section, si) => (
-                    <div key={si}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>{section.label}</div>
-                      <StackedBar segments={section.bar} />
-                      <div style={{ display: section.grid ? "grid" : "flex", gridTemplateColumns: section.grid ? "1fr 1fr" : undefined, justifyContent: !section.grid ? "space-between" : undefined, marginTop: 8, gap: 4, fontSize: 12, color: "#6b7280" }}>
-                        {section.legend.map((l, li) => <span key={li}>● {l.label}</span>)}
-                      </div>
+              <div className="card p-5 lg:col-span-2 space-y-4">
+                <p className="section-title">Budget Distribution</p>
+
+                {/* Type split pie */}
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <PieChart width={80} height={80}>
+                    <Pie data={pieData} cx={35} cy={35} innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                    </Pie>
+                  </PieChart>
+                  <div className="text-xs text-gray-500 space-y-1.5">
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f]" /> CAPEX: {stats.capex_count}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500" /> OPEX: {stats.opex_count}</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-400" /> Active: {stats.active_budgets}</div>
+                  </div>
+                </div>
+
+                {/* Budget allocation bars */}
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1.5 font-medium">Allocation Breakdown</p>
+                    <StackedBar segments={[
+                      { pct: Math.max(Math.round(usedPct), 1), color: "#2563eb" },
+                      { pct: Math.max(Math.round(reservedPct), 1), color: "#f59e0b" },
+                      { pct: Math.max(Math.round(remainingPct), 1), color: "#10b981" },
+                    ]} />
+                    <div className="flex flex-wrap gap-4 mt-1.5 text-xs text-gray-500">
+                      <span>● Used</span><span>● Reserved</span><span>● Free</span>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Quick summary */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <div className="text-base sm:text-lg font-bold text-blue-700 mono">{fmtCompact(stats.total_used)}</div>
+                      <div className="text-xs text-blue-500">Used</div>
+                    </div>
+                    <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                      <div className="text-base sm:text-lg font-bold text-emerald-700 mono">{fmtCompact(stats.total_remaining)}</div>
+                      <div className="text-xs text-emerald-500">Remaining</div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                      <div className="text-base sm:text-lg font-bold text-yellow-700 mono">{fmtCompact(stats.total_reserved)}</div>
+                      <div className="text-xs text-yellow-600">Reserved</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <div className="text-base sm:text-lg font-bold text-gray-700 mono">{fmtCompact(stats.total_amount)}</div>
+                      <div className="text-xs text-gray-500">Total</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* ── Row 3: Monthly Trend + Revision Stats ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
               {/* Monthly Trend */}
-              <div style={{ ...card, padding: 20 }}>
-                <div style={sectionTitle}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb", display: "inline-block", flexShrink: 0 }} />
-                  Monthly Request Trend (IDR Jt)
-                </div>
-                <ResponsiveContainer width="100%" height={185}>
+              <div className="card p-5 lg:col-span-3">
+                <p className="section-title flex items-center gap-2">
+                  <span className="bullet-dot bg-blue-600" />Monthly Request Trend (IDR Jt)
+                </p>
+                <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={monthlyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                     <Tooltip formatter={(v) => [`${v}M IDR`, ""]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #e5e7eb" }} />
                     <Line type="monotone" dataKey="Total" stroke="#1e3a5f" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="5 3" />
                     <Line type="monotone" dataKey="Approved" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: "#2563eb" }} />
                   </LineChart>
                 </ResponsiveContainer>
-                <div style={{ display: "flex", gap: 24, justifyContent: "center", marginTop: 10 }}>
+                <div className="flex flex-wrap gap-4 justify-center mt-3">
                   {[["#1e3a5f", "Total"], ["#2563eb", "Approved"]].map(([c, l]) => (
-                    <span key={l} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6b7280" }}>
-                      <span style={{ width: 20, height: 2, background: c, display: "inline-block" }} />{l}
+                    <span key={l} className="flex items-center gap-2 text-xs text-gray-500">
+                      <span style={{ width: 20, height: 2, background: c }} />{l}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* ── Revision & System Stats — CLEAN, no colorful cards ── */}
-              <div style={{ ...card, padding: 20 }}>
-                <div style={sectionTitle}>Revision & System Stats</div>
+              {/* Revision & System Stats */}
+              <div className="card p-5 lg:col-span-2 space-y-4">
+                <p className="section-title">Revision & System Stats</p>
 
-                {/* 4 neutral stat boxes — same style as BudgetManagement overview */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                {/* 4 neutral stat boxes */}
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: "Total Revisions", value: stats.total_revisions, sub: `${stats.capex_revisions} CAPEX • ${stats.opex_revisions} OPEX` },
                     { label: "Departments", value: departments.length, sub: "Active departments" },
                     { label: "Active Budgets", value: stats.active_budgets, sub: `of ${stats.total_budgets} total` },
                     { label: "Approval Rate", value: `${approvalRate.toFixed(0)}%`, sub: `${stats.approved_requests} approved` },
                   ].map((s, i) => (
-                    <div key={i} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "14px 16px" }}>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: "#111827", lineHeight: 1 }}>{s.value}</div>
-                      <div style={{ fontSize: 13, color: "#374151", fontWeight: 600, marginTop: 5 }}>{s.label}</div>
-                      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 3 }}>{s.sub}</div>
+                    <div key={i} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-800 mono">{s.value}</div>
+                      <div className="text-xs font-medium text-gray-600 mt-1">{s.label}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Budget Reduction Summary — simple row list */}
-                <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>Budget Reduction Summary</div>
+                {/* Budget Reduction Summary */}
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Budget Reduction Summary</p>
                   {[
                     { label: "Total Reduction", value: fmt(stats.total_reduction), highlight: true },
                     { label: "Avg per Revision", value: fmt(stats.total_revisions > 0 ? stats.total_reduction / stats.total_revisions : 0) },
                     { label: "CAPEX Revisions", value: stats.capex_revisions },
                     { label: "OPEX Revisions", value: stats.opex_revisions },
                   ].map((row, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: i < 3 ? "1px solid #f3f4f6" : "none", fontSize: 14 }}>
-                      <span style={{ color: "#6b7280" }}>{row.label}</span>
-                      <span style={{ fontWeight: 700, color: row.highlight ? "#dc2626" : "#111827" }}>{row.value}</span>
+                    <div key={i} className="flex justify-between items-center py-2 text-sm border-b border-gray-50 last:border-0">
+                      <span className="text-gray-500">{row.label}</span>
+                      <span className={`font-bold ${row.highlight ? "text-red-600" : "text-gray-800"}`}>{row.value}</span>
                     </div>
                   ))}
                 </div>
@@ -401,57 +424,56 @@ export default function DashboardPage() {
             </div>
 
             {/* ── Recent Budgets Table ── */}
-            <div style={{ ...card, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <Wallet style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Budgets
+            <div className="card overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-blue-600" /> Recent Budgets
                 </h3>
-                <Link href="/budget_management" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+                <Link href="/manage_budget/budget_management" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+                  View All →
+                </Link>
               </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr>
-                      {["Budget Name", "Type", "Department", "Total Amount", "Remaining", "Status"].map(h => (
-                        <th key={h} style={tblTh}>{h}</th>
+                    <tr className="bg-gray-50">
+                      {["Budget Name", "Type", "Department", "Total", "Remaining", "Status"].map(h => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {recentBudgets.map(b => (
-                      <tr key={b.id} onClick={() => router.push("/budget_management")} style={{ cursor: "pointer" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                        onMouseLeave={e => e.currentTarget.style.background = ""}>
-                        <td style={tblTd}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 8, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {b.budget_type === "CAPEX" ? <Building style={{ width: 16, height: 16, color: "#2563eb" }} /> : <Calendar style={{ width: 16, height: 16, color: "#2563eb" }} />}
+                      <tr key={b.id} onClick={() => router.push("/manage_budget/budget_management")} 
+                        className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                              {b.budget_type === "CAPEX" ? <Building className="w-4 h-4 text-blue-600" /> : <Calendar className="w-4 h-4 text-blue-600" />}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{b.budget_name}</div>
-                              {b.budget_code && <div style={{ fontSize: 12, color: "#9ca3af" }}>{b.budget_code}</div>}
+                              <div className="font-semibold text-gray-900 text-sm">{b.budget_name}</div>
+                              {b.budget_code && <div className="text-xs text-gray-400">{b.budget_code}</div>}
                             </div>
                           </div>
                         </td>
-                        <td style={tblTd}>
-                          <span style={badge(b.budget_type === "CAPEX" ? "#f3e8ff" : "#d1fae5", b.budget_type === "CAPEX" ? "#7c3aed" : "#065f46")}>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${b.budget_type === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>
                             {b.budget_type}
                           </span>
                         </td>
-                        <td style={{ ...tblTd, color: "#6b7280" }}>{b.department_name}</td>
-                        <td style={{ ...tblTd, fontWeight: 700, color: "#111827" }}>{fmt(b.total_amount)}</td>
-                        <td style={{ ...tblTd, fontWeight: 700, color: b.remaining_amount < b.total_amount * 0.2 ? "#dc2626" : "#059669" }}>
-                          {fmt(b.remaining_amount)}
-                        </td>
-                        <td style={tblTd}>
+                        <td className="px-4 py-3 text-xs text-gray-600">{b.department_name}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 mono">{fmt(b.total_amount)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-emerald-600 mono">{fmt(b.remaining_amount)}</td>
+                        <td className="px-4 py-3">
                           {b.is_active
-                            ? <span style={badge("#d1fae5", "#065f46")}><CheckCircle style={{ width: 12, height: 12 }} />Active</span>
-                            : <span style={badge("#f3f4f6", "#6b7280")}><AlertTriangle style={{ width: 12, height: 12 }} />Inactive</span>}
+                            ? <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full"><CheckCircle className="w-3 h-3" />Active</span>
+                            : <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-gray-500 bg-gray-100 rounded-full"><AlertTriangle className="w-3 h-3" />Inactive</span>}
                         </td>
                       </tr>
                     ))}
                     {recentBudgets.length === 0 && (
-                      <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No budgets found</td></tr>
+                      <tr><td colSpan={6} className="py-8 text-center text-gray-400 text-sm">No budgets found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -459,19 +481,21 @@ export default function DashboardPage() {
             </div>
 
             {/* ── Recent Requests Table ── */}
-            <div style={{ ...card, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <FileText style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Requests
+            <div className="card overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" /> Recent Requests
                 </h3>
-                <Link href="/request_budget_list" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+                <Link href="/request_budget_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+                  View All →
+                </Link>
               </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr>
+                    <tr className="bg-gray-50">
                       {["Request No", "Requester", "Item", "Type", "Amount", "Status", "Date"].map(h => (
-                        <th key={h} style={tblTh}>{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -479,28 +503,27 @@ export default function DashboardPage() {
                     {recentRequests.map(req => {
                       const s = getStatusBadge(req.status);
                       return (
-                        <tr key={req.id} onClick={() => router.push("/request_budget_list")} style={{ cursor: "pointer" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                          onMouseLeave={e => e.currentTarget.style.background = ""}>
-                          <td style={{ ...tblTd, fontWeight: 700, color: "#111827" }}>{req.request_no}</td>
-                          <td style={{ ...tblTd, color: "#6b7280" }}>{req.requester_name}</td>
-                          <td style={{ ...tblTd, color: "#6b7280", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{req.item_name}</td>
-                          <td style={tblTd}>
-                            <span style={badge(req.request_type === "ITEM" ? "#dbeafe" : "#ede9fe", req.request_type === "ITEM" ? "#1d4ed8" : "#6d28d9")}>
-                              {req.request_type === "ITEM" ? <Package style={{ width: 12, height: 12 }} /> : <Server style={{ width: 12, height: 12 }} />}
+                        <tr key={req.id} onClick={() => router.push("/request_budget_list")} 
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900">{req.request_no}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600">{req.requester_name}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600 max-w-[150px] truncate">{req.item_name}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full inline-flex items-center gap-1 ${req.request_type === "ITEM" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                              {req.request_type === "ITEM" ? <Package className="w-3 h-3" /> : <Server className="w-3 h-3" />}
                               {req.request_type}
                             </span>
                           </td>
-                          <td style={{ ...tblTd, fontWeight: 700, color: "#1d4ed8" }}>{fmt(req.estimated_total)}</td>
-                          <td style={tblTd}>
-                            <span style={badge(s.bg, s.text)}>{s.label}</span>
+                          <td className="px-4 py-3 text-sm font-semibold text-blue-600 mono">{fmt(req.estimated_total)}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full" style={{ background: s.bg, color: s.text }}>{s.label}</span>
                           </td>
-                          <td style={{ ...tblTd, color: "#9ca3af" }}>{fmtDate(req.created_at)}</td>
+                          <td className="px-4 py-3 text-xs text-gray-400">{fmtDate(req.created_at)}</td>
                         </tr>
                       );
                     })}
                     {recentRequests.length === 0 && (
-                      <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No requests found</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-gray-400 text-sm">No requests found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -508,19 +531,21 @@ export default function DashboardPage() {
             </div>
 
             {/* ── Recent Revisions Table ── */}
-            <div style={{ ...card, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <RotateCcw style={{ width: 16, height: 16, color: "#2563eb" }} /> Recent Revisions
+            <div className="card overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 text-blue-600" /> Recent Revisions
                 </h3>
-                <Link href="/revision_list" style={{ fontSize: 14, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}>View All →</Link>
+                <Link href="/revision_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+                  View All →
+                </Link>
               </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr>
-                      {["Budget", "Request", "Original", "New Amount", "Reduction", "Reason", "Date"].map(h => (
-                        <th key={h} style={tblTh}>{h}</th>
+                    <tr className="bg-gray-50">
+                      {["Budget", "Request", "Original", "New", "Reduction", "Reason", "Date"].map(h => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -529,57 +554,54 @@ export default function DashboardPage() {
                       const bd = budgets.find(b => b.id === rv.budget_id);
                       const rq = requests.find(r => r.id === rv.request_id);
                       const reduction = Number(rv.original_amount) - Number(rv.new_amount);
-                      const pct = Number(rv.original_amount) > 0
-                        ? ((reduction / Number(rv.original_amount)) * 100).toFixed(1) : "0.0";
+                      const pct = Number(rv.original_amount) > 0 ? ((reduction / Number(rv.original_amount)) * 100).toFixed(1) : "0.0";
                       return (
-                        <tr key={rv.id} onClick={() => router.push("/revision_list")} style={{ cursor: "pointer" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                          onMouseLeave={e => e.currentTarget.style.background = ""}>
-                          <td style={tblTd}>
-                            <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{bd?.budget_name || `ID: ${rv.budget_id}`}</div>
-                            <div style={{ fontSize: 12, color: "#9ca3af" }}>{bd?.budget_type}</div>
+                        <tr key={rv.id} onClick={() => router.push("/revision_list")} 
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-gray-900 text-sm">{bd?.budget_name || `ID: ${rv.budget_id}`}</div>
+                            <div className="text-xs text-gray-400">{bd?.budget_type}</div>
                           </td>
-                          <td style={{ ...tblTd, color: "#6b7280" }}>{rq?.request_no || `ID: ${rv.request_id}`}</td>
-                          <td style={{ ...tblTd, fontWeight: 600, color: "#111827" }}>{fmt(rv.original_amount)}</td>
-                          <td style={{ ...tblTd, fontWeight: 700, color: "#1d4ed8" }}>{fmt(rv.new_amount)}</td>
-                          <td style={tblTd}>
-                            <span style={badge("#fee2e2", "#b91c1c")}>
-                              <TrendingDown style={{ width: 12, height: 12 }} />{pct}%
+                          <td className="px-4 py-3 text-xs text-gray-600">{rq?.request_no || `ID: ${rv.request_id}`}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900 mono">{fmt(rv.original_amount)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-blue-600 mono">{fmt(rv.new_amount)}</td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-red-700 bg-red-50 rounded-full">
+                              <TrendingDown className="w-3 h-3" />{pct}%
                             </span>
-                            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 3 }}>({fmtCompact(reduction)})</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{fmtCompact(reduction)}</div>
                           </td>
-                          <td style={{ ...tblTd, color: "#6b7280", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rv.reason}</td>
-                          <td style={{ ...tblTd, color: "#9ca3af" }}>{fmtDate(rv.created_at)}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600 max-w-[150px] truncate">{rv.reason}</td>
+                          <td className="px-4 py-3 text-xs text-gray-400">{fmtDate(rv.created_at)}</td>
                         </tr>
                       );
                     })}
                     {recentRevisions.length === 0 && (
-                      <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>No revisions found</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-gray-400 text-sm">No revisions found</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
-
           </div>
 
           {/* ══ RIGHT COLUMN — Budget Statement ══ */}
-          <div style={{ width: 285, flexShrink: 0, position: "sticky", top: 16 }}>
-            <div style={{ ...card, overflow: "hidden" }}>
+          <div className="w-full xl:w-80 flex-shrink-0">
+            <div className="card sticky top-4 overflow-hidden">
               {/* Header */}
-              <div style={{ background: "#1e3a5f", color: "#fff", textAlign: "center", padding: "13px 16px", fontWeight: 700, fontSize: 15, letterSpacing: "0.02em" }}>
+              <div className="bg-[#1e3a5f] text-white text-center py-3 px-4 font-bold text-sm uppercase tracking-wide">
                 Budget Statement
               </div>
 
               {/* Rows */}
-              <div style={{ padding: "4px 16px 10px" }}>
+              <div className="p-4">
                 {incomeRows.map((row, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: i < incomeRows.length - 1 ? "1px solid #f3f4f6" : "none", fontSize: 13 }}>
-                    <span style={{ fontWeight: row.bold ? 700 : 400, color: row.bold ? "#111827" : "#6b7280", display: "flex", alignItems: "center", gap: 6 }}>
-                      {row.isCount && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#d1d5db", display: "inline-block", flexShrink: 0 }} />}
+                  <div key={i} className="flex justify-between items-center py-2 text-sm border-b border-gray-50 last:border-0">
+                    <span className={`${row.bold ? "font-semibold text-gray-900" : "text-gray-500"} flex items-center gap-1.5`}>
+                      {row.isCount && <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />}
                       {row.label}
                     </span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: row.color || "#111827" }}>
+                    <span className={`font-bold ${row.color || "text-gray-900"}`}>
                       {row.isCount ? row.value : fmtCompact(row.value)}
                     </span>
                   </div>
@@ -587,31 +609,28 @@ export default function DashboardPage() {
               </div>
 
               {/* Quick Actions */}
-              <div style={{ borderTop: "1px solid #e5e7eb", padding: "14px 16px 16px" }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, margin: "0 0 10px 0" }}>
-                  Quick Actions
-                </p>
-                {[
-                  { label: "Add Budget", href: "/manage_budget/create_budget", icon: Plus, color: "#2563eb", bg: "#dbeafe" },
-                  { label: "View Budgets", href: "/budget_management", icon: Wallet, color: "#059669", bg: "#d1fae5" },
-                  { label: "New Request", href: "/manage_request/request_budget_form", icon: FileText, color: "#7c3aed", bg: "#ede9fe" },
-                  { label: "Request List", href: "/request_budget_list", icon: Send, color: "#d97706", bg: "#fef3c7" },
-                ].map((a, i) => (
-                  <Link key={i} href={a.href} style={{ textDecoration: "none" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 10px", borderRadius: 10, cursor: "pointer", transition: "background 0.15s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={e => e.currentTarget.style.background = ""}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: a.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <a.icon style={{ width: 15, height: 15, color: a.color }} />
+              <div className="border-t border-gray-100 p-4">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quick Actions</p>
+                <div className="space-y-1">
+                  {[
+                    { label: "Add Budget", href: "/manage_budget/create_budget", icon: Plus, color: "#2563eb", bg: "#dbeafe" },
+                    { label: "View Budgets", href: "/budget_management", icon: Wallet, color: "#059669", bg: "#d1fae5" },
+                    { label: "New Request", href: "/manage_request/request_budget_form", icon: FileText, color: "#7c3aed", bg: "#ede9fe" },
+                    { label: "Request List", href: "/request_budget_list", icon: Send, color: "#d97706", bg: "#fef3c7" },
+                  ].map((a, i) => (
+                    <Link key={i} href={a.href} className="block">
+                      <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: a.bg }}>
+                          <a.icon className="w-4 h-4" style={{ color: a.color }} />
+                        </div>
+                        <span className="text-sm font-medium text-gray-600">{a.label}</span>
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{a.label}</span>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </LayoutDashboard>

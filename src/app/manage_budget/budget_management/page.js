@@ -266,9 +266,6 @@ export default function BudgetManagementPage() {
   return (
     <LayoutDashboard activeMenu={1}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-        .bm-root { font-family: 'DM Sans', sans-serif; }
-        .bm-root .mono { font-family: 'DM Mono', monospace; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
         .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
@@ -282,13 +279,13 @@ export default function BudgetManagementPage() {
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
       `}</style>
 
-      <div className="bm-root space-y-5">
+      <div className="space-y-5">
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900">Budget Management</h1>
+              <h1 className="text-xl font-bold text-gray-900">Manage Budget</h1>
               <span className="period-badge">CAPEX / OPEX — {new Date().getFullYear()}</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">Manage budgets, track allocations, and monitor remaining funds</p>
@@ -331,7 +328,7 @@ export default function BudgetManagementPage() {
 
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Bar Chart by Department */}
+          {/* Bar Chart by Department - FIXED VISIBILITY */}
           <div className="card p-5 md:col-span-3">
             <p className="section-title flex items-center gap-2">
               <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
@@ -339,10 +336,28 @@ export default function BudgetManagementPage() {
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                  tickFormatter={v => v.length > 8 ? v.slice(0, 8) + "…" : v} />
-                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v) => [`${v}M IDR`, "Total"]} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickFormatter={v => v.length > 8 ? v.slice(0, 8) + "…" : v} 
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+                  tickLine={false} 
+                  axisLine={false} 
+                />
+                <Tooltip 
+                  formatter={(v) => [`${v}M IDR`, "Total"]} 
+                  contentStyle={{ 
+                    fontSize: 12, 
+                    borderRadius: 8, 
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#fff",
+                    color: "#111827"
+                  }} 
+                />
                 <Bar dataKey="value" fill="#1e3a5f" radius={[4, 4, 0, 0]} barSize={22} />
               </BarChart>
             </ResponsiveContainer>
@@ -383,19 +398,19 @@ export default function BudgetManagementPage() {
               {/* Quick summary */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700 mono">{fmtCompact(stats.totalUsed)}</div>
+                  <div className="text-lg font-bold text-blue-700">{fmtCompact(stats.totalUsed)}</div>
                   <div className="text-xs text-blue-500">Used</div>
                 </div>
                 <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-700 mono">{fmtCompact(stats.totalRemaining)}</div>
+                  <div className="text-lg font-bold text-emerald-700">{fmtCompact(stats.totalRemaining)}</div>
                   <div className="text-xs text-emerald-500">Remaining</div>
                 </div>
                 <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-yellow-700 mono">{fmtCompact(stats.totalReserved)}</div>
+                  <div className="text-lg font-bold text-yellow-700">{fmtCompact(stats.totalReserved)}</div>
                   <div className="text-xs text-yellow-600">Reserved</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-gray-700 mono">{fmtCompact(stats.totalAmount)}</div>
+                  <div className="text-lg font-bold text-gray-700">{fmtCompact(stats.totalAmount)}</div>
                   <div className="text-xs text-gray-500">Total</div>
                 </div>
               </div>
@@ -562,10 +577,10 @@ export default function BudgetManagementPage() {
                     <div className="space-y-1.5 text-xs">
                       <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{budget.department_name}</span></div>
                       {budget.budget_code && <div className="flex justify-between"><span className="text-gray-400">Code</span><span className="font-medium text-gray-700">{budget.budget_code}</span></div>}
-                      <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-gray-900 mono">{formatBudgetCurrency(budget.total_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Reserved</span><span className="font-medium text-yellow-600 mono">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Used</span><span className="font-medium text-blue-600 mono">{formatBudgetCurrency(budget.used_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Remaining</span><span className="font-medium text-emerald-600 mono">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Reserved</span><span className="font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Used</span><span className="font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Remaining</span><span className="font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</span></div>
                       {budget.budget_owner && <div className="flex justify-between"><span className="text-gray-400">Owner</span><span className="font-medium text-gray-700">{budget.budget_owner}</span></div>}
                       <div className="flex justify-between pt-1.5 border-t border-gray-100">
                         <span className="text-gray-400">Fiscal Year</span>
@@ -653,11 +668,11 @@ export default function BudgetManagementPage() {
                             {budget.budget_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-xs text-gray-500 mono">{budget.budget_code || "—"}</td>
-                        <td className="px-4 py-3 text-center text-sm font-semibold text-gray-900 mono">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-yellow-600 mono">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-blue-600 mono">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-emerald-600 mono">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_code || "—"}</td>
+                        <td className="px-4 py-3 text-center text-sm font-semibold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-center text-sm font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-center text-sm font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-center text-sm font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-600">{budget.department_name}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_owner || "—"}</td>
                         <td className="px-4 py-3 text-center text-xs font-medium text-gray-700">{budget.fiscal_year}</td>

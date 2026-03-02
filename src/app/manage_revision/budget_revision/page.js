@@ -277,9 +277,6 @@ export default function BudgetRevisionPage() {
   return (
     <LayoutDashboard activeMenu={4}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-        .rv-root { font-family: 'DM Sans', sans-serif; }
-        .rv-root .mono { font-family: 'DM Mono', monospace; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
         .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
@@ -294,13 +291,13 @@ export default function BudgetRevisionPage() {
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
 
-      <div className="rv-root space-y-5">
+      <div className="space-y-5">
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-gray-900">Budget Revision History</h1>
+                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Revision History</h1>
               <span className="period-badge">CAPEX / OPEX — {new Date().getFullYear()}</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">Track all budget revisions and amount changes</p>
@@ -311,9 +308,9 @@ export default function BudgetRevisionPage() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
-            <Link href="/request_budget_list"
+            <Link href="/manage_request/budget_request_list"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
-              <FileText className="w-4 h-4" />Back to Requests
+              <FileText className="w-4 h-4" />New Request
             </Link>
           </div>
         </div>
@@ -404,19 +401,19 @@ export default function BudgetRevisionPage() {
               {/* Summary cards */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-red-600 mono">{fmtCompact(stats.totalReduction)}</div>
+                  <div className="text-lg font-bold text-red-600">{fmtCompact(stats.totalReduction)}</div>
                   <div className="text-xs text-red-400">Total Reduction</div>
                 </div>
                 <div className="bg-orange-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-orange-600 mono">{fmtCompact(stats.averageReduction)}</div>
+                  <div className="text-lg font-bold text-orange-600">{fmtCompact(stats.averageReduction)}</div>
                   <div className="text-xs text-orange-400">Avg Reduction</div>
                 </div>
                 <div className="bg-[#1e3a5f]/10 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-[#1e3a5f] mono">{stats.capexRevisions}</div>
+                  <div className="text-lg font-bold text-[#1e3a5f]">{stats.capexRevisions}</div>
                   <div className="text-xs text-[#1e3a5f]/60">CAPEX Rev.</div>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700 mono">{stats.opexRevisions}</div>
+                  <div className="text-lg font-bold text-blue-700">{stats.opexRevisions}</div>
                   <div className="text-xs text-blue-400">OPEX Rev.</div>
                 </div>
               </div>
@@ -555,8 +552,8 @@ export default function BudgetRevisionPage() {
                         <div className="flex justify-between"><span className="text-gray-400">Type</span>
                           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budgetType === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>{budgetType}</span>
                         </div>
-                        <div className="flex justify-between"><span className="text-gray-400">Original</span><span className="font-medium text-gray-900 mono">{formatBudgetCurrency(revision.original_amount, currency)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">New Amount</span><span className="font-medium text-blue-600 mono">{formatBudgetCurrency(revision.new_amount, currency)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Original</span><span className="font-medium text-gray-900">{formatBudgetCurrency(revision.original_amount, currency)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">New Amount</span><span className="font-medium text-blue-600">{formatBudgetCurrency(revision.new_amount, currency)}</span></div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Reduction</span>
                           <div className="text-right">
@@ -654,8 +651,8 @@ export default function BudgetRevisionPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center text-xs text-gray-600">{getBudgetDepartment(revision.budget_id)}</td>
-                          <td className="px-4 py-3 text-center text-sm text-gray-900 mono">{formatBudgetCurrency(revision.original_amount, currency)}</td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600 mono">{formatBudgetCurrency(revision.new_amount, currency)}</td>
+                          <td className="px-4 py-3 text-center text-sm text-gray-900">{formatBudgetCurrency(revision.original_amount, currency)}</td>
+                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600">{formatBudgetCurrency(revision.new_amount, currency)}</td>
                           <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
                               <TrendingDown className="w-2.5 h-2.5" />{reductionPercent}%

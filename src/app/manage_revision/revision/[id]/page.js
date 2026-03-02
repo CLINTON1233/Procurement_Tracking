@@ -233,7 +233,7 @@ export default function BudgetRevisionPage() {
                 showConfirmButton: false,
             });
 
-            router.push("/budget_revision");
+            router.push("/manage_revision/budget_revision");
         } catch (error) {
             console.error("Error creating revision:", error);
             Swal.fire({
