@@ -486,7 +486,7 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-600" /> Recent Requests
                 </h3>
-                <Link href="/request_budget_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+                <Link href="/manage_request/budget_request_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
                   View All →
                 </Link>
               </div>
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                     {recentRequests.map(req => {
                       const s = getStatusBadge(req.status);
                       return (
-                        <tr key={req.id} onClick={() => router.push("/request_budget_list")} 
+                        <tr key={req.id} onClick={() => router.push("/manage_request/budget_request_list")} 
                           className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                           <td className="px-4 py-3 text-sm font-semibold text-gray-900">{req.request_no}</td>
                           <td className="px-4 py-3 text-xs text-gray-600">{req.requester_name}</td>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                   <RotateCcw className="w-4 h-4 text-blue-600" /> Recent Revisions
                 </h3>
-                <Link href="/revision_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
+                <Link href="/manage_revision/budget_revision" className="text-sm text-blue-600 font-medium hover:text-blue-700">
                   View All →
                 </Link>
               </div>
@@ -556,7 +556,7 @@ export default function DashboardPage() {
                       const reduction = Number(rv.original_amount) - Number(rv.new_amount);
                       const pct = Number(rv.original_amount) > 0 ? ((reduction / Number(rv.original_amount)) * 100).toFixed(1) : "0.0";
                       return (
-                        <tr key={rv.id} onClick={() => router.push("/revision_list")} 
+                        <tr key={rv.id} onClick={() => router.push("/manage_revision/budget_revision")} 
                           className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                           <td className="px-4 py-3">
                             <div className="font-semibold text-gray-900 text-sm">{bd?.budget_name || `ID: ${rv.budget_id}`}</div>
