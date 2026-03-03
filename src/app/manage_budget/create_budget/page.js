@@ -24,18 +24,25 @@ import {
   RotateCcw,
   TrendingUp,
   Edit3,
+  XCircle,
   Check,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
-import { CURRENCIES, formatCurrency, getCurrencySymbol, convertCurrency } from "@/utils/currency";
+import {
+  CURRENCIES,
+  formatCurrency,
+  getCurrencySymbol,
+  convertCurrency,
+  formatIDR,
+} from "@/utils/currency";
 
 // Data kurs dari CURRENCIES
 const getInitialExchangeRates = () => {
   const rates = { IDR: 1 };
-  CURRENCIES.forEach(currency => {
-    if (currency.code !== 'IDR') {
+  CURRENCIES.forEach((currency) => {
+    if (currency.code !== "IDR") {
       rates[currency.code] = currency.rate;
     }
   });
@@ -43,7 +50,7 @@ const getInitialExchangeRates = () => {
 };
 
 // Fungsi untuk generate ID yang stabil
-const generateStableId = (prefix = '') => {
+const generateStableId = (prefix = "") => {
   return `${prefix}${Math.random().toString(36).substring(2, 9)}`;
 };
 
@@ -55,10 +62,29 @@ export default function CreateBudgetPage() {
   const [editingRate, setEditingRate] = useState(null);
   const [tempRateValue, setTempRateValue] = useState("");
   const [mounted, setMounted] = useState(false);
-  
+  const [entryErrors, setEntryErrors] = useState({});
+
+  const validateAmountByType = (entry) => {
+    if (entry.budget_type === "OPEX" && entry.total_amount) {
+      const amount = parseFloat(entry.total_amount);
+      const amountInIDR =
+        entry.currency === "IDR"
+          ? amount
+          : amount * (exchangeRates[entry.currency] || 1);
+
+      if (amountInIDR > 16000000) {
+        return {
+          isValid: false,
+          message: `OPEX budget cannot exceed IDR 16,000,000 (Current: ${formatIDR(amountInIDR)})`,
+        };
+      }
+    }
+    return { isValid: true };
+  };
+
   const [budgetEntries, setBudgetEntries] = useState([
     {
-      id: 'entry-1', // ID statis untuk entry pertama
+      id: "entry-1", // ID statis untuk entry pertama
       fiscal_year: new Date().getFullYear().toString(),
       budget_code: "",
       department_name: "",
@@ -113,15 +139,17 @@ export default function CreateBudgetPage() {
       if (newRate > 0) {
         const newRates = { ...exchangeRates, [currencyCode]: newRate };
         saveRatesToStorage(newRates);
-        
+
         // Recalculate all entries that use this currency
-        setBudgetEntries(prev => prev.map(entry => {
-          if (entry.showConvert && entry.currency && entry.convert_to) {
-            return recalculateEntry(entry, newRates);
-          }
-          return entry;
-        }));
-        
+        setBudgetEntries((prev) =>
+          prev.map((entry) => {
+            if (entry.showConvert && entry.currency && entry.convert_to) {
+              return recalculateEntry(entry, newRates);
+            }
+            return entry;
+          }),
+        );
+
         Swal.fire({
           title: "Success!",
           text: `Exchange rate for ${currencyCode} updated to ${newRate.toLocaleString()} IDR`,
@@ -174,25 +202,36 @@ export default function CreateBudgetPage() {
 
   // Fungsi untuk menghitung ulang entry berdasarkan rates terbaru
   const recalculateEntry = (entry, rates = exchangeRates) => {
-    if (!entry.showConvert || !entry.total_amount || !entry.currency || !entry.convert_to) {
+    if (
+      !entry.showConvert ||
+      !entry.total_amount ||
+      !entry.currency ||
+      !entry.convert_to
+    ) {
       return entry;
     }
 
     if (entry.currency === entry.convert_to) {
-      return { ...entry, exchange_rate: "1.0000", converted_amount: entry.total_amount };
+      return {
+        ...entry,
+        exchange_rate: "1.0000",
+        converted_amount: entry.total_amount,
+      };
     }
 
     let convertedAmount, exchangeRateValue;
-    
+
     if (entry.useCustomRate && entry.customRate) {
       // Gunakan rate kustom yang dimasukkan user
       exchangeRateValue = entry.customRate;
-      convertedAmount = (parseFloat(entry.total_amount) / parseFloat(entry.customRate)).toFixed(2);
+      convertedAmount = (
+        parseFloat(entry.total_amount) / parseFloat(entry.customRate)
+      ).toFixed(2);
     } else {
       // Gunakan rate dari database
       const fromRate = rates[entry.currency] || 1;
       const toRate = rates[entry.convert_to] || 1;
-      
+
       // Hitung amount dalam IDR dulu, lalu konversi ke target
       const amountInIDR = parseFloat(entry.total_amount) * fromRate;
       convertedAmount = (amountInIDR / toRate).toFixed(2);
@@ -212,18 +251,40 @@ export default function CreateBudgetPage() {
         if (entry.id === id) {
           let updatedEntry = { ...entry, [field]: value };
 
-          // Auto calculate conversion jika perlu
           if (
-            ["total_amount", "currency", "convert_to", "useCustomRate", "customRate"].includes(field) ||
+            [
+              "total_amount",
+              "currency",
+              "convert_to",
+              "useCustomRate",
+              "customRate",
+            ].includes(field) ||
             (field === "showConvert" && value === true)
           ) {
             updatedEntry = recalculateEntry(updatedEntry);
           }
 
+          if (
+            field === "total_amount" ||
+            field === "currency" ||
+            field === "budget_type"
+          ) {
+            const validation = validateAmountByType(updatedEntry);
+            if (!validation.isValid) {
+              setEntryErrors((prev) => ({ ...prev, [id]: validation.message }));
+            } else {
+              setEntryErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[id];
+                return newErrors;
+              });
+            }
+          }
+
           return updatedEntry;
         }
         return entry;
-      })
+      }),
     );
   };
 
@@ -242,7 +303,7 @@ export default function CreateBudgetPage() {
           return newShowConvert ? recalculateEntry(updatedEntry) : updatedEntry;
         }
         return entry;
-      })
+      }),
     );
   };
 
@@ -256,12 +317,13 @@ export default function CreateBudgetPage() {
           };
         }
         return entry;
-      })
+      }),
     );
   };
 
   const validateEntries = () => {
     const errors = [];
+    const newEntryErrors = {};
 
     budgetEntries.forEach((entry, index) => {
       const entryErrors = [];
@@ -272,7 +334,18 @@ export default function CreateBudgetPage() {
       if (!entry.total_amount || parseFloat(entry.total_amount) <= 0)
         entryErrors.push("Total amount must be greater than 0");
 
-      if (entry.showConvert && entry.useCustomRate && (!entry.customRate || parseFloat(entry.customRate) <= 0)) {
+      // Validasi khusus OPEX
+      const validation = validateAmountByType(entry);
+      if (!validation.isValid) {
+        entryErrors.push(validation.message);
+        newEntryErrors[entry.id] = validation.message;
+      }
+
+      if (
+        entry.showConvert &&
+        entry.useCustomRate &&
+        (!entry.customRate || parseFloat(entry.customRate) <= 0)
+      ) {
         entryErrors.push("Custom exchange rate must be greater than 0");
       }
 
@@ -281,6 +354,7 @@ export default function CreateBudgetPage() {
       }
     });
 
+    setEntryErrors(newEntryErrors);
     return errors;
   };
 
@@ -288,7 +362,7 @@ export default function CreateBudgetPage() {
     const errors = validateEntries();
     if (errors.length > 0) {
       Swal.fire({
-        title: "Validation Error",
+        title: "Cannot Create Budget",
         html: errors.map((err) => `• ${err}`).join("<br>"),
         icon: "warning",
         confirmButtonColor: "#1e40af",
@@ -333,7 +407,7 @@ export default function CreateBudgetPage() {
 
         if (entry.showConvert && entry.convert_to) {
           budgetData.convert_to = entry.convert_to;
-          budgetData.exchange_rate = entry.useCustomRate 
+          budgetData.exchange_rate = entry.useCustomRate
             ? parseFloat(entry.customRate)
             : parseFloat(entry.exchange_rate || 1);
           budgetData.converted_amount = parseFloat(entry.converted_amount || 0);
@@ -378,7 +452,7 @@ export default function CreateBudgetPage() {
       if (result.isConfirmed) {
         setBudgetEntries([
           {
-            id: 'entry-1',
+            id: "entry-1",
             fiscal_year: new Date().getFullYear().toString(),
             budget_code: "",
             department_name: "",
@@ -412,10 +486,13 @@ export default function CreateBudgetPage() {
 
   const Label = ({ children, required }) => (
     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-      {children}{required && <span className="text-red-500 ml-0.5">*</span>}
+      {children}
+      {required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
   );
-  const Hint = ({ children }) => <p className="text-xs text-gray-400 mt-1">{children}</p>;
+  const Hint = ({ children }) => (
+    <p className="text-xs text-gray-400 mt-1">{children}</p>
+  );
 
   // Prevent hydration mismatch dengan tidak merender konten sampai mounted
   if (!mounted) {
@@ -457,8 +534,12 @@ export default function CreateBudgetPage() {
                     <Wallet className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-base font-bold text-gray-800 leading-tight">Create New Budget</h1>
-                    <p className="text-xs text-gray-400 leading-tight">Add one or multiple Capex/Opex budget entries</p>
+                    <h1 className="text-base font-bold text-gray-800 leading-tight">
+                      Create New Budget
+                    </h1>
+                    <p className="text-xs text-gray-400 leading-tight">
+                      Add one or multiple Capex/Opex budget entries
+                    </p>
                   </div>
                 </div>
                 <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white border border-gray-300 text-gray-600">
@@ -492,6 +573,9 @@ export default function CreateBudgetPage() {
                   tempRateValue={tempRateValue}
                   setTempRateValue={setTempRateValue}
                   handleUpdateRate={handleUpdateRate}
+                  entryErrors={entryErrors}
+                  setEntryErrors={setEntryErrors}
+                  validateAmountByType={validateAmountByType}
                 />
               ))}
             </div>
@@ -515,11 +599,17 @@ export default function CreateBudgetPage() {
                   <p className="font-semibold mb-1">Budget Creation Process:</p>
                   <p>• Fill in all required fields marked with *</p>
                   <p>• Select currency for each budget entry</p>
-                  <p>• Update exchange rates in the Budget Amount section if needed (based on current market)</p>
+                  <p>
+                    • Update exchange rates in the Budget Amount section if
+                    needed (based on current market)
+                  </p>
                   <p>• Use "Custom Rate" option for special exchange rates</p>
                   <p>• Enter total budget amount</p>
                   <p>• Optionally convert to another currency for reference</p>
-                  <p>• Click "Add Another Budget Entry" to create multiple budgets at once</p>
+                  <p>
+                    • Click "Add Another Budget Entry" to create multiple
+                    budgets at once
+                  </p>
                 </div>
               </div>
 
@@ -542,7 +632,9 @@ export default function CreateBudgetPage() {
                     className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
                   >
                     <Save className="w-4 h-4" />
-                    {loading ? "Saving..." : `Save ${budgetEntries.length} Budgets`}
+                    {loading
+                      ? "Saving..."
+                      : `Save ${budgetEntries.length} Budgets`}
                   </button>
                 </div>
               </div>
@@ -576,9 +668,16 @@ function BudgetEntryForm({
   tempRateValue,
   setTempRateValue,
   handleUpdateRate,
+  entryErrors,
+  setEntryErrors,
+  validateAmountByType,
 }) {
   const getExchangeRate = () => {
-    if (entry.currency && entry.convert_to && entry.currency !== entry.convert_to) {
+    if (
+      entry.currency &&
+      entry.convert_to &&
+      entry.currency !== entry.convert_to
+    ) {
       if (entry.useCustomRate && entry.customRate) {
         return entry.customRate;
       }
@@ -598,7 +697,7 @@ function BudgetEntryForm({
       entry.currency !== entry.convert_to
     ) {
       let fromRate, toRate;
-      
+
       if (entry.useCustomRate && entry.customRate) {
         fromRate = 1;
         toRate = parseFloat(entry.customRate);
@@ -606,7 +705,7 @@ function BudgetEntryForm({
         fromRate = exchangeRates[entry.currency] || 1;
         toRate = exchangeRates[entry.convert_to] || 1;
       }
-      
+
       const amountInIDR = parseFloat(entry.total_amount) * fromRate;
       return (amountInIDR / toRate).toFixed(2);
     }
@@ -628,14 +727,16 @@ function BudgetEntryForm({
   };
 
   const getCurrencyName = (code) => {
-    const currency = CURRENCIES.find(c => c.code === code);
+    const currency = CURRENCIES.find((c) => c.code === code);
     return currency ? currency.name : code;
   };
 
   const SectionDivider = ({ icon: Icon, label }) => (
     <div className="flex items-center gap-2 pt-6 pb-4 border-t border-gray-100 mt-2">
       <Icon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</h3>
+      <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+        {label}
+      </h3>
     </div>
   );
 
@@ -672,7 +773,9 @@ function BudgetEntryForm({
         {/* BUDGET INFORMATION */}
         <div className="flex items-center gap-2 mb-5">
           <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Budget Information</h3>
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Budget Information
+          </h3>
         </div>
 
         {/* Budget Name */}
@@ -695,7 +798,9 @@ function BudgetEntryForm({
             <input
               type="text"
               value={entry.budget_code || ""}
-              onChange={(e) => onUpdate(entry.id, "budget_code", e.target.value)}
+              onChange={(e) =>
+                onUpdate(entry.id, "budget_code", e.target.value)
+              }
               className={inputCls}
               placeholder="BUD-2026-001"
             />
@@ -706,7 +811,9 @@ function BudgetEntryForm({
             <input
               type="text"
               value={entry.fiscal_year}
-              onChange={(e) => onUpdate(entry.id, "fiscal_year", e.target.value)}
+              onChange={(e) =>
+                onUpdate(entry.id, "fiscal_year", e.target.value)
+              }
               className={inputCls}
               placeholder="2026"
               required
@@ -720,12 +827,23 @@ function BudgetEntryForm({
           <Label required>Budget Type</Label>
           <div className="flex gap-6 mt-1">
             {["CAPEX", "OPEX"].map((type) => (
-              <label key={type} className="flex items-center gap-2 cursor-pointer">
+              <label
+                key={type}
+                className="flex items-center gap-2 cursor-pointer"
+              >
                 <input
                   type="radio"
                   name={`budget_type_${entry.id}`}
                   checked={entry.budget_type === type}
-                  onChange={() => onUpdate(entry.id, "budget_type", type)}
+                  onChange={() => {
+                    onUpdate(entry.id, "budget_type", type);
+                    const validation = validateAmountByType({
+                      ...entry,
+                      budget_type: type,
+                    });
+                    if (!validation.isValid) {
+                    }
+                  }}
                   className="w-4 h-4 accent-blue-600"
                 />
                 <span className="text-sm text-gray-700">{type}</span>
@@ -743,7 +861,9 @@ function BudgetEntryForm({
             <div className="relative">
               <select
                 value={entry.department_name}
-                onChange={(e) => onUpdate(entry.id, "department_name", e.target.value)}
+                onChange={(e) =>
+                  onUpdate(entry.id, "department_name", e.target.value)
+                }
                 className={selectCls}
                 required
               >
@@ -762,7 +882,9 @@ function BudgetEntryForm({
             <input
               type="text"
               value={entry.budget_owner || ""}
-              onChange={(e) => onUpdate(entry.id, "budget_owner", e.target.value)}
+              onChange={(e) =>
+                onUpdate(entry.id, "budget_owner", e.target.value)
+              }
               className={inputCls}
               placeholder="Person responsible"
             />
@@ -778,17 +900,24 @@ function BudgetEntryForm({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-700">Exchange Rates (1 IDR = ?)</h3>
+              <h3 className="text-sm font-semibold text-gray-700">
+                Exchange Rates (1 IDR = ?)
+              </h3>
             </div>
             <p className="text-xs text-gray-500">Click on rate to edit</p>
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {Object.entries(exchangeRates)
-              .filter(([code]) => code !== 'IDR')
+              .filter(([code]) => code !== "IDR")
               .map(([code, rate]) => (
-                <div key={code} className="bg-white rounded-lg border border-gray-200 p-2">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">1 {code}</div>
+                <div
+                  key={code}
+                  className="bg-white rounded-lg border border-gray-200 p-2"
+                >
+                  <div className="text-xs font-semibold text-gray-500 mb-1">
+                    1 {code}
+                  </div>
                   {editingRate === code ? (
                     <div className="flex items-center gap-1">
                       <input
@@ -825,7 +954,8 @@ function BudgetEntryForm({
               ))}
           </div>
           <p className="text-xs text-gray-400 mt-2">
-            * Rates are saved locally. Update them manually based on current market rates.
+            * Rates are saved locally. Update them manually based on current
+            market rates.
           </p>
         </div>
 
@@ -846,23 +976,39 @@ function BudgetEntryForm({
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
-            {entry.currency !== 'IDR' && (
+            {entry.currency !== "IDR" && (
               <p className="text-xs text-blue-600 mt-1">
-                1 {entry.currency} = {exchangeRates[entry.currency]?.toLocaleString()} IDR
+                1 {entry.currency} ={" "}
+                {exchangeRates[entry.currency]?.toLocaleString()} IDR
               </p>
             )}
           </div>
           <div>
-            <Label required>Total Amount ({getCurrencySymbol(entry.currency)})</Label>
+            <Label required>
+              Total Amount ({getCurrencySymbol(entry.currency)})
+            </Label>
             <input
               type="number"
               value={entry.total_amount}
-              onChange={(e) => onUpdate(entry.id, "total_amount", e.target.value)}
-              className={inputCls}
+              onChange={(e) =>
+                onUpdate(entry.id, "total_amount", e.target.value)
+              }
+              className={`${inputCls} ${entryErrors && entryErrors[entry.id] ? "border-red-500 focus:ring-red-500" : ""}`}
               placeholder="Enter total budget amount"
               min="0"
               required
             />
+            {entry.budget_type === "OPEX" && (
+              <p className="text-xs text-amber-600 mt-1">
+                Max: Rp 16,000,000 for OPEX
+              </p>
+            )}
+            {entryErrors && entryErrors[entry.id] && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <XCircle className="w-3 h-3" />
+                {entryErrors[entry.id]}
+              </p>
+            )}
           </div>
         </div>
 
@@ -880,12 +1026,17 @@ function BudgetEntryForm({
             {entry.showConverted && (
               <div className="mt-2 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-md px-4 py-3">
                 <div>
-                  <p className="text-xs text-gray-600 font-medium">Equivalent in IDR</p>
+                  <p className="text-xs text-gray-600 font-medium">
+                    Equivalent in IDR
+                  </p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    1 {entry.currency} = {exchangeRates[entry.currency]?.toLocaleString() || 1} IDR
+                    1 {entry.currency} ={" "}
+                    {exchangeRates[entry.currency]?.toLocaleString() || 1} IDR
                   </p>
                 </div>
-                <span className="text-sm font-bold text-blue-700">{formatIDR(getAmountInIDR())}</span>
+                <span className="text-sm font-bold text-blue-700">
+                  {formatIDR(getAmountInIDR())}
+                </span>
               </div>
             )}
           </div>
@@ -900,9 +1051,11 @@ function BudgetEntryForm({
               onChange={() => onToggleConvert(entry.id)}
               className="w-4 h-4 accent-blue-600 rounded"
             />
-            <span className="text-sm text-gray-700">Convert to another currency for reference</span>
+            <span className="text-sm text-gray-700">
+              Convert to another currency for reference
+            </span>
           </label>
-          
+
           {entry.showConvert && (
             <div className="pl-6 border-l-2 border-blue-300 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -911,7 +1064,9 @@ function BudgetEntryForm({
                   <div className="relative">
                     <select
                       value={entry.convert_to}
-                      onChange={(e) => onUpdate(entry.id, "convert_to", e.target.value)}
+                      onChange={(e) =>
+                        onUpdate(entry.id, "convert_to", e.target.value)
+                      }
                       className={selectCls}
                     >
                       <option value="">Select Currency</option>
@@ -919,14 +1074,15 @@ function BudgetEntryForm({
                         .filter((code) => code !== entry.currency)
                         .map((code) => (
                           <option key={code} value={code}>
-                            {code} — {getCurrencyName(code)} ({getCurrencySymbol(code)})
+                            {code} — {getCurrencyName(code)} (
+                            {getCurrencySymbol(code)})
                           </option>
                         ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label>Exchange Rate Option</Label>
                   <div className="space-y-2">
@@ -941,17 +1097,23 @@ function BudgetEntryForm({
                         }}
                         className="w-4 h-4 accent-blue-600"
                       />
-                      <span className="text-sm text-gray-700">Use system rate</span>
+                      <span className="text-sm text-gray-700">
+                        Use system rate
+                      </span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name={`rate_option_${entry.id}`}
                         checked={entry.useCustomRate}
-                        onChange={() => onUpdate(entry.id, "useCustomRate", true)}
+                        onChange={() =>
+                          onUpdate(entry.id, "useCustomRate", true)
+                        }
                         className="w-4 h-4 accent-blue-600"
                       />
-                      <span className="text-sm text-gray-700">Use custom rate</span>
+                      <span className="text-sm text-gray-700">
+                        Use custom rate
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -962,17 +1124,23 @@ function BudgetEntryForm({
                   <div>
                     <Label>Custom Exchange Rate</Label>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">1 {entry.currency} =</span>
+                      <span className="text-sm text-gray-600">
+                        1 {entry.currency} =
+                      </span>
                       <input
                         type="number"
                         value={entry.customRate || ""}
-                        onChange={(e) => onUpdate(entry.id, "customRate", e.target.value)}
+                        onChange={(e) =>
+                          onUpdate(entry.id, "customRate", e.target.value)
+                        }
                         className={`${inputCls} w-32`}
                         placeholder="Rate"
                         step="0.0001"
                         min="0"
                       />
-                      <span className="text-sm text-gray-600">{entry.convert_to}</span>
+                      <span className="text-sm text-gray-600">
+                        {entry.convert_to}
+                      </span>
                     </div>
                     <Hint>Enter current market rate manually</Hint>
                   </div>
@@ -984,7 +1152,10 @@ function BudgetEntryForm({
                       readOnly
                       className={readonlyCls}
                     />
-                    <Hint>1 {entry.currency} = {getExchangeRate()} {entry.convert_to}</Hint>
+                    <Hint>
+                      1 {entry.currency} = {getExchangeRate()}{" "}
+                      {entry.convert_to}
+                    </Hint>
                   </div>
                 </div>
               )}
@@ -999,7 +1170,10 @@ function BudgetEntryForm({
                       readOnly
                       className={readonlyCls}
                     />
-                    <Hint>1 {entry.currency} = {getExchangeRate()} {entry.convert_to}</Hint>
+                    <Hint>
+                      1 {entry.currency} = {getExchangeRate()}{" "}
+                      {entry.convert_to}
+                    </Hint>
                   </div>
                   <div>
                     <Label>Converted Amount ({entry.convert_to})</Label>
@@ -1026,7 +1200,9 @@ function BudgetEntryForm({
             <input
               type="date"
               value={entry.period_start}
-              onChange={(e) => onUpdate(entry.id, "period_start", e.target.value)}
+              onChange={(e) =>
+                onUpdate(entry.id, "period_start", e.target.value)
+              }
               className={inputCls}
             />
           </div>

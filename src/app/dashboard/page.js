@@ -248,14 +248,14 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-gray-500 mt-1">Monitor CAPEX/OPEX budgets, requests & revisions</p>
           </div>
-          <button
+          {/* <button
             onClick={() => { setRefreshing(true); fetchAllDashboardData(); }}
             disabled={refreshing}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto justify-center"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
+          </button> */}
         </div>
 
         {/* ── Main Layout ── */}

@@ -22,7 +22,8 @@ import {
   showBulkEditBudgetModal,
 } from "@/components/modals/BudgetManagementModals";
 import { departmentService } from "@/services/departmentService";
-import { formatTableCurrency } from "@/utils/currencyFormatter";
+import { formatTableCurrency, getSymbol } from "@/utils/currencyFormatter";
+import { CURRENCIES, convertCurrency } from "@/utils/currency";
 
 // ─── Inline Donut ─────────────────────────────────────────────────────────────
 const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) => {
@@ -54,13 +55,24 @@ const StackedBar = ({ segments }) => (
   </div>
 );
 
-const fmtCompact = (n) => {
-  if (!n) return "0";
-  if (n >= 1e12) return (n / 1e12).toFixed(1) + "T";
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
-  return n.toString();
+// Fungsi untuk menentukan ukuran font berdasarkan panjang angka
+const getFontSizeClass = (numStr) => {
+  const length = numStr.replace(/[^0-9]/g, '').length;
+  if (length >= 12) return "text-xl"; // 1T ke atas
+  if (length >= 10) return "text-2xl"; // 1B - 999M
+  if (length >= 8) return "text-3xl"; // 10M - 999M
+  if (length >= 6) return "text-3xl"; // 100K - 9.9M
+  return "text-3xl"; // default
+};
+
+// Format amount tanpa compact (full number dengan pemisah ribuan)
+const formatFullNumber = (amount, currency) => {
+  const symbol = getSymbol(currency);
+  const formatted = new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount || 0);
+  return { symbol, formatted };
 };
 
 export default function BudgetManagementPage() {
@@ -70,6 +82,10 @@ export default function BudgetManagementPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [headerTypeFilter, setHeaderTypeFilter] = useState("all");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState("IDR");
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [viewMode, setViewMode] = useState("list");
   const [showFilters, setShowFilters] = useState(false);
@@ -124,6 +140,57 @@ export default function BudgetManagementPage() {
       totalReserved: data.reduce((s, b) => s + Number(b.reserved_amount_idr || 0), 0),
       totalUsed: data.reduce((s, b) => s + Number(b.used_amount_idr || 0), 0),
     });
+  };
+
+  // Filter budgets berdasarkan tipe dari header
+  const filteredBudgetsByHeader = useMemo(() => {
+    if (headerTypeFilter === "all") return budgets;
+    return budgets.filter(b => b.budget_type === headerTypeFilter);
+  }, [budgets, headerTypeFilter]);
+
+  // Hitung ulang stats berdasarkan filter header
+  const filteredStats = useMemo(() => {
+    const filtered = filteredBudgetsByHeader;
+    return {
+      total: filtered.length,
+      CAPEX: filtered.filter((b) => b.budget_type === "CAPEX").length,
+      OPEX: filtered.filter((b) => b.budget_type === "OPEX").length,
+      active: filtered.filter((b) => b.is_active).length,
+      totalAmount: filtered.reduce((s, b) => s + Number(b.total_amount_idr || 0), 0),
+      totalRemaining: filtered.reduce((s, b) => s + Number(b.remaining_amount_idr || 0), 0),
+      totalReserved: filtered.reduce((s, b) => s + Number(b.reserved_amount_idr || 0), 0),
+      totalUsed: filtered.reduce((s, b) => s + Number(b.used_amount_idr || 0), 0),
+    };
+  }, [filteredBudgetsByHeader]);
+
+  // Format amount dengan full number (tanpa compact)
+  const formatDisplayAmount = (amountInIDR) => {
+    if (displayCurrency === "IDR") {
+      const { symbol, formatted } = formatFullNumber(amountInIDR, "IDR");
+      return `${symbol} ${formatted}`;
+    } else {
+      const amountInUSD = convertCurrency(amountInIDR, "IDR", "USD");
+      const { symbol, formatted } = formatFullNumber(amountInUSD, "USD");
+      return `${symbol} ${formatted}`;
+    }
+  };
+
+  // Format untuk angka besar dengan font yang mengecil
+  const formatAmountWithDynamicFont = (amountInIDR) => {
+    let amount, currency;
+    
+    if (displayCurrency === "IDR") {
+      amount = amountInIDR;
+      currency = "IDR";
+    } else {
+      amount = convertCurrency(amountInIDR, "IDR", "USD");
+      currency = "USD";
+    }
+    
+    const { symbol, formatted } = formatFullNumber(amount, currency);
+    const fontSizeClass = getFontSizeClass(formatted);
+    
+    return { symbol, formatted, fontSizeClass };
   };
 
   const handleRefresh = () => { setRefreshing(true); fetchBudgets(); };
@@ -186,13 +253,15 @@ export default function BudgetManagementPage() {
 
   const uniqueDepartments = useMemo(() => [...new Set(budgets.map(b => b.department_name))].filter(Boolean), [budgets]);
 
+  // Filter untuk tabel - mengikuti header filter
   const filteredBudgets = useMemo(() => {
     let filtered = budgets.filter(budget => {
       const q = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || [budget.budget_name, budget.department_name, budget.description, budget.budget_owner].some(v => (v || "").toLowerCase().includes(q));
       const matchesType = typeFilter === "all" || budget.budget_type === typeFilter;
       const matchesDept = departmentFilter === "all" || budget.department_name === departmentFilter;
-      return matchesSearch && matchesType && matchesDept;
+      const matchesHeaderType = headerTypeFilter === "all" || budget.budget_type === headerTypeFilter;
+      return matchesSearch && matchesType && matchesDept && matchesHeaderType;
     });
     if (sorting.length > 0) {
       const { id, desc } = sorting[0];
@@ -203,7 +272,7 @@ export default function BudgetManagementPage() {
       });
     }
     return filtered;
-  }, [budgets, searchTerm, typeFilter, departmentFilter, sorting]);
+  }, [budgets, searchTerm, typeFilter, departmentFilter, headerTypeFilter, sorting]);
 
   const exportToExcel = (exportType = "current") => {
     try {
@@ -228,28 +297,28 @@ export default function BudgetManagementPage() {
 
   const formatBudgetCurrency = (amount, currencyCode) => formatTableCurrency(amount, currencyCode);
 
-  // Computed chart data
-  const usedPct = stats.totalAmount > 0 ? (stats.totalUsed / stats.totalAmount) * 100 : 0;
-  const remainingPct = stats.totalAmount > 0 ? (stats.totalRemaining / stats.totalAmount) * 100 : 0;
-  const reservedPct = stats.totalAmount > 0 ? (stats.totalReserved / stats.totalAmount) * 100 : 0;
-  const capexPct = stats.total > 0 ? (stats.CAPEX / stats.total) * 100 : 0;
-  const activePct = stats.total > 0 ? (stats.active / stats.total) * 100 : 0;
+  // Computed chart data berdasarkan filteredStats
+  const usedPct = filteredStats.totalAmount > 0 ? (filteredStats.totalUsed / filteredStats.totalAmount) * 100 : 0;
+  const remainingPct = filteredStats.totalAmount > 0 ? (filteredStats.totalRemaining / filteredStats.totalAmount) * 100 : 0;
+  const reservedPct = filteredStats.totalAmount > 0 ? (filteredStats.totalReserved / filteredStats.totalAmount) * 100 : 0;
+  const capexPct = filteredStats.total > 0 ? (filteredStats.CAPEX / filteredStats.total) * 100 : 0;
+  const activePct = filteredStats.total > 0 ? (filteredStats.active / filteredStats.total) * 100 : 0;
 
-  // Dept bar chart data
+  // Dept bar chart data berdasarkan filteredBudgetsByHeader
   const deptChartData = useMemo(() => {
     const map = new Map();
-    budgets.forEach(b => {
+    filteredBudgetsByHeader.forEach(b => {
       const d = b.department_name;
       map.set(d, (map.get(d) || 0) + Number(b.total_amount || 0));
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value: Math.round(value / 1e6) }))
       .sort((a, b) => b.value - a.value).slice(0, 7);
-  }, [budgets]);
+  }, [filteredBudgetsByHeader]);
 
-  // Budget type pie data
+  // Budget type pie data berdasarkan filteredStats
   const pieData = [
-    { name: "CAPEX", value: stats.CAPEX },
-    { name: "OPEX", value: stats.OPEX },
+    { name: "CAPEX", value: filteredStats.CAPEX },
+    { name: "OPEX", value: filteredStats.OPEX },
   ];
   const PIE_COLORS = ["#1e3a5f", "#2563eb"];
 
@@ -268,7 +337,8 @@ export default function BudgetManagementPage() {
       <style>{`
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .period-badge:hover { background: #2c4a7a; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
         .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -281,54 +351,169 @@ export default function BudgetManagementPage() {
 
       <div className="space-y-5">
 
-        {/* ── Header ── */}
+        {/* ── Header with clickable badge ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-bold text-gray-900">Manage Budget</h1>
-              <span className="period-badge">CAPEX / OPEX — {new Date().getFullYear()}</span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {headerTypeFilter === "all" ? "CAPEX/OPEX" : headerTypeFilter} — {new Date().getFullYear()}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showTypeDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1">
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("all");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        ALL (CAPEX & OPEX)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("CAPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        CAPEX 
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("OPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        OPEX 
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">Manage budgets, track allocations, and monitor remaining funds</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {headerTypeFilter === "all" 
+                ? "Showing all CAPEX and OPEX budgets" 
+                : `Showing ${headerTypeFilter} budgets only`}
+            </p>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
         </div>
 
-        {/* ── Row 1: 4 Donut KPIs ── */}
+        {/* ── Row 1: 4 Donut KPIs with currency filter ── */}
         <div className="card p-5">
+          <div className="flex justify-end mb-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-200 transition"
+              >
+                {displayCurrency === "IDR" ? "Rp IDR" : "$ USD"}
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showCurrencyDropdown && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowCurrencyDropdown(false)} />
+                  <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1">
+                    <button
+                      onClick={() => {
+                        setDisplayCurrency("IDR");
+                        setShowCurrencyDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    >
+                      Rp IDR
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDisplayCurrency("USD");
+                        setShowCurrencyDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    >
+                      $ USD
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-gray-100">
+            {/* Remaining Card */}
             <div className="donut-card">
-              <h4>Budget Used</h4>
-              <InlineDonut pct={usedPct} color="#2563eb" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{fmtCompact(stats.totalUsed)} / {fmtCompact(stats.totalAmount)}</p>
+              <h4>Remaining</h4>
+              {(() => {
+                const { symbol, formatted, fontSizeClass } = formatAmountWithDynamicFont(filteredStats.totalRemaining);
+                return (
+                  <div className={`font-bold ${fontSizeClass} text-emerald-600 mb-1 break-all text-center px-1`}>
+                    {symbol} {formatted}
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-gray-500">from {formatDisplayAmount(filteredStats.totalAmount)} total</p>
             </div>
+            
+            {/* Total Card */}
             <div className="donut-card">
-              <h4>CAPEX Ratio</h4>
-              <InlineDonut pct={capexPct} color="#1e3a5f" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.CAPEX} CAPEX • {stats.OPEX} OPEX</p>
+              <h4>Total Amount</h4>
+              {(() => {
+                const { symbol, formatted, fontSizeClass } = formatAmountWithDynamicFont(filteredStats.totalAmount);
+                return (
+                  <div className={`font-bold ${fontSizeClass} text-gray-800 mb-1 break-all text-center px-1`}>
+                    {symbol} {formatted}
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-gray-500">total budget</p>
             </div>
+            
+            {/* Used Card */}
             <div className="donut-card">
-              <h4>Budget Health</h4>
-              <InlineDonut pct={remainingPct} color="#10b981" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{fmtCompact(stats.totalRemaining)} remaining</p>
+              <h4>Used</h4>
+              {(() => {
+                const { symbol, formatted, fontSizeClass } = formatAmountWithDynamicFont(filteredStats.totalUsed);
+                return (
+                  <div className={`font-bold ${fontSizeClass} text-blue-600 mb-1 break-all text-center px-1`}>
+                    {symbol} {formatted}
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-gray-500">{usedPct.toFixed(1)}% of total</p>
             </div>
+            
+            {/* Reserved Card */}
             <div className="donut-card">
-              <h4>Active Budgets</h4>
-              <InlineDonut pct={activePct} color="#f59e0b" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.active} of {stats.total} active</p>
+              <h4>Reserved</h4>
+              {(() => {
+                const { symbol, formatted, fontSizeClass } = formatAmountWithDynamicFont(filteredStats.totalReserved);
+                return (
+                  <div className={`font-bold ${fontSizeClass} text-yellow-600 mb-1 break-all text-center px-1`}>
+                    {symbol} {formatted}
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-gray-500">{reservedPct.toFixed(1)}% of total</p>
             </div>
           </div>
         </div>
 
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Bar Chart by Department - FIXED VISIBILITY */}
+          {/* Bar Chart by Department */}
           <div className="card p-5 md:col-span-3">
             <p className="section-title flex items-center gap-2">
               <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
@@ -363,7 +548,7 @@ export default function BudgetManagementPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Budget Allocation Stacked + Pie */}
+          {/* Budget Distribution */}
           <div className="card p-5 md:col-span-2 space-y-4">
             <p className="section-title">Budget Distribution</p>
 
@@ -375,44 +560,65 @@ export default function BudgetManagementPage() {
                 </Pie>
               </PieChart>
               <div className="text-xs text-gray-500 space-y-1.5">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {stats.CAPEX}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> OPEX: {stats.OPEX}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" /> Active: {stats.active}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {filteredStats.CAPEX}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> OPEX: {filteredStats.OPEX}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" /> Active: {filteredStats.active}</div>
               </div>
             </div>
 
-            {/* Budget allocation bars */}
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">Allocation Breakdown</p>
-                <StackedBar segments={[
-                  { pct: Math.max(Math.round(usedPct), 1), color: "#2563eb" },
-                  { pct: Math.max(Math.round(reservedPct), 1), color: "#f59e0b" },
-                  { pct: Math.max(Math.round(remainingPct), 1), color: "#10b981" },
-                ]} />
-                <div className="flex gap-4 mt-1.5 text-xs text-gray-500">
-                  <span>● Used</span><span>● Reserved</span><span>● Free</span>
-                </div>
+            {/* Allocation Breakdown */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1.5 font-medium">Allocation Breakdown</p>
+              <StackedBar segments={[
+                { pct: Math.max(Math.round(usedPct), 1), color: "#2563eb" },
+                { pct: Math.max(Math.round(reservedPct), 1), color: "#f59e0b" },
+                { pct: Math.max(Math.round(remainingPct), 1), color: "#10b981" },
+              ]} />
+              <div className="flex gap-4 mt-1.5 text-xs text-gray-500">
+                <span>● Used</span><span>● Reserved</span><span>● Free</span>
+              </div>
+            </div>
+
+            {/* 4 KPI Cards */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Budget Used Card */}
+              <div className="bg-blue-50 rounded-xl p-3">
+                <h4 className="text-xs font-medium text-blue-700 mb-1">Budget Used</h4>
+                <InlineDonut pct={usedPct} color="#2563eb" size={70} stroke={8} />
+                <p className="text-xs text-gray-600 mt-2 text-center">
+                  {(() => {
+                    const { symbol, formatted } = formatFullNumber(filteredStats.totalUsed, displayCurrency);
+                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+                  })()}
+                </p>
               </div>
 
-              {/* Quick summary */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700">{fmtCompact(stats.totalUsed)}</div>
-                  <div className="text-xs text-blue-500">Used</div>
-                </div>
-                <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-700">{fmtCompact(stats.totalRemaining)}</div>
-                  <div className="text-xs text-emerald-500">Remaining</div>
-                </div>
-                <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-yellow-700">{fmtCompact(stats.totalReserved)}</div>
-                  <div className="text-xs text-yellow-600">Reserved</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-gray-700">{fmtCompact(stats.totalAmount)}</div>
-                  <div className="text-xs text-gray-500">Total</div>
-                </div>
+              {/* CAPEX Ratio Card */}
+              <div className="bg-indigo-50 rounded-xl p-3">
+                <h4 className="text-xs font-medium text-indigo-700 mb-1">CAPEX Ratio</h4>
+                <InlineDonut pct={capexPct} color="#1e3a5f" size={70} stroke={8} />
+                <p className="text-xs text-gray-600 mt-2 text-center">{filteredStats.CAPEX} CAPEX • {filteredStats.OPEX} OPEX</p>
+              </div>
+
+              {/* Budget Health Card */}
+              <div className="bg-emerald-50 rounded-xl p-3">
+                <h4 className="text-xs font-medium text-emerald-700 mb-1">Budget Health</h4>
+                <InlineDonut pct={remainingPct} color="#10b981" size={70} stroke={8} />
+                <p className="text-xs text-gray-600 mt-2 text-center">
+                  {(() => {
+                    const { symbol, formatted } = formatFullNumber(filteredStats.totalRemaining, displayCurrency);
+                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+                  })()}
+                </p>
+              </div>
+
+              {/* Active Budgets Card */}
+              <div className="bg-amber-50 rounded-xl p-3">
+                <h4 className="text-xs font-medium text-amber-700 mb-1">Active Budgets</h4>
+                <InlineDonut pct={activePct} color="#f59e0b" size={70} stroke={8} />
+                <p className="text-xs text-gray-600 mt-2 text-center">{filteredStats.active} of {filteredStats.total} active</p>
               </div>
             </div>
           </div>
@@ -427,7 +633,7 @@ export default function BudgetManagementPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                   <ListIcon className="w-4 h-4 text-blue-600" />
                   List Budget for Procurement
-                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{budgets.length}</span>
+                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{filteredBudgetsByHeader.length}</span>
                 </h3>
 
                 {/* Desktop Actions */}
@@ -530,117 +736,37 @@ export default function BudgetManagementPage() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content - List View */}
           <div className="p-4 md:p-6">
-            {budgets.length === 0 ? (
+            {filteredBudgets.length === 0 ? (
               <div className="py-16 text-center">
                 <Wallet className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <h3 className="text-gray-700 font-medium mb-1">No budget available</h3>
-                <p className="text-gray-400 text-sm mb-5">Start by adding CAPEX/OPEX budget</p>
-                <button onClick={handleAddClick} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs inline-flex items-center gap-2 hover:bg-blue-700">
-                  <Plus className="w-3.5 h-3.5" />Add First Budget
-                </button>
-              </div>
-            ) : filteredBudgets.length === 0 ? (
-              <div className="py-16 text-center">
-                <Search className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <h3 className="text-gray-700 font-medium mb-1">No matching budgets</h3>
-                <p className="text-gray-400 text-sm mb-5">Try adjusting your search criteria</p>
-                <button onClick={() => { setSearchTerm(""); setTypeFilter("all"); setDepartmentFilter("all"); }}
-                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs inline-flex items-center gap-2 hover:bg-gray-200">
-                  <RefreshCw className="w-3.5 h-3.5" />Clear Filters
-                </button>
-              </div>
-            ) : viewMode === "grid" ? (
-              /* GRID VIEW */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {filteredBudgets.map(budget => (
-                  <div key={budget.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all bg-white">
-                    <div className="flex justify-between items-start mb-3">
-                      {selectMode && (
-                        <input type="checkbox" checked={selectedBudgets.includes(budget.id)} onChange={() => handleSelectBudget(budget.id)}
-                          className="w-4 h-4 text-blue-600 rounded border-gray-300 mr-2 mt-0.5" />
-                      )}
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="p-2 rounded-lg bg-blue-50">
-                          {budget.budget_type === "CAPEX" ? <Calendar className="w-4 h-4 text-blue-600" /> : <Server className="w-4 h-4 text-blue-600" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 truncate text-sm">{budget.budget_name}</div>
-                          <span className={`inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold rounded-full ${budget.budget_type === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>
-                            {budget.budget_type}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{budget.department_name}</span></div>
-                      {budget.budget_code && <div className="flex justify-between"><span className="text-gray-400">Code</span><span className="font-medium text-gray-700">{budget.budget_code}</span></div>}
-                      <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Reserved</span><span className="font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Used</span><span className="font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Remaining</span><span className="font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</span></div>
-                      {budget.budget_owner && <div className="flex justify-between"><span className="text-gray-400">Owner</span><span className="font-medium text-gray-700">{budget.budget_owner}</span></div>}
-                      <div className="flex justify-between pt-1.5 border-t border-gray-100">
-                        <span className="text-gray-400">Fiscal Year</span>
-                        <span className="font-medium text-gray-700">{budget.fiscal_year}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${budget.is_active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                        {budget.is_active ? <><CheckCircle className="w-3 h-3" />Active</> : <><XCircle className="w-3 h-3" />Inactive</>}
-                      </span>
-                      <div className="flex gap-0.5">
-                        <button onClick={() => handleViewDetails(budget)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleEditClick(budget.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDeleteClick(budget)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <h3 className="text-gray-700 font-medium mb-1">No budgets available</h3>
+                <p className="text-gray-400 text-sm">Budgets will appear here when you create them</p>
               </div>
             ) : (
-              /* LIST VIEW */
               <div className="overflow-x-auto rounded-xl border border-gray-100">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
                       {selectMode && (
-                        <th className="px-4 py-3 text-center">
+                        <th className="px-4 py-3 text-center w-10">
                           <input type="checkbox" checked={selectAll} onChange={handleSelectAll}
                             className="w-4 h-4 text-blue-600 rounded border-gray-300" />
                         </th>
                       )}
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Budget Name</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Code</th>
-                      {[
-                        { label: "Total", id: "total_amount" },
-                        { label: "Reserved", id: "reserved_amount" },
-                        { label: "Used", id: "used_amount" },
-                        { label: "Remaining", id: "remaining_amount" },
-                      ].map(col => (
-                        <th key={col.id} onClick={() => setSorting([{ id: col.id, desc: sorting[0]?.id === col.id ? !sorting[0].desc : false }])}
-                          className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700">
-                          <div className="flex items-center justify-center gap-1">
-                            {col.label}
-                            {sorting[0]?.id === col.id ? (sorting[0].desc ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : null}
-                          </div>
-                        </th>
-                      ))}
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Department</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Owner</th>
-                      <th onClick={() => setSorting([{ id: "fiscal_year", desc: sorting[0]?.id === "fiscal_year" ? !sorting[0].desc : false }])}
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700">
-                        <div className="flex items-center justify-center gap-1">
-                          Fiscal Year
-                          {sorting[0]?.id === "fiscal_year" ? (sorting[0].desc ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : null}
-                        </div>
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget Name</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Code</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Reserved</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Used</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Remaining</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Owner</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Fiscal Year</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -652,30 +778,31 @@ export default function BudgetManagementPage() {
                               className="w-4 h-4 text-blue-600 rounded border-gray-300" />
                           </td>
                         )}
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
                               {budget.budget_type === "CAPEX" ? <Calendar className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
                             </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm max-w-[180px] truncate">{budget.budget_name}</div>
-                              {budget.description && <div className="text-xs text-gray-400 max-w-[180px] truncate">{budget.description}</div>}
-                            </div>
+                            <span className="font-medium text-gray-900">{budget.budget_name}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budget.budget_type === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                            budget.budget_type === "CAPEX" 
+                              ? "bg-[#1e3a5f] text-white" 
+                              : "bg-blue-100 text-blue-700"
+                          }`}>
                             {budget.budget_type}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_code || "—"}</td>
-                        <td className="px-4 py-3 text-center text-sm font-semibold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-center text-sm font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-600">{budget.department_name}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_owner || "—"}</td>
-                        <td className="px-4 py-3 text-center text-xs font-medium text-gray-700">{budget.fiscal_year}</td>
+                        <td className="px-4 py-3 text-center text-xs text-gray-700">{budget.fiscal_year}</td>
                         <td className="px-4 py-3 text-center">
                           {budget.is_active
                             ? <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full"><CheckCircle className="w-3 h-3" />Active</span>
@@ -683,9 +810,9 @@ export default function BudgetManagementPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => handleViewDetails(budget)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleEditClick(budget.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleDeleteClick(budget)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleViewDetails(budget)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"><Eye className="w-4 h-4" /></button>
+                            <button onClick={() => handleEditClick(budget.id)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteClick(budget)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -699,7 +826,7 @@ export default function BudgetManagementPage() {
           {/* Footer */}
           {filteredBudgets.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-              <span className="text-xs text-gray-500">Showing {filteredBudgets.length} of {budgets.length} budgets</span>
+              <span className="text-xs text-gray-500">Showing {filteredBudgets.length} of {filteredBudgetsByHeader.length} budgets</span>
               {selectMode && <span className="text-xs font-medium text-gray-500">{selectedBudgets.length} selected</span>}
             </div>
           )}

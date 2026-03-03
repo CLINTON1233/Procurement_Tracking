@@ -238,31 +238,26 @@ export default function BudgetRequestListPage() {
   const rejectedPct = stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0;
   const waitingPct = stats.total > 0 ? (stats.waiting / stats.total) * 100 : 0;
 
-  // Dept bar chart - FIXED: Menggunakan estimated_total, bukan estimated_total_idr
+  // Dept bar chart
   const deptChartData = useMemo(() => {
     const map = new Map();
     
-    console.log("Requests data:", requests); // Untuk debugging
+    console.log("Requests data:", requests);
     
     requests.forEach(r => {
       const d = r.department;
-      // Gunakan estimated_total jika ada, fallback ke estimated_total_idr
       const amount = Number(r.estimated_total || r.estimated_total_idr || 0);
       
-      // Konversi ke IDR jika mata uang USD (asumsi 1 USD = 15000 IDR)
       let amountInIDR = amount;
       if (r.currency === "USD") {
-        amountInIDR = amount * 15000; // Sesuaikan dengan kurs yang digunakan
+        amountInIDR = amount * 15000;
       }
-      
-      console.log(`Department: ${d}, Amount: ${amount}, Currency: ${r.currency}, Amount in IDR: ${amountInIDR}`);
       
       if (d) {
         map.set(d, (map.get(d) || 0) + amountInIDR);
       }
     });
     
-    // Jika tidak ada data, tampilkan pesan
     if (map.size === 0) {
       console.log("No department data found");
       return [];
@@ -271,7 +266,7 @@ export default function BudgetRequestListPage() {
     const chartData = Array.from(map.entries())
       .map(([name, value]) => ({ 
         name, 
-        value: Math.round(value / 1e6) // Konversi ke jutaan
+        value: Math.round(value / 1e6)
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 7);
@@ -310,6 +305,7 @@ export default function BudgetRequestListPage() {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
 
       <div className="space-y-5">
@@ -364,7 +360,7 @@ export default function BudgetRequestListPage() {
 
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Bar chart by dept - FIXED VISIBILITY */}
+          {/* Bar chart by dept */}
           <div className="card p-5 md:col-span-3">
             <p className="section-title flex items-center gap-2">
               <span className="bullet-dot bg-blue-800" />Request Amount by Department (IDR Jt)
@@ -589,107 +585,188 @@ export default function BudgetRequestListPage() {
             </div>
           </div>
 
-          {/* Content - LIST VIEW (table) */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  {selectMode && (
-                    <th className="px-4 py-3 text-center w-10">
-                      <input type="checkbox" checked={selectAll} onChange={handleSelectAll}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300" />
-                    </th>
-                  )}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Request No</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Requester</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Badge</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item Name</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          {/* Content - FIXED: Added container with padding for empty states */}
+          <div className="p-4 md:p-6">
+            {requests.length === 0 ? (
+              // No requests available - like Budget Revision page
+              <div className="py-16 text-center">
+                <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <h3 className="text-gray-700 font-medium mb-1">No requests available</h3>
+                <p className="text-gray-400 text-sm">Requests will appear here when created</p>
+              </div>
+            ) : filteredRequests.length === 0 ? (
+              // No matching requests after filter - like Budget Revision page
+              <div className="py-16 text-center">
+                <Search className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <h3 className="text-gray-700 font-medium mb-1">No matching requests</h3>
+                <p className="text-gray-400 text-sm mb-5">Try adjusting your filters</p>
+                <button onClick={() => { setSearchTerm(""); setStatusFilter("all"); setTypeFilter("all"); setDepartmentFilter("all"); }}
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs inline-flex items-center gap-2 hover:bg-gray-200">
+                  <RefreshCw className="w-3.5 h-3.5" />Clear Filters
+                </button>
+              </div>
+            ) : viewMode === "grid" ? (
+              /* GRID VIEW */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredRequests.map(request => {
                   const s = getStatusConfig(request.status);
                   const Icon = s.icon;
                   return (
-                    <tr key={request.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <div key={request.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all bg-white relative">
                       {selectMode && (
-                        <td className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={selectedRequests.includes(request.id)} onChange={() => handleSelectRequest(request.id)}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300" />
-                        </td>
+                        <input type="checkbox" checked={selectedRequests.includes(request.id)} onChange={() => handleSelectRequest(request.id)}
+                          className="absolute top-3 left-3 w-4 h-4 text-blue-600 rounded border-gray-300" />
                       )}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                            {request.request_type === "ITEM" ? <Package className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
-                          </div>
-                          <span className="font-medium text-gray-900">{request.request_no}</span>
+                      <div className={`flex items-center gap-2 mb-3 ${selectMode ? "ml-6" : ""}`}>
+                        <div className="p-2 rounded-lg bg-blue-50">
+                          {request.request_type === "ITEM" ? <Package className="w-4 h-4 text-blue-600" /> : <Server className="w-4 h-4 text-blue-600" />}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{request.requester_name}</td>
-                      <td className="px-4 py-3 text-center text-gray-500">{request.requester_badge}</td>
-                      <td className="px-4 py-3 text-center text-gray-600">{request.department}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{request.item_name}</td>
-                      <td className="px-4 py-3 text-center text-gray-700">{request.quantity}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                          request.request_type === "ITEM" 
-                            ? "bg-[#1e3a5f] text-white" 
-                            : "bg-blue-100 text-blue-700"
-                        }`}>
-                          {request.request_type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium text-blue-600">
-                        {formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{getBudgetName(request.budget_id)}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${s.bg} ${s.text}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 truncate text-sm">{request.request_no}</div>
+                          <span className="inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                            {request.requester_badge}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-gray-400">Requester</span><span className="font-medium text-gray-700">{request.requester_name}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{request.department}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Type</span>
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                            request.request_type === "ITEM" 
+                              ? "bg-[#1e3a5f] text-white" 
+                              : "bg-blue-100 text-blue-700"
+                          }`}>
+                            {request.request_type}
+                          </span>
+                        </div>
+                        <div className="flex justify-between"><span className="text-gray-400">Item</span><span className="font-medium text-gray-700 truncate max-w-[120px]" title={request.item_name}>{request.item_name}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Qty</span><span className="font-medium text-gray-700">{request.quantity}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Total</span><span className="font-bold text-blue-600">{formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Budget</span><span className="font-medium text-gray-700 truncate max-w-[120px]" title={getBudgetName(request.budget_id)}>{getBudgetName(request.budget_id)}</span></div>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${s.bg} ${s.text}`}>
                           <Icon className="w-3 h-3" />{s.label}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-center text-gray-500">{formatDate(request.created_at)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => handleViewDetails(request)} 
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleRevision(request)} 
-                            className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors">
-                            <RotateCcw className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDeleteRequest(request)} 
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div className="flex gap-0.5">
+                          <button onClick={() => handleViewDetails(request)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleRevision(request)} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"><RotateCcw className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDeleteRequest(request)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            ) : (
+              /* LIST VIEW */
+              <div className="overflow-x-auto rounded-xl border border-gray-100">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      {selectMode && (
+                        <th className="px-4 py-3 text-center w-10">
+                          <input type="checkbox" checked={selectAll} onChange={handleSelectAll}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                        </th>
+                      )}
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Request No</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Requester</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Badge</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item Name</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRequests.map(request => {
+                      const s = getStatusConfig(request.status);
+                      const Icon = s.icon;
+                      return (
+                        <tr key={request.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          {selectMode && (
+                            <td className="px-4 py-3 text-center">
+                              <input type="checkbox" checked={selectedRequests.includes(request.id)} onChange={() => handleSelectRequest(request.id)}
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                            </td>
+                          )}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                {request.request_type === "ITEM" ? <Package className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
+                              </div>
+                              <span className="font-medium text-gray-900">{request.request_no}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{request.requester_name}</td>
+                          <td className="px-4 py-3 text-center text-gray-500">{request.requester_badge}</td>
+                          <td className="px-4 py-3 text-center text-gray-600">{request.department}</td>
+                          <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">{request.item_name}</td>
+                          <td className="px-4 py-3 text-center text-gray-700">{request.quantity}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              request.request_type === "ITEM" 
+                                ? "bg-[#1e3a5f] text-white" 
+                                : "bg-blue-100 text-blue-700"
+                            }`}>
+                              {request.request_type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium text-blue-600">
+                            {formatBudgetCurrency(request.estimated_total, request.currency || "IDR")}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{getBudgetName(request.budget_id)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${s.bg} ${s.text}`}>
+                              <Icon className="w-3 h-3" />{s.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-500">{formatDate(request.created_at)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-1">
+                              <button onClick={() => handleViewDetails(request)} 
+                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleRevision(request)} 
+                                className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors">
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDeleteRequest(request)} 
+                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {/* Footer */}
-          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-            <span className="text-xs text-gray-500">
-              Showing {filteredRequests.length} of {requests.length} requests
-            </span>
-            {selectMode && (
-              <span className="text-xs font-medium text-gray-500">
-                {selectedRequests.length} selected
-              </span>
+            {/* Footer - Only show when there are filtered results */}
+            {filteredRequests.length > 0 && (
+              <div className="mt-4 px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+                <span className="text-xs text-gray-500">
+                  Showing {filteredRequests.length} of {requests.length} requests
+                </span>
+                {selectMode && (
+                  <span className="text-xs font-medium text-gray-500">
+                    {selectedRequests.length} selected
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
