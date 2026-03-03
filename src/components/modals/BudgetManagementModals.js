@@ -1,5 +1,6 @@
 import Swal from "sweetalert2";
 import { departmentService } from "@/services/departmentService";
+import { CURRENCIES, getCurrencySymbol } from "@/utils/currency";
 
 let departmentsList = [];
 
@@ -14,7 +15,22 @@ const fetchDepartments = async () => {
   }
 };
 
-// Bulk Edit Budget Modal
+// Format IDR
+const formatIDR = (amount) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount || 0);
+};
+
+// Get currency name
+const getCurrencyName = (currencyCode) => {
+  const currency = CURRENCIES.find(c => c.code === currencyCode);
+  return currency ? `${currency.code} — ${currency.name} (${currency.symbol})` : currencyCode;
+};
+
+// Bulk Edit Budget Modal - Persis seperti halaman edit per ID
 export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
   const currentYear = new Date().getFullYear().toString();
   const depts = await fetchDepartments();
@@ -23,106 +39,106 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
   const generateDepartmentOptions = (selectedDept = "") => {
     let options = '<option value="">Select Department</option>';
     departmentsList.forEach((dept) => {
-      options += `<option value="${dept.name}">${dept.name}</option>`;
+      const selected = dept.name === selectedDept ? 'selected' : '';
+      options += `<option value="${dept.name}" ${selected}>${dept.name}</option>`;
     });
     return options;
-  };
-
-  // Helper untuk mendapatkan nama mata uang
-  const getCurrencyName = (currencyCode) => {
-    const currencies = {
-      IDR: "IDR - Indonesian Rupiah (Rp)",
-      USD: "USD - US Dollar ($)",
-      EUR: "EUR - Euro (€)",
-      SGD: "SGD - Singapore Dollar (S$)",
-      GBP: "GBP - British Pound (£)",
-      JPY: "JPY - Japanese Yen (¥)",
-      AUD: "AUD - Australian Dollar (A$)",
-      CNY: "CNY - Chinese Yuan (¥)",
-      MYR: "MYR - Malaysian Ringgit (RM)",
-      THB: "THB - Thai Baht (฿)",
-      KRW: "KRW - South Korean Won (₩)",
-      INR: "INR - Indian Rupee (₹)",
-      SAR: "SAR - Saudi Riyal (﷼)",
-      AED: "AED - UAE Dirham (د.إ)",
-      HKD: "HKD - Hong Kong Dollar (HK$)",
-    };
-    return currencies[currencyCode] || `${currencyCode} - Unknown Currency`;
   };
 
   const generateBudgetEntries = () => {
     let entriesHtml = "";
 
     budgets.forEach((budget, index) => {
+      // Hitung amount dalam IDR untuk validasi OPEX
+      const amountInIDR = budget.total_amount * (budget.currency === 'IDR' ? 1 : 15700); // Asumsi rate USD 15700
+      const isOpexExceed = budget.budget_type === "OPEX" && amountInIDR > 16000000;
+
       entriesHtml += `
-        <div class="budget-entry border border-gray-200 rounded-lg p-4 mb-4 relative" data-id="${budget.id}" data-index="${index}">
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="text-sm font-semibold text-gray-700">Edit Budget #${index + 1}: ${budget.budget_name}</h4>
+        <div class="budget-entry border border-gray-200 rounded-lg p-5 mb-6 relative bg-white shadow-sm" data-id="${budget.id}" data-index="${index}">
+          <!-- Header dengan nomor dan nama budget -->
+          <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-sm font-semibold">
+                ${index + 1}
+              </div>
+              <h4 class="text-sm font-semibold text-gray-800">${budget.budget_name || "Budget Entry"}</h4>
+            </div>
+            ${budget.budget_code ? `<span class="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600">${budget.budget_code}</span>` : ''}
             <input type="hidden" class="entry-id" value="${budget.id}">
           </div>
 
-          <div class="space-y-3">
-            <!-- 1. BUDGET NAME -->
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Budget Name *
-              </label>
-              <input
-                type="text"
-                class="entry-budget_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.budget_name || ""}"
-                placeholder="Capex/Opex IT 2026"
-                required
-              >
+          <div class="space-y-4">
+            <!-- 1. BUDGET NAME & CODE -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                  Budget Name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="entry-budget_name w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  value="${budget.budget_name || ""}"
+                  placeholder="e.g. Capex IT Infrastructure 2026"
+                >
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                  Budget Code
+                </label>
+                <input
+                  type="text"
+                  class="entry-budget_code w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  value="${budget.budget_code || ""}"
+                  placeholder="BUD-2026-001"
+                >
+                <p class="text-xs text-gray-400 mt-1">Optional internal budget code</p>
+              </div>
             </div>
 
-            <!-- 2. BUDGET CODE (Optional) -->
+            <!-- 2. BUDGET TYPE (Radio) -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Budget Code
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                Budget Type <span class="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                class="entry-budget_code w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value="${budget.budget_code || ""}"
-                placeholder="BUD-2026-001"
-              >
-              <p class="text-xs text-gray-500 mt-1">Optional internal budget code</p>
-            </div>
-
-            <!-- 3. BUDGET TYPE -->
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-2">
-                Budget Type *
-              </label>
-              <div class="flex flex-wrap gap-2 jenis-container">
-                <button
-                  type="button"
-                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === "CAPEX" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}"
-                  data-jenis="CAPEX"
-                >
-                  CAPEX
-                </button>
-                <button
-                  type="button"
-                  class="jenis-btn px-3 py-2 text-xs rounded-lg ${budget.budget_type === "OPEX" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}"
-                  data-jenis="OPEX"
-                >
-                  OPEX
-                </button>
+              <div class="flex gap-6 mt-1 jenis-container">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="budget_type_${budget.id}"
+                    class="entry-budget_type-radio w-4 h-4 accent-blue-600"
+                    data-jenis="CAPEX"
+                    ${budget.budget_type === "CAPEX" ? 'checked' : ''}
+                  >
+                  <span class="text-sm text-gray-700">CAPEX</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="budget_type_${budget.id}"
+                    class="entry-budget_type-radio w-4 h-4 accent-blue-600"
+                    data-jenis="OPEX"
+                    ${budget.budget_type === "OPEX" ? 'checked' : ''}
+                  >
+                  <span class="text-sm text-gray-700">OPEX</span>
+                </label>
               </div>
               <input type="hidden" class="entry-budget_type" value="${budget.budget_type || "CAPEX"}">
+              ${budget.budget_type === "OPEX" ? `
+                <p class="text-xs text-amber-600 mt-2">
+                  Note: OPEX budget maximum is IDR 16,000,000
+                </p>
+              ` : ''}
             </div>
 
-            <!-- 4. CURRENCY (Read-only) -->
+            <!-- 3. CURRENCY (Read-only) -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
                 Currency
               </label>
               <div class="relative">
                 <input
                   type="text"
-                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 pr-10"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                   value="${getCurrencyName(budget.currency || "IDR")}"
                   readonly
                   disabled
@@ -136,134 +152,136 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
                 </div>
               </div>
               <input type="hidden" class="entry-currency" value="${budget.currency || "IDR"}">
-              <p class="text-xs text-gray-500 mt-1">Currency is fixed and cannot be changed</p>
+              <p class="text-xs text-gray-400 mt-1">Currency is fixed and cannot be changed</p>
             </div>
 
-            <!-- 5. TOTAL AMOUNT -->
+            <!-- 4. TOTAL AMOUNT -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Total Amount *
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                Total Amount <span class="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                class="entry-total_amount w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                class="entry-total_amount w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${isOpexExceed ? 'border-red-500' : ''}"
                 value="${budget.total_amount || ""}"
                 placeholder="Enter total budget amount"
                 min="0"
-                required
               >
+              ${isOpexExceed ? `
+                <p class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  OPEX budget exceeds IDR 16,000,000 limit
+                </p>
+              ` : ''}
             </div>
 
-            <!-- 6. FINANCIAL STATUS (Read-only) -->
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Reserved</label>
-                <input
-                  type="text"
-                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.reserved_amount || 0)}"
-                  readonly
-                  disabled
-                >
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Used</label>
-                <input
-                  type="text"
-                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.used_amount || 0)}"
-                  readonly
-                  disabled
-                >
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Remaining</label>
-                <input
-                  type="text"
-                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
-                  value="${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(budget.remaining_amount || 0)}"
-                  readonly
-                  disabled
-                >
-              </div>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">Financial status is auto-calculated</p>
+            <!-- 5. FINANCIAL STATUS - Minimalist Gray Design -->
+            <div class="rounded-lg border border-gray-200 bg-white p-4">
+              <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Financial Status</p>
+              <div class="grid grid-cols-3 gap-4">
+                <!-- Reserved -->
+                <div class="text-center">
+                  <p class="text-xs text-gray-500 mb-1">Reserved</p>
+                  <p class="text-sm font-semibold text-gray-700">${formatIDR(budget.reserved_amount || 0)}</p>
+                </div>
 
-            <!-- 7. DEPARTMENT -->
+                <!-- Vertical Divider -->
+                <div class="relative">
+                  <div class="text-center">
+                    <p class="text-xs text-gray-500 mb-1">Used</p>
+                    <p class="text-sm font-semibold text-gray-700">${formatIDR(budget.used_amount || 0)}</p>
+                  </div>
+                  <div class="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200 hidden sm:block"></div>
+                  <div class="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-gray-200 hidden sm:block"></div>
+                </div>
+
+                <!-- Remaining -->
+                <div class="text-center">
+                  <p class="text-xs text-gray-500 mb-1">Remaining</p>
+                  <p class="text-sm font-semibold text-gray-700">${formatIDR(budget.remaining_amount || 0)}</p>
+                </div>
+              </div>
+              <p class="text-xs text-gray-400 text-center mt-3 pt-2 border-t border-gray-100">
+                Auto-calculated based on transactions
+              </p>
+            </div>
+
+            <!-- 6. DEPARTMENT -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Department *
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                Department <span class="text-red-500">*</span>
               </label>
-              <select
-                class="entry-department_name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                required
-              >
-                ${generateDepartmentOptions()}
-              </select>
+              <div class="relative">
+                <select
+                  class="entry-department_name w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition"
+                >
+                  ${generateDepartmentOptions(budget.department_name)}
+                </select>
+                <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
             </div>
 
-            <!-- 8. BUDGET OWNER (Optional) -->
+            <!-- 7. BUDGET OWNER -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
                 Budget Owner
               </label>
               <input
                 type="text"
-                class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                class="entry-budget_owner w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 value="${budget.budget_owner || ""}"
-                placeholder="Enter owner name"
+                placeholder="Person responsible"
               >
-              <p class="text-xs text-gray-500 mt-1">Person responsible for this budget</p>
+              <p class="text-xs text-gray-400 mt-1">Person responsible for this budget</p>
             </div>
 
-            <!-- 9. FISCAL YEAR -->
+            <!-- 8. FISCAL YEAR -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Fiscal Year *
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                Fiscal Year <span class="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                class="entry-fiscal_year w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                class="entry-fiscal_year w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 value="${budget.fiscal_year || currentYear}"
                 placeholder="2026"
-                required
               >
-              <p class="text-xs text-gray-500 mt-1">Budget allocation year</p>
+              <p class="text-xs text-gray-400 mt-1">Budget allocation year</p>
             </div>
 
-            <!-- 10. PERIOD (Optional) -->
-            <div class="grid grid-cols-2 gap-3">
+            <!-- 9. BUDGET PERIOD (Optional) -->
+            <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">
                   Period Start
                 </label>
                 <input
                   type="date"
-                  class="entry-period_start w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  class="entry-period_start w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   value="${budget.period_start ? budget.period_start.split("T")[0] : ""}"
                 >
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">
                   Period End
                 </label>
                 <input
                   type="date"
-                  class="entry-period_end w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  class="entry-period_end w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   value="${budget.period_end ? budget.period_end.split("T")[0] : ""}"
                 >
               </div>
             </div>
 
-            <!-- 11. DESCRIPTION (Optional) -->
+            <!-- 10. DESCRIPTION -->
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">
-                Description (Optional)
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">
+                Description
               </label>
               <textarea
-                class="entry-description w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                class="entry-description w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 rows="2"
-                placeholder="Additional notes, purpose of budget, etc..."
+                placeholder="Additional notes, purpose of budget, scope, etc..."
               >${budget.description || ""}</textarea>
             </div>
           </div>
@@ -275,29 +293,33 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
   };
 
   let html = `
-    <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3">
-      <div class="sticky top-0 bg-white py-2 z-10 border-b border-gray-200 mb-3">
+    <div class="text-left space-y-4 max-h-[70vh] overflow-y-auto px-3 py-2">
+      <div class="sticky top-0 bg-white py-3 z-10 border-b border-gray-200 mb-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              class="text-blue-600">
-              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14"/>
-              <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
+            <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14"/>
+                <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
             <span class="text-base font-semibold text-gray-900">
               Edit ${budgets.length} Selected Budgets
             </span>
           </div>
+          <span class="text-xs font-medium px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-gray-600">
+            Multiple Entries
+          </span>
         </div>
+        <p class="text-xs text-gray-500 mt-1">Update multiple budgets at once</p>
       </div>
       
       <div id="budget-entries-container">
         ${generateBudgetEntries()}
       </div>
 
-      <div class="text-xs text-gray-500 pt-2 border-t">
-        * Required fields
+      <div class="text-xs text-gray-500 pt-3 border-t border-gray-200">
+        <span class="text-red-500">*</span> Required fields
       </div>
     </div>
   `;
@@ -308,51 +330,62 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
     width: window.innerWidth > 768 ? "800px" : "95vw",
     padding: "0",
     showCancelButton: true,
-    confirmButtonText: "Update All",
+    confirmButtonText: `Update ${budgets.length} Budgets`,
     cancelButtonText: "Cancel",
     confirmButtonColor: "#2563eb",
     cancelButtonColor: "#6b7280",
     customClass: {
       popup: "rounded-xl overflow-hidden bg-white mx-4",
-      htmlContainer: "!p-4 !m-0 !bg-white",
-      actions:
-        "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
-      confirmButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700",
-      cancelButton:
-        "!px-4 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50",
+      htmlContainer: "!p-0 !m-0 !bg-white",
+      actions: "!p-4 !m-0 !bg-gray-50 !border-t !border-gray-200 !flex !justify-end !gap-3",
+      confirmButton: "!px-6 !py-2.5 !text-sm !font-medium !text-white !bg-blue-600 !rounded-lg hover:!bg-blue-700 !shadow-sm",
+      cancelButton: "!px-6 !py-2.5 !text-sm !font-medium !text-gray-700 !bg-white !border !border-gray-300 !rounded-lg hover:!bg-gray-50 !shadow-sm",
     },
     didOpen: () => {
-      const setupJenisButtons = (container) => {
-        const jenisButtons = container.querySelectorAll(".jenis-btn");
-        jenisButtons.forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            const parentContainer = e.target.closest(".budget-entry");
-            const buttons = parentContainer.querySelectorAll(".jenis-btn");
-
-            buttons.forEach((b) => {
-              b.classList.remove("bg-blue-600", "text-white");
-              b.classList.add(
-                "bg-gray-100",
-                "text-gray-700",
-                "hover:bg-gray-200",
-              );
-            });
-
-            btn.classList.remove(
-              "bg-gray-100",
-              "text-gray-700",
-              "hover:bg-gray-200",
-            );
-            btn.classList.add("bg-blue-600", "text-white");
-
-            const jenis = btn.getAttribute("data-jenis");
-            parentContainer.querySelector(".entry-budget_type").value = jenis;
-          });
+      // Setup radio buttons untuk budget type
+      const radioButtons = document.querySelectorAll(".entry-budget_type-radio");
+      radioButtons.forEach((radio) => {
+        radio.addEventListener("change", (e) => {
+          const parentContainer = e.target.closest(".budget-entry");
+          const jenis = e.target.getAttribute("data-jenis");
+          parentContainer.querySelector(".entry-budget_type").value = jenis;
+          
+          // Tampilkan pesan untuk OPEX jika perlu
+          const opexNote = parentContainer.querySelector(".text-amber-600");
+          if (opexNote) {
+            opexNote.style.display = jenis === "OPEX" ? "block" : "none";
+          }
         });
-      };
+      });
 
-      setupJenisButtons(document);
+      // Setup untuk total amount validation (optional, bisa ditambahkan real-time validation)
+      const totalAmountInputs = document.querySelectorAll(".entry-total_amount");
+      totalAmountInputs.forEach((input) => {
+        input.addEventListener("input", (e) => {
+          const parentContainer = e.target.closest(".budget-entry");
+          const budgetType = parentContainer.querySelector(".entry-budget_type").value;
+          const currency = parentContainer.querySelector(".entry-currency").value;
+          const amount = parseFloat(e.target.value) || 0;
+          
+          // Simple validation untuk OPEX (asumsi rate USD 15700)
+          if (budgetType === "OPEX") {
+            const amountInIDR = currency === "IDR" ? amount : amount * 15700;
+            if (amountInIDR > 16000000) {
+              e.target.classList.add("border-red-500");
+              if (!parentContainer.querySelector(".opex-error")) {
+                const errorMsg = document.createElement("p");
+                errorMsg.className = "text-xs text-red-500 mt-1 flex items-center gap-1 opex-error";
+                errorMsg.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> OPEX budget exceeds IDR 16,000,000 limit';
+                e.target.parentNode.appendChild(errorMsg);
+              }
+            } else {
+              e.target.classList.remove("border-red-500");
+              const errorMsg = parentContainer.querySelector(".opex-error");
+              if (errorMsg) errorMsg.remove();
+            }
+          }
+        });
+      });
     },
     preConfirm: () => {
       const entries = document.querySelectorAll(".budget-entry");
@@ -361,35 +394,33 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
 
       entries.forEach((entry, index) => {
         const id = entry.querySelector(".entry-id")?.value;
-        const fiscal_year =
-          entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
-        const budget_code =
-          entry.querySelector(".entry-budget_code")?.value?.trim() || null;
-        const department_name =
-          entry.querySelector(".entry-department_name")?.value || "";
-        const budget_type =
-          entry.querySelector(".entry-budget_type")?.value || "CAPEX";
-        const currency = entry.querySelector(".entry-currency")?.value || "IDR"; // TAMBAHKAN INI!
-        const budget_name =
-          entry.querySelector(".entry-budget_name")?.value?.trim() || "";
-        const total_amount =
-          entry.querySelector(".entry-total_amount")?.value || "";
-        const budget_owner =
-          entry.querySelector(".entry-budget_owner")?.value?.trim() || null;
-        const period_start =
-          entry.querySelector(".entry-period_start")?.value || null;
-        const period_end =
-          entry.querySelector(".entry-period_end")?.value || null;
-        const description =
-          entry.querySelector(".entry-description")?.value?.trim() || "";
+        const fiscal_year = entry.querySelector(".entry-fiscal_year")?.value?.trim() || "";
+        const budget_code = entry.querySelector(".entry-budget_code")?.value?.trim() || null;
+        const department_name = entry.querySelector(".entry-department_name")?.value || "";
+        const budget_type = entry.querySelector(".entry-budget_type")?.value || "CAPEX";
+        const currency = entry.querySelector(".entry-currency")?.value || "IDR";
+        const budget_name = entry.querySelector(".entry-budget_name")?.value?.trim() || "";
+        const total_amount = entry.querySelector(".entry-total_amount")?.value || "";
+        const budget_owner = entry.querySelector(".entry-budget_owner")?.value?.trim() || null;
+        const period_start = entry.querySelector(".entry-period_start")?.value || null;
+        const period_end = entry.querySelector(".entry-period_end")?.value || null;
+        const description = entry.querySelector(".entry-description")?.value?.trim() || "";
 
         const entryErrors = [];
 
         if (!fiscal_year) entryErrors.push("Fiscal year is required");
         if (!department_name) entryErrors.push("Department is required");
         if (!budget_name) entryErrors.push("Budget name is required");
-        if (!total_amount || total_amount <= 0)
-          entryErrors.push("Total amount must be greater than 0");
+        if (!total_amount || parseFloat(total_amount) <= 0) entryErrors.push("Total amount must be greater than 0");
+
+        // Validasi OPEX
+        if (budget_type === "OPEX" && total_amount) {
+          const amount = parseFloat(total_amount);
+          const amountInIDR = currency === "IDR" ? amount : amount * 15700; // Asumsi rate USD 15700
+          if (amountInIDR > 16000000) {
+            entryErrors.push("OPEX budget cannot exceed IDR 16,000,000");
+          }
+        }
 
         if (entryErrors.length > 0) {
           errors.push(`Budget #${index + 1}: ${entryErrors.join(", ")}`);
@@ -402,7 +433,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
             budget_type,
             currency,
             budget_name,
-            total_amount,
+            total_amount: parseFloat(total_amount),
             budget_owner,
             period_start,
             period_end,
@@ -429,6 +460,7 @@ export const showBulkEditBudgetModal = async ({ budgets, onSave }) => {
     }
   });
 };
+
 // Delete Budget Modal
 export const showDeleteBudgetModal = ({ budget, onConfirm }) => {
   Swal.fire({

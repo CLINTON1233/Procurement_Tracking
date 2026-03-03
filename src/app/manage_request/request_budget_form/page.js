@@ -38,6 +38,7 @@ import {
   getCurrencySymbol,
   formatCurrency,
   formatIDR,
+  convertCurrency,
 } from "@/utils/currency";
 
 // Data kurs dari CURRENCIES
@@ -87,6 +88,7 @@ export default function RequestBudgetForm() {
       budget_type: "CAPEX",
       notes: "",
       showConverted: false,
+      budgetRemainingWarning: false,
     },
   ]);
 
@@ -177,6 +179,7 @@ export default function RequestBudgetForm() {
         budget_type: "CAPEX",
         notes: "",
         showConverted: false,
+        budgetRemainingWarning: false,
       },
     ]);
   };
@@ -192,14 +195,18 @@ export default function RequestBudgetForm() {
     }
   };
 
-  // Calculate totals for an item
+  // Calculate totals for an item - FIXED: Menggunakan konversi yang benar
   const calculateItemTotals = (item, rates = exchangeRates) => {
     const quantity = parseInt(item.quantity) || 0;
     const price = parseFloat(item.estimated_unit_price) || 0;
 
     const totalInSelectedCurrency = quantity * price;
-    const rate = rates[item.currency] || 1;
-    const totalInIDR = totalInSelectedCurrency * rate;
+    
+    // Hitung IDR equivalent dengan benar
+    let totalInIDR = totalInSelectedCurrency;
+    if (item.currency !== "IDR") {
+      totalInIDR = convertCurrency(totalInSelectedCurrency, item.currency, "IDR");
+    }
 
     return {
       ...item,
@@ -223,6 +230,16 @@ export default function RequestBudgetForm() {
           // Recalculate if quantity, price, or currency changes
           if (["quantity", "estimated_unit_price", "currency"].includes(field)) {
             updatedItem = calculateItemTotals(updatedItem);
+          }
+
+          // Check budget sufficiency if budget is selected
+          if (updatedItem.budget_id && updatedItem.estimated_total_idr > 0) {
+            const budget = selectedBudgets[id];
+            if (budget && updatedItem.estimated_total_idr > budget.remaining_amount) {
+              updatedItem.budgetRemainingWarning = true;
+            } else {
+              updatedItem.budgetRemainingWarning = false;
+            }
           }
 
           return updatedItem;
@@ -250,11 +267,23 @@ export default function RequestBudgetForm() {
         [itemId]: budget,
       }));
 
-      // Auto-fill budget type
+      // Auto-fill budget type dan cek budget sufficiency
       setRequestItems((prev) =>
         prev.map((item) => {
           if (item.id === itemId) {
-            return { ...item, budget_type: budget?.budget_type || "CAPEX" };
+            const updatedItem = { 
+              ...item, 
+              budget_type: budget?.budget_type || "CAPEX" 
+            };
+            
+            // Cek apakah request melebihi remaining budget
+            if (updatedItem.estimated_total_idr > (budget?.remaining_amount || 0)) {
+              updatedItem.budgetRemainingWarning = true;
+            } else {
+              updatedItem.budgetRemainingWarning = false;
+            }
+            
+            return updatedItem;
           }
           return item;
         })
@@ -265,6 +294,15 @@ export default function RequestBudgetForm() {
         delete newState[itemId];
         return newState;
       });
+      
+      setRequestItems((prev) =>
+        prev.map((item) => {
+          if (item.id === itemId) {
+            return { ...item, budgetRemainingWarning: false };
+          }
+          return item;
+        })
+      );
     }
   };
 
@@ -449,6 +487,7 @@ export default function RequestBudgetForm() {
             budget_type: "CAPEX",
             notes: "",
             showConverted: false,
+            budgetRemainingWarning: false,
           },
         ]);
         setSelectedBudgets({});
@@ -773,7 +812,7 @@ export default function RequestBudgetForm() {
   );
 }
 
-// Request Item Card Component
+// Request Item Card Component - FIXED
 function RequestItemCard({
   item,
   index,
@@ -799,14 +838,22 @@ function RequestItemCard({
     }).format(number || 0);
   };
 
+  const formatCurrencyWithSymbol = (amount, currencyCode) => {
+    const symbol = getCurrencySymbol(currencyCode);
+    const formatted = new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount || 0);
+    return `${symbol} ${formatted}`;
+  };
+
   const getAmountInIDR = () => {
     if (!item.estimated_total) return 0;
-    const rate = exchangeRates[item.currency] || 1;
-    return item.estimated_total * rate;
+    return item.estimated_total_idr;
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className={`border border-gray-200 rounded-lg overflow-hidden ${item.budgetRemainingWarning ? 'border-red-300 bg-red-50/30' : ''}`}>
       {/* Card Header */}
       <div className="px-4 py-3 bg-gray-50/50 flex items-center justify-between border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -945,18 +992,26 @@ function RequestItemCard({
           </div>
         </div>
 
-        {/* Estimated Total */}
+        {/* Estimated Total - FIXED: Menampilkan dalam mata uang asli */}
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-600">Total in {item.currency}:</span>
             <span className="text-sm font-bold text-blue-600">
-              {formatCurrency(item.estimated_total, item.currency)}
+              {formatCurrencyWithSymbol(item.estimated_total, item.currency)}
             </span>
           </div>
+          {item.currency !== "IDR" && (
+            <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
+              <span className="text-xs font-medium text-gray-500">IDR Equivalent:</span>
+              <span className="text-sm font-semibold text-green-600">
+                {formatRupiah(item.estimated_total_idr)}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Show IDR Conversion */}
-        {item.estimated_total > 0 && (
+        {/* Show IDR Conversion - untuk toggle detail */}
+        {item.estimated_total > 0 && item.currency !== "IDR" && (
           <div className="mb-4">
             <button
               type="button"
@@ -964,12 +1019,12 @@ function RequestItemCard({
               className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition"
             >
               <RefreshCw className="w-3 h-3" />
-              {item.showConverted ? "Hide" : "Show"} IDR Conversion
+              {item.showConverted ? "Hide" : "Show"} Conversion Details
             </button>
             {item.showConverted && (
               <div className="mt-2 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-md px-4 py-3">
                 <div>
-                  <p className="text-xs text-gray-600 font-medium">In IDR</p>
+                  <p className="text-xs text-gray-600 font-medium">Conversion Details</p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     1 {item.currency} = {exchangeRates[item.currency]?.toLocaleString()} IDR
                   </p>
@@ -982,7 +1037,7 @@ function RequestItemCard({
           </div>
         )}
 
-        {/* Budget Selection */}
+        {/* Budget Selection - FIXED: Menampilkan remaining budget dalam format yang benar */}
         <div className="mb-4">
           <Label required>Select Budget</Label>
           <div className="relative">
@@ -997,7 +1052,7 @@ function RequestItemCard({
                 .filter((b) => b.is_active)
                 .map((budget) => (
                   <option key={budget.id} value={budget.id}>
-                    {budget.budget_name} - {formatRupiah(budget.remaining_amount)} remaining
+                    {budget.budget_name} - {budget.currency === 'USD' ? '$' : 'Rp'} {budget.remaining_amount?.toLocaleString()} remaining
                   </option>
                 ))}
             </select>
@@ -1005,7 +1060,7 @@ function RequestItemCard({
           </div>
         </div>
 
-        {/* Budget Details */}
+        {/* Budget Details - FIXED: Menampilkan remaining budget dengan mata uang yang benar */}
         {selectedBudget && (
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -1033,7 +1088,9 @@ function RequestItemCard({
                     ? "text-red-600"
                     : "text-green-600"
                 }`}>
-                  {formatRupiah(selectedBudget.remaining_amount)}
+                  {selectedBudget.currency === 'USD' 
+                    ? formatCurrencyWithSymbol(selectedBudget.remaining_amount, 'USD')
+                    : formatRupiah(selectedBudget.remaining_amount)}
                 </p>
               </div>
               <div>
@@ -1048,6 +1105,16 @@ function RequestItemCard({
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-red-700">
                   Warning: Request amount exceeds remaining budget by {formatRupiah(item.estimated_total_idr - selectedBudget.remaining_amount)}
+                </p>
+              </div>
+            )}
+
+            {/* Success if sufficient budget */}
+            {selectedBudget.remaining_amount >= item.estimated_total_idr && item.estimated_total_idr > 0 && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-green-700">
+                  Sufficient budget available
                 </p>
               </div>
             )}
