@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { verifyPortalToken } from "../../../services/api";
+import { verifyPortalToken, PORTAL_APP_URL } from "../../../services/api";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -13,7 +13,8 @@ export default function AuthCallbackPage() {
     const next = searchParams.get("next") || "/dashboard";
 
     if (!token) {
-      setTimeout(() => router.push("/login"), 1000);
+      // Redirect ke login PORTAL (ambil dari api.js)
+      window.location.href = `${PORTAL_APP_URL}/login`;
       return;
     }
 
@@ -27,24 +28,25 @@ export default function AuthCallbackPage() {
           localStorage.setItem("budget_token", token);
           localStorage.setItem("budget_login_time", Date.now().toString());
 
-          // Cookie untuk middleware (expire 24 jam)
+          // Cookie middleware (sinkron dengan session portal 24 jam)
           const expireTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
           document.cookie = `budget_token=${token}; path=/; expires=${expireTime.toUTCString()}`;
           document.cookie = `budget_user=${encodeURIComponent(
             JSON.stringify(data.user)
           )}; path=/; expires=${expireTime.toUTCString()}`;
 
-          // Session flag
           sessionStorage.setItem("isAuthenticated", "true");
           sessionStorage.setItem("auth_source", "portal");
 
           router.push(next);
         } else {
-          router.push("/login");
+          // Redirect ke login PORTAL jika verifikasi gagal
+          window.location.href = `${PORTAL_APP_URL}/login`;
         }
       } catch (error) {
         console.error("Token verification error:", error);
-        router.push("/login");
+        // Redirect ke login PORTAL jika error
+        window.location.href = `${PORTAL_APP_URL}/login`;
       }
     };
 

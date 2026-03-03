@@ -14,10 +14,9 @@ export function middleware(request) {
     const token = request.cookies.get('budget_token');
 
     if (!token) {
-        // Redirect ke login jika tidak ada token
-        const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(loginUrl);
+        // Redirect ke login PORTAL jika tidak ada token
+        const portalLoginUrl = 'http://localhost:3000/login';
+        return NextResponse.redirect(portalLoginUrl);
     }
 
     return NextResponse.next();
