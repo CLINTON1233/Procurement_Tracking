@@ -5,7 +5,7 @@ import LayoutDashboard from "@/components/LayoutDashboard";
 import {
   Search, RefreshCw, RotateCcw, Eye, Calendar, DollarSign,
   ArrowUp, ArrowDown, FileText, Clock, Layers,
-  Grid, List as ListIcon, Server, Trash2, TrendingDown,
+  Grid, List as ListIcon, Server, Trash2, TrendingDown, ChevronDown,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -16,6 +16,19 @@ import { budgetService } from "@/services/budgetService";
 import { formatTableCurrency } from "@/utils/currencyFormatter";
 import { showDeleteRevisionModal, showDeleteMultipleRevisionsModal } from "@/components/modals/BudgetRevisionModals";
 import Link from "next/link";
+
+// ─── Generate tahun dari 2000 sampai 10 tahun ke depan ───────────────────────
+const generateYears = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  const startYear = 2000;
+  const endYear = currentYear + 10;
+  
+  for (let year = startYear; year <= endYear; year++) {
+    years.push(year.toString());
+  }
+  return years;
+};
 
 // ─── Inline Donut ─────────────────────────────────────────────────────────────
 const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) => {
@@ -67,11 +80,19 @@ export default function BudgetRevisionPage() {
   const [sorting, setSorting] = useState([]);
   const [viewMode, setViewMode] = useState("list");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [headerTypeFilter, setHeaderTypeFilter] = useState("all");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [departments, setDepartments] = useState([]);
   const [selectedRevisions, setSelectedRevisions] = useState([]);
   const [selectMode, setSelectMode] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
+
+  // State untuk filter tahun
+  const [yearFilter, setYearFilter] = useState("all");
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const availableYears = useMemo(() => generateYears(), []);
+  const currentYear = new Date().getFullYear().toString();
 
   const [stats, setStats] = useState({
     total: 0, totalReduction: 0, averageReduction: 0,
@@ -178,8 +199,45 @@ export default function BudgetRevisionPage() {
 
   const uniqueDepartments = useMemo(() => [...new Set(budgets.map(b => b.department_name))].filter(Boolean), [budgets]);
 
+  // Filter revisions berdasarkan tipe dari header dan tahun
+  const filteredRevisionsByHeader = useMemo(() => {
+    let filtered = revisions;
+    
+    // Filter by type
+    if (headerTypeFilter !== "all") {
+      filtered = filtered.filter(r => {
+        const bud = budgets.find(b => b.id === r.budget_id);
+        return bud?.budget_type === headerTypeFilter;
+      });
+    }
+    
+    // Filter by year - menggunakan fiscal_year dari budget
+    if (yearFilter !== "all") {
+      filtered = filtered.filter(r => {
+        const bud = budgets.find(b => b.id === r.budget_id);
+        return bud?.fiscal_year === yearFilter;
+      });
+    }
+    
+    return filtered;
+  }, [revisions, budgets, headerTypeFilter, yearFilter]);
+
+  // Hitung ulang stats berdasarkan filter header
+  const filteredStats = useMemo(() => {
+    const filtered = filteredRevisionsByHeader;
+    const total = filtered.length;
+    const totalReduction = filtered.reduce((s, r) => s + (Number(r.original_amount) - Number(r.new_amount)), 0);
+    return {
+      total,
+      totalReduction,
+      averageReduction: total > 0 ? totalReduction / total : 0,
+      capexRevisions: filtered.filter(r => budgets.find(b => b.id === r.budget_id)?.budget_type === "CAPEX").length,
+      opexRevisions: filtered.filter(r => budgets.find(b => b.id === r.budget_id)?.budget_type === "OPEX").length,
+    };
+  }, [filteredRevisionsByHeader, budgets]);
+
   const filteredRevisions = useMemo(() => {
-    let filtered = revisions.filter(revision => {
+    let filtered = filteredRevisionsByHeader.filter(revision => {
       const req = requests.find(r => r.id === revision.request_id);
       const bud = budgets.find(b => b.id === revision.budget_id);
       const q = searchTerm.toLowerCase();
@@ -205,39 +263,39 @@ export default function BudgetRevisionPage() {
       });
     }
     return filtered;
-  }, [revisions, requests, budgets, searchTerm, sorting, typeFilter, departmentFilter]);
+  }, [filteredRevisionsByHeader, requests, budgets, searchTerm, sorting, typeFilter, departmentFilter]);
 
   // ── Chart data ──────────────────────────────────────────────────────────────
-  const capexPct = stats.total > 0 ? (stats.capexRevisions / stats.total) * 100 : 0;
-  const opexPct = stats.total > 0 ? (stats.opexRevisions / stats.total) * 100 : 0;
+  const capexPct = filteredStats.total > 0 ? (filteredStats.capexRevisions / filteredStats.total) * 100 : 0;
+  const opexPct = filteredStats.total > 0 ? (filteredStats.opexRevisions / filteredStats.total) * 100 : 0;
 
   const deptChartData = useMemo(() => {
     const map = new Map();
-    revisions.forEach(r => {
+    filteredRevisionsByHeader.forEach(r => {
       const d = getBudgetDepartment(r.budget_id);
       const reduction = Number(r.original_amount) - Number(r.new_amount);
       map.set(d, (map.get(d) || 0) + reduction);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value: Math.round(value / 1e6) }))
       .sort((a, b) => b.value - a.value).slice(0, 7);
-  }, [revisions, budgets]);
+  }, [filteredRevisionsByHeader, budgets]);
 
   const pieData = [
-    { name: "CAPEX", value: stats.capexRevisions },
-    { name: "OPEX", value: stats.opexRevisions },
+    { name: "CAPEX", value: filteredStats.capexRevisions },
+    { name: "OPEX", value: filteredStats.opexRevisions },
   ];
   const PIE_COLORS = ["#1e3a5f", "#2563eb"];
 
   // Avg reduction pct across all revisions
   const avgReductionPct = useMemo(() => {
-    if (!revisions.length) return 0;
-    const total = revisions.reduce((s, r) => {
+    if (!filteredRevisionsByHeader.length) return 0;
+    const total = filteredRevisionsByHeader.reduce((s, r) => {
       const orig = Number(r.original_amount);
       if (!orig) return s;
       return s + ((Number(r.original_amount) - Number(r.new_amount)) / orig) * 100;
     }, 0);
-    return total / revisions.length;
-  }, [revisions]);
+    return total / filteredRevisionsByHeader.length;
+  }, [filteredRevisionsByHeader]);
 
   const showDetailModal = (revision) => {
     const reductionAmount = Number(revision.original_amount) - Number(revision.new_amount);
@@ -279,7 +337,9 @@ export default function BudgetRevisionPage() {
       <style>{`
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .period-badge:hover { background: #2c4a7a; }
+        .period-badge-disabled { background: #6b7280; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0.5; cursor: not-allowed; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
         .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -289,25 +349,175 @@ export default function BudgetRevisionPage() {
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* Grey background for stat boxes */
+        .stat-box-grey {
+          background-color: #f9fafb;
+          border: 1px solid #f3f4f6;
+          border-radius: 12px;
+          padding: 12px;
+        }
+        .stat-box-grey .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+          line-height: 1.2;
+        }
+        .stat-box-grey .stat-label {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .stat-box-grey .stat-sub {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
+
+        /* Year grid */
+        .year-grid { 
+          display: grid; 
+          grid-template-columns: repeat(4, 1fr); 
+          gap: 4px; 
+          max-height: 300px; 
+          overflow-y: auto; 
+          padding: 4px; 
+        }
       `}</style>
 
       <div className="space-y-5">
 
-        {/* ── Header ── */}
+        {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Revision History</h1>
-              <span className="period-badge">CAPEX / OPEX — {new Date().getFullYear()}</span>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Revision History</h1>
+              
+              {/* Type Filter Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {headerTypeFilter === "all" ? "CAPEX/OPEX (ALL)" : headerTypeFilter}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showTypeDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1">
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("all");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        ALL (CAPEX & OPEX)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("CAPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        CAPEX
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("OPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        OPEX
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Year Filter Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowYearDropdown(!showYearDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {yearFilter === "all" ? "All Years" : yearFilter}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showYearDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowYearDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-3">
+                      <div className="mb-2 px-2 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100">
+                        Select Year (2000 - {new Date().getFullYear() + 10})
+                      </div>
+                      <div className="year-grid">
+                        <button
+                          onClick={() => {
+                            setYearFilter("all");
+                            setShowYearDropdown(false);
+                          }}
+                          className={`col-span-4 px-3 py-2 text-sm rounded-lg mb-2 ${
+                            yearFilter === "all" ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          All Years
+                        </button>
+                        {availableYears.map(year => {
+                          const isDisabled = parseInt(year) < 2026;
+                          const isSelected = yearFilter === year;
+                          
+                          return (
+                            <button
+                              key={year}
+                              onClick={() => {
+                                if (!isDisabled) {
+                                  setYearFilter(year);
+                                  setShowYearDropdown(false);
+                                }
+                              }}
+                              disabled={isDisabled}
+                              className={`
+                                px-2 py-1.5 text-sm rounded-lg transition-colors
+                                ${isSelected ? 'bg-blue-50 text-blue-600 font-semibold' : ''}
+                                ${isDisabled 
+                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                  : 'text-gray-700 hover:bg-gray-50'
+                                }
+                              `}
+                              title={isDisabled ? "Years before 2026 cannot be selected" : ""}
+                            >
+                              {year}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 px-2 py-1 text-xs text-gray-400 border-t border-gray-100">
+                        * Years before 2026 are disabled • Years automatically update
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">Track all budget revisions and amount changes</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {headerTypeFilter === "all" 
+                ? "Showing all CAPEX and OPEX budget revisions" 
+                : `Showing ${headerTypeFilter} budget revisions only`}
+              {yearFilter !== "all" && ` for year ${yearFilter}`}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setRefreshing(true); fetchData(); }} disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm">
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
             <Link href="/manage_request/budget_request_list"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
               <FileText className="w-4 h-4" />New Request
@@ -315,18 +525,18 @@ export default function BudgetRevisionPage() {
           </div>
         </div>
 
-        {/* ── Row 1: 4 Donut KPIs ── */}
+        {/* ── Row 1: 4 Donut KPIs (menggunakan filteredStats) ── */}
         <div className="card p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-gray-100">
             <div className="donut-card">
               <h4>CAPEX Revisions</h4>
               <InlineDonut pct={capexPct} color="#1e3a5f" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.capexRevisions} of {stats.total} total</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.capexRevisions} of {filteredStats.total} total</p>
             </div>
             <div className="donut-card">
               <h4>OPEX Revisions</h4>
               <InlineDonut pct={opexPct} color="#2563eb" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.opexRevisions} of {stats.total} total</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.opexRevisions} of {filteredStats.total} total</p>
             </div>
             <div className="donut-card">
               <h4>Avg Reduction %</h4>
@@ -341,30 +551,54 @@ export default function BudgetRevisionPage() {
                   <circle cx={55} cy={55} r={42} fill="none" stroke="#10b981" strokeWidth={13}
                     strokeDasharray={2 * Math.PI * 42} strokeDashoffset={0} strokeLinecap="round" />
                 </svg>
-                <span className="text-2xl font-bold text-gray-800 z-10">{stats.total}</span>
+                <span className="text-2xl font-bold text-gray-800 z-10">{filteredStats.total}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.capexRevisions} CAPEX • {stats.opexRevisions} OPEX</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.capexRevisions} CAPEX • {filteredStats.opexRevisions} OPEX</p>
             </div>
           </div>
         </div>
 
-        {/* ── Row 2: Charts ── */}
+        {/* ── Row 2: Charts (menggunakan filtered data) ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           {/* Bar chart: reduction by dept */}
           <div className="card p-5 md:col-span-3">
             <p className="section-title flex items-center gap-2">
               <span className="bullet-dot bg-red-600" />Budget Reduction by Department (IDR Jt)
             </p>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                  tickFormatter={v => v.length > 8 ? v.slice(0, 8) + "…" : v} />
-                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v) => [`${v}M IDR`, "Reduction"]} />
-                <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={22} />
-              </BarChart>
-            </ResponsiveContainer>
+            {deptChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tickFormatter={v => v && v.length > 8 ? v.slice(0, 8) + "…" : v || ""} 
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <Tooltip 
+                    formatter={(v) => [`${v}M IDR`, "Reduction"]} 
+                    contentStyle={{ 
+                      fontSize: 12, 
+                      borderRadius: 8, 
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#fff",
+                      color: "#111827"
+                    }} 
+                  />
+                  <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={22} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[180px] text-gray-400 text-sm">
+                No reduction data available
+              </div>
+            )}
           </div>
 
           {/* Distribution panel */}
@@ -379,9 +613,9 @@ export default function BudgetRevisionPage() {
                 </Pie>
               </PieChart>
               <div className="text-xs text-gray-500 space-y-1.5">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {stats.capexRevisions}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> OPEX: {stats.opexRevisions}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> Total: {stats.total}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {filteredStats.capexRevisions}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> OPEX: {filteredStats.opexRevisions}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> Total: {filteredStats.total}</div>
               </div>
             </div>
 
@@ -390,31 +624,31 @@ export default function BudgetRevisionPage() {
               <div>
                 <p className="text-xs text-gray-500 mb-1.5 font-medium">CAPEX vs OPEX Split</p>
                 <StackedBar segments={[
-                  { pct: Math.max(Math.round(capexPct), 1), color: "#1e3a5f" },
-                  { pct: Math.max(Math.round(opexPct), 1), color: "#2563eb" },
+                  { pct: Math.max(Math.round(capexPct) || 1, 1), color: "#1e3a5f" },
+                  { pct: Math.max(Math.round(opexPct) || 1, 1), color: "#2563eb" },
                 ]} />
                 <div className="flex gap-4 mt-1.5 text-xs text-gray-500">
                   <span>● CAPEX</span><span>● OPEX</span>
                 </div>
               </div>
 
-              {/* Summary cards */}
+              {/* Summary cards - GREY BACKGROUND */}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-red-600">{fmtCompact(stats.totalReduction)}</div>
-                  <div className="text-xs text-red-400">Total Reduction</div>
+                <div className="stat-box-grey">
+                  <div className="stat-value">{fmtCompact(filteredStats.totalReduction)}</div>
+                  <div className="stat-label">Total Reduction</div>
                 </div>
-                <div className="bg-orange-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-orange-600">{fmtCompact(stats.averageReduction)}</div>
-                  <div className="text-xs text-orange-400">Avg Reduction</div>
+                <div className="stat-box-grey">
+                  <div className="stat-value">{fmtCompact(filteredStats.averageReduction)}</div>
+                  <div className="stat-label">Avg Reduction</div>
                 </div>
-                <div className="bg-[#1e3a5f]/10 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-[#1e3a5f]">{stats.capexRevisions}</div>
-                  <div className="text-xs text-[#1e3a5f]/60">CAPEX Rev.</div>
+                <div className="stat-box-grey">
+                  <div className="stat-value">{filteredStats.capexRevisions}</div>
+                  <div className="stat-label">CAPEX Rev.</div>
                 </div>
-                <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700">{stats.opexRevisions}</div>
-                  <div className="text-xs text-blue-400">OPEX Rev.</div>
+                <div className="stat-box-grey">
+                  <div className="stat-value">{filteredStats.opexRevisions}</div>
+                  <div className="stat-label">OPEX Rev.</div>
                 </div>
               </div>
             </div>
@@ -430,7 +664,7 @@ export default function BudgetRevisionPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                   <ListIcon className="w-4 h-4 text-blue-600" />
                   Revision List
-                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{revisions.length}</span>
+                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{filteredRevisionsByHeader.length}</span>
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -479,7 +713,7 @@ export default function BudgetRevisionPage() {
                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" />
                 </div>
 
-                {/* Type filter chips */}
+                {/* Type filter chips - untuk filter di dalam tabel */}
                 <div className="flex gap-1.5">
                   {["all", "CAPEX", "OPEX"].map(type => (
                     <button key={type} onClick={() => setTypeFilter(type)}
@@ -505,7 +739,7 @@ export default function BudgetRevisionPage() {
 
           {/* Content */}
           <div className="p-4 md:p-6">
-            {revisions.length === 0 ? (
+            {filteredRevisionsByHeader.length === 0 ? (
               <div className="py-16 text-center">
                 <RotateCcw className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                 <h3 className="text-gray-700 font-medium mb-1">No revisions available</h3>
@@ -678,8 +912,8 @@ export default function BudgetRevisionPage() {
           {/* Footer */}
           {filteredRevisions.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-wrap gap-2">
-              <span className="text-xs text-gray-500">Showing {filteredRevisions.length} of {revisions.length} revisions</span>
-              <span className="text-xs font-semibold text-red-600">Total Reduction: {formatBudgetCurrency(stats.totalReduction, "IDR")}</span>
+              <span className="text-xs text-gray-500">Showing {filteredRevisions.length} of {filteredRevisionsByHeader.length} revisions</span>
+              <span className="text-xs font-semibold text-red-600">Total Reduction: {formatBudgetCurrency(filteredStats.totalReduction, "IDR")}</span>
               {selectMode && <span className="text-xs font-medium text-gray-500">{selectedRevisions.length} selected</span>}
             </div>
           )}

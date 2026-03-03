@@ -22,6 +22,16 @@ import { showRequestDetailsModal } from "@/components/modals/BudgetRequestModals
 import { formatTableCurrency } from "@/utils/currencyFormatter";
 import Link from "next/link";
 
+// ─── Generate tahun dari 2020 sampai 5 tahun ke depan ─────────────────────
+const generateYears = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let year = 2020; year <= currentYear + 5; year++) {
+    years.push(year.toString());
+  }
+  return years;
+};
+
 // ─── Inline Donut ─────────────────────────────────────────────────────────────
 const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) => {
   const r = (size - stroke) / 2;
@@ -71,6 +81,10 @@ export default function BudgetRequestListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [headerTypeFilter, setHeaderTypeFilter] = useState("all");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [yearFilter, setYearFilter] = useState("all");
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [sorting, setSorting] = useState([]);
@@ -79,10 +93,12 @@ export default function BudgetRequestListPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
 
+  const availableYears = generateYears();
+
   const [stats, setStats] = useState({
     total: 0, draft: 0, submitted: 0, approved: 0,
     rejected: 0, waiting: 0, totalAmount: 0,
-    itemRequests: 0, serviceRequests: 0,
+    CAPEX: 0, SERVICE: 0,
   });
 
   useEffect(() => { fetchData(); }, []);
@@ -115,8 +131,8 @@ export default function BudgetRequestListPage() {
       approved: data.filter(r => r.status === "BUDGET_APPROVED").length,
       rejected: data.filter(r => r.status === "BUDGET_REJECTED").length,
       waiting: data.filter(r => r.status === "WAITING_SR_MR").length,
-      itemRequests: data.filter(r => r.request_type === "ITEM").length,
-      serviceRequests: data.filter(r => r.request_type === "SERVICE").length,
+      CAPEX: data.filter(r => r.budget_type === "CAPEX").length,
+      SERVICE: data.filter(r => r.request_type === "SERVICE").length,
       totalAmount: data.reduce((s, r) => s + Number(r.estimated_total_idr || 0), 0),
     });
   };
@@ -189,8 +205,45 @@ export default function BudgetRequestListPage() {
 
   const uniqueDepartments = useMemo(() => [...new Set(requests.map(r => r.department))].filter(Boolean), [requests]);
 
+  // Filter berdasarkan header (type dan year)
+  const filteredRequestsByHeader = useMemo(() => {
+    let filtered = requests;
+    
+    // Filter by budget type (CAPEX/OPEX)
+    if (headerTypeFilter !== "all") {
+      filtered = filtered.filter(r => r.budget_type === headerTypeFilter);
+    }
+    
+    // Filter by year (dari created_at)
+    if (yearFilter !== "all") {
+      filtered = filtered.filter(r => {
+        if (!r.created_at) return false;
+        const year = new Date(r.created_at).getFullYear().toString();
+        return year === yearFilter;
+      });
+    }
+    
+    return filtered;
+  }, [requests, headerTypeFilter, yearFilter]);
+
+  // Hitung ulang stats berdasarkan filter header
+  const filteredStats = useMemo(() => {
+    const filtered = filteredRequestsByHeader;
+    return {
+      total: filtered.length,
+      draft: filtered.filter(r => r.status === "DRAFT").length,
+      submitted: filtered.filter(r => r.status === "SUBMITTED").length,
+      approved: filtered.filter(r => r.status === "BUDGET_APPROVED").length,
+      rejected: filtered.filter(r => r.status === "BUDGET_REJECTED").length,
+      waiting: filtered.filter(r => r.status === "WAITING_SR_MR").length,
+      CAPEX: filtered.filter(r => r.budget_type === "CAPEX").length,
+      SERVICE: filtered.filter(r => r.request_type === "SERVICE").length,
+      totalAmount: filtered.reduce((s, r) => s + Number(r.estimated_total_idr || 0), 0),
+    };
+  }, [filteredRequestsByHeader]);
+
   const filteredRequests = useMemo(() => {
-    let filtered = requests.filter(r => {
+    let filtered = filteredRequestsByHeader.filter(r => {
       const q = searchTerm.toLowerCase();
       const matchSearch = !searchTerm || [r.request_no, r.requester_name, r.item_name, r.department].some(v => (v || "").toLowerCase().includes(q));
       const matchStatus = statusFilter === "all" || r.status === statusFilter;
@@ -208,19 +261,20 @@ export default function BudgetRequestListPage() {
       });
     }
     return filtered;
-  }, [requests, searchTerm, statusFilter, typeFilter, departmentFilter, sorting]);
+  }, [filteredRequestsByHeader, searchTerm, statusFilter, typeFilter, departmentFilter, sorting]);
 
   const exportToExcel = (exportType = "current") => {
     try {
-      const data = (exportType === "current" ? filteredRequests : requests).map(r => ({
+      const data = (exportType === "current" ? filteredRequests : filteredRequestsByHeader).map(r => ({
         "Request No": r.request_no, Date: formatDate(r.created_at), Requester: r.requester_name,
-        Badge: r.requester_badge, Department: r.department, Type: r.request_type,
-        "Item Name": r.item_name, Quantity: r.quantity, "Estimated Total": r.estimated_total,
+        Badge: r.requester_badge, Department: r.department, "Budget Type": r.budget_type,
+        "Request Type": r.request_type, "Item Name": r.item_name, Quantity: r.quantity, 
+        "Estimated Total": r.estimated_total,
         Budget: getBudgetName(r.budget_id), Status: r.status, Notes: r.notes || "",
       }));
       if (!data.length) return Swal.fire({ title: "No Data", icon: "info", confirmButtonColor: "#1e40af" });
       const ws = XLSX.utils.json_to_sheet(data);
-      ws["!cols"] = [15, 12, 15, 10, 15, 8, 25, 8, 18, 25, 15, 25].map(wch => ({ wch }));
+      ws["!cols"] = [15, 12, 15, 10, 15, 10, 8, 25, 8, 18, 25, 15, 25].map(wch => ({ wch }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Budget Requests");
       XLSX.writeFile(wb, `budget_requests_${exportType}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.xlsx`);
@@ -231,35 +285,27 @@ export default function BudgetRequestListPage() {
   };
 
   // ── Chart data ──────────────────────────────────────────────────────────────
-  const approvalRate = stats.total > 0 ? (stats.approved / stats.total) * 100 : 0;
-  const submittedPct = stats.total > 0 ? (stats.submitted / stats.total) * 100 : 0;
-  const draftPct = stats.total > 0 ? (stats.draft / stats.total) * 100 : 0;
-  const itemPct = stats.total > 0 ? (stats.itemRequests / stats.total) * 100 : 0;
-  const rejectedPct = stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0;
-  const waitingPct = stats.total > 0 ? (stats.waiting / stats.total) * 100 : 0;
+  const approvalRate = filteredStats.total > 0 ? (filteredStats.approved / filteredStats.total) * 100 : 0;
+  const submittedPct = filteredStats.total > 0 ? (filteredStats.submitted / filteredStats.total) * 100 : 0;
+  const draftPct = filteredStats.total > 0 ? (filteredStats.draft / filteredStats.total) * 100 : 0;
+  const capexPct = filteredStats.total > 0 ? (filteredStats.CAPEX / filteredStats.total) * 100 : 0;
+  const rejectedPct = filteredStats.total > 0 ? (filteredStats.rejected / filteredStats.total) * 100 : 0;
+  const waitingPct = filteredStats.total > 0 ? (filteredStats.waiting / filteredStats.total) * 100 : 0;
 
   // Dept bar chart
   const deptChartData = useMemo(() => {
     const map = new Map();
     
-    console.log("Requests data:", requests);
-    
-    requests.forEach(r => {
+    filteredRequestsByHeader.forEach(r => {
       const d = r.department;
-      const amount = Number(r.estimated_total || r.estimated_total_idr || 0);
-      
-      let amountInIDR = amount;
-      if (r.currency === "USD") {
-        amountInIDR = amount * 15000;
-      }
+      const amount = Number(r.estimated_total_idr || 0);
       
       if (d) {
-        map.set(d, (map.get(d) || 0) + amountInIDR);
+        map.set(d, (map.get(d) || 0) + amount);
       }
     });
     
     if (map.size === 0) {
-      console.log("No department data found");
       return [];
     }
     
@@ -271,13 +317,12 @@ export default function BudgetRequestListPage() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 7);
     
-    console.log("Chart data:", chartData);
     return chartData;
-  }, [requests]);
+  }, [filteredRequestsByHeader]);
 
   const pieData = [
-    { name: "ITEM", value: stats.itemRequests },
-    { name: "SERVICE", value: stats.serviceRequests },
+    { name: "CAPEX", value: filteredStats.CAPEX },
+    { name: "SERVICE", value: filteredStats.SERVICE },
   ];
   const PIE_COLORS = ["#1e3a5f", "#2563eb"];
 
@@ -296,7 +341,8 @@ export default function BudgetRequestListPage() {
       <style>{`
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .period-badge:hover { background: #2c4a7a; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
         .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -310,21 +356,114 @@ export default function BudgetRequestListPage() {
 
       <div className="space-y-5">
 
-        {/* ── Header ── */}
+        {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-bold text-gray-900">Budget Request List</h1>
-              <span className="period-badge">ITEM / SERVICE — {new Date().getFullYear()}</span>
+              
+              {/* Type Filter Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {headerTypeFilter === "all" ? "CAPEX/OPEX" : headerTypeFilter}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showTypeDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1">
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("all");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        ALL (CAPEX & OPEX)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("CAPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        CAPEX
+                      </button>
+                      <button
+                        onClick={() => {
+                          setHeaderTypeFilter("OPEX");
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        OPEX
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Year Filter Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowYearDropdown(!showYearDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {yearFilter === "all" ? "All Years" : yearFilter}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showYearDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowYearDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1 max-h-60 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setYearFilter("all");
+                          setShowYearDropdown(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                          yearFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        All Years
+                      </button>
+                      {availableYears.map(year => (
+                        <button
+                          key={year}
+                          onClick={() => {
+                            setYearFilter(year);
+                            setShowYearDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
+                            yearFilter === year ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">View and manage all budget requests, track status and approvals</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {headerTypeFilter === "all" 
+                ? "Showing all CAPEX and OPEX requests" 
+                : `Showing ${headerTypeFilter} requests only`}
+              {yearFilter !== "all" && ` for year ${yearFilter}`}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => { setRefreshing(true); fetchData(); }} disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm">
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
             <Link href="/manage_request/request_budget_form"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
               <Plus className="w-4 h-4" />New Request
@@ -338,22 +477,22 @@ export default function BudgetRequestListPage() {
             <div className="donut-card">
               <h4>Approval Rate</h4>
               <InlineDonut pct={approvalRate} color="#10b981" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.approved} of {stats.total} approved</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.approved} of {filteredStats.total} approved</p>
             </div>
             <div className="donut-card">
-              <h4>Item Ratio</h4>
-              <InlineDonut pct={itemPct} color="#1e3a5f" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.itemRequests} Item • {stats.serviceRequests} Service</p>
+              <h4>CAPEX Ratio</h4>
+              <InlineDonut pct={capexPct} color="#1e3a5f" size={110} stroke={13} />
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.CAPEX} CAPEX • {filteredStats.SERVICE} Service</p>
             </div>
             <div className="donut-card">
               <h4>Pending Rate</h4>
               <InlineDonut pct={submittedPct + draftPct} color="#f59e0b" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.draft} Draft • {stats.submitted} Submitted</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.draft} Draft • {filteredStats.submitted} Submitted</p>
             </div>
             <div className="donut-card">
               <h4>Rejected Rate</h4>
               <InlineDonut pct={rejectedPct} color="#ef4444" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{stats.rejected} rejected of {stats.total}</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.rejected} rejected of {filteredStats.total}</p>
             </div>
           </div>
         </div>
@@ -413,9 +552,9 @@ export default function BudgetRequestListPage() {
                 </Pie>
               </PieChart>
               <div className="text-xs text-gray-500 space-y-1.5">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> Item: {stats.itemRequests}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> Service: {stats.serviceRequests}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Approved: {stats.approved}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {filteredStats.CAPEX}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> Service: {filteredStats.SERVICE}</div>
+                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Approved: {filteredStats.approved}</div>
               </div>
             </div>
 
@@ -430,32 +569,35 @@ export default function BudgetRequestListPage() {
                   { pct: Math.max(Math.round(rejectedPct), 0), color: "#ef4444" },
                 ]} />
                 <div className="grid grid-cols-2 mt-1.5 gap-1 text-xs text-gray-500">
-                  <span>● Draft ({stats.draft})</span>
-                  <span>● Submitted ({stats.submitted})</span>
-                  <span>● Approved ({stats.approved})</span>
-                  <span>● Rejected ({stats.rejected})</span>
+                  <span>● Draft ({filteredStats.draft})</span>
+                  <span>● Submitted ({filteredStats.submitted})</span>
+                  <span>● Approved ({filteredStats.approved})</span>
+                  <span>● Rejected ({filteredStats.rejected})</span>
                 </div>
               </div>
 
-              {/* Summary cards */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-700">{stats.approved}</div>
-                  <div className="text-xs text-emerald-500">Approved</div>
-                </div>
-                <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-red-600">{stats.rejected}</div>
-                  <div className="text-xs text-red-400">Rejected</div>
-                </div>
-                <div className="bg-blue-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700">{stats.submitted}</div>
-                  <div className="text-xs text-blue-500">Submitted</div>
-                </div>
-                <div className="bg-purple-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-purple-700">{stats.waiting}</div>
-                  <div className="text-xs text-purple-400">Waiting</div>
-                </div>
-              </div>
+        {/* Summary cards */}
+<div className="grid grid-cols-2 gap-2 pt-1">
+  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+    <div className="text-lg font-bold text-emerald-700">{filteredStats.approved}</div>
+    <div className="text-xs text-emerald-500">Approved</div>
+  </div>
+
+  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+    <div className="text-lg font-bold text-red-600">{filteredStats.rejected}</div>
+    <div className="text-xs text-red-400">Rejected</div>
+  </div>
+
+  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+    <div className="text-lg font-bold text-blue-700">{filteredStats.submitted}</div>
+    <div className="text-xs text-blue-500">Submitted</div>
+  </div>
+
+  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+    <div className="text-lg font-bold text-purple-700">{filteredStats.waiting}</div>
+    <div className="text-xs text-purple-400">Waiting</div>
+  </div>
+</div>
             </div>
           </div>
         </div>
@@ -469,7 +611,7 @@ export default function BudgetRequestListPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                   <ListIcon className="w-4 h-4 text-blue-600" />
                   List Budget Requests
-                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{requests.length}</span>
+                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{filteredRequestsByHeader.length}</span>
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -487,7 +629,7 @@ export default function BudgetRequestListPage() {
                             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />Current View ({filteredRequests.length})
                           </button>
                           <button onClick={() => exportToExcel("all")} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
-                            <FileSpreadsheet className="w-4 h-4 text-blue-600" />All Requests ({requests.length})
+                            <FileSpreadsheet className="w-4 h-4 text-blue-600" />All Requests ({filteredRequestsByHeader.length})
                           </button>
                         </div>
                       </>
@@ -561,7 +703,7 @@ export default function BudgetRequestListPage() {
                   ))}
                 </div>
 
-                {/* Type filter */}
+                {/* Request Type filter */}
                 <div className="flex gap-1.5">
                   {["all", "ITEM", "SERVICE"].map(type => (
                     <button key={type} onClick={() => setTypeFilter(type)}
@@ -585,17 +727,15 @@ export default function BudgetRequestListPage() {
             </div>
           </div>
 
-          {/* Content - FIXED: Added container with padding for empty states */}
+          {/* Content */}
           <div className="p-4 md:p-6">
             {requests.length === 0 ? (
-              // No requests available - like Budget Revision page
               <div className="py-16 text-center">
                 <FileText className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                 <h3 className="text-gray-700 font-medium mb-1">No requests available</h3>
                 <p className="text-gray-400 text-sm">Requests will appear here when created</p>
               </div>
             ) : filteredRequests.length === 0 ? (
-              // No matching requests after filter - like Budget Revision page
               <div className="py-16 text-center">
                 <Search className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                 <h3 className="text-gray-700 font-medium mb-1">No matching requests</h3>
@@ -619,7 +759,7 @@ export default function BudgetRequestListPage() {
                       )}
                       <div className={`flex items-center gap-2 mb-3 ${selectMode ? "ml-6" : ""}`}>
                         <div className="p-2 rounded-lg bg-blue-50">
-                          {request.request_type === "ITEM" ? <Package className="w-4 h-4 text-blue-600" /> : <Server className="w-4 h-4 text-blue-600" />}
+                          {request.budget_type === "CAPEX" ? <Calendar className="w-4 h-4 text-blue-600" /> : <Server className="w-4 h-4 text-blue-600" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-gray-900 truncate text-sm">{request.request_no}</div>
@@ -632,13 +772,13 @@ export default function BudgetRequestListPage() {
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between"><span className="text-gray-400">Requester</span><span className="font-medium text-gray-700">{request.requester_name}</span></div>
                         <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{request.department}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Type</span>
+                        <div className="flex justify-between"><span className="text-gray-400">Budget Type</span>
                           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                            request.request_type === "ITEM" 
+                            request.budget_type === "CAPEX" 
                               ? "bg-[#1e3a5f] text-white" 
-                              : "bg-blue-100 text-blue-700"
+                              : "bg-green-100 text-green-700"
                           }`}>
-                            {request.request_type}
+                            {request.budget_type}
                           </span>
                         </div>
                         <div className="flex justify-between"><span className="text-gray-400">Item</span><span className="font-medium text-gray-700 truncate max-w-[120px]" title={request.item_name}>{request.item_name}</span></div>
@@ -679,7 +819,8 @@ export default function BudgetRequestListPage() {
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item Name</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget Type</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Req Type</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -702,7 +843,7 @@ export default function BudgetRequestListPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                {request.request_type === "ITEM" ? <Package className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
+                                {request.budget_type === "CAPEX" ? <Calendar className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
                               </div>
                               <span className="font-medium text-gray-900">{request.request_no}</span>
                             </div>
@@ -714,9 +855,18 @@ export default function BudgetRequestListPage() {
                           <td className="px-4 py-3 text-center text-gray-700">{request.quantity}</td>
                           <td className="px-4 py-3 text-center">
                             <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                              request.request_type === "ITEM" 
+                              request.budget_type === "CAPEX" 
                                 ? "bg-[#1e3a5f] text-white" 
-                                : "bg-blue-100 text-blue-700"
+                                : "bg-green-100 text-green-700"
+                            }`}>
+                              {request.budget_type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              request.request_type === "ITEM" 
+                                ? "bg-blue-100 text-blue-700" 
+                                : "bg-purple-100 text-purple-700"
                             }`}>
                               {request.request_type}
                             </span>
@@ -759,7 +909,7 @@ export default function BudgetRequestListPage() {
             {filteredRequests.length > 0 && (
               <div className="mt-4 px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
                 <span className="text-xs text-gray-500">
-                  Showing {filteredRequests.length} of {requests.length} requests
+                  Showing {filteredRequests.length} of {filteredRequestsByHeader.length} requests
                 </span>
                 {selectMode && (
                   <span className="text-xs font-medium text-gray-500">

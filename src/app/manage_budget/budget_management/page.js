@@ -25,6 +25,20 @@ import { departmentService } from "@/services/departmentService";
 import { formatTableCurrency, getSymbol } from "@/utils/currencyFormatter";
 import { CURRENCIES, convertCurrency } from "@/utils/currency";
 
+// ─── Generate tahun dari 2000 sampai 10 tahun ke depan (otomatis bertambah) ───
+const generateYears = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  // Dari tahun 2000 sampai 10 tahun ke depan (otomatis bertambah setiap tahun)
+  const startYear = 2000;
+  const endYear = currentYear + 10;
+  
+  for (let year = startYear; year <= endYear; year++) {
+    years.push(year.toString());
+  }
+  return years;
+};
+
 // ─── Inline Donut ─────────────────────────────────────────────────────────────
 const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) => {
   const r = (size - stroke) / 2;
@@ -96,6 +110,12 @@ export default function BudgetManagementPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
 
+  // State untuk filter tahun
+  const [yearFilter, setYearFilter] = useState("all");
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const availableYears = useMemo(() => generateYears(), []); // Gunakan useMemo agar tidak regenerate setiap render
+  const currentYear = new Date().getFullYear().toString();
+
   const [stats, setStats] = useState({
     total: 0, CAPEX: 0, OPEX: 0, totalAmount: 0,
     totalRemaining: 0, totalReserved: 0, totalUsed: 0, active: 0,
@@ -142,11 +162,22 @@ export default function BudgetManagementPage() {
     });
   };
 
-  // Filter budgets berdasarkan tipe dari header
+  // Filter budgets berdasarkan tipe dari header dan tahun
   const filteredBudgetsByHeader = useMemo(() => {
-    if (headerTypeFilter === "all") return budgets;
-    return budgets.filter(b => b.budget_type === headerTypeFilter);
-  }, [budgets, headerTypeFilter]);
+    let filtered = budgets;
+    
+    // Filter by type
+    if (headerTypeFilter !== "all") {
+      filtered = filtered.filter(b => b.budget_type === headerTypeFilter);
+    }
+    
+    // Filter by year
+    if (yearFilter !== "all") {
+      filtered = filtered.filter(b => b.fiscal_year === yearFilter);
+    }
+    
+    return filtered;
+  }, [budgets, headerTypeFilter, yearFilter]);
 
   // Hitung ulang stats berdasarkan filter header
   const filteredStats = useMemo(() => {
@@ -253,7 +284,7 @@ export default function BudgetManagementPage() {
 
   const uniqueDepartments = useMemo(() => [...new Set(budgets.map(b => b.department_name))].filter(Boolean), [budgets]);
 
-  // Filter untuk tabel - mengikuti header filter
+  // Filter untuk tabel - mengikuti header filter dan tahun
   const filteredBudgets = useMemo(() => {
     let filtered = budgets.filter(budget => {
       const q = searchTerm.toLowerCase();
@@ -261,7 +292,8 @@ export default function BudgetManagementPage() {
       const matchesType = typeFilter === "all" || budget.budget_type === typeFilter;
       const matchesDept = departmentFilter === "all" || budget.department_name === departmentFilter;
       const matchesHeaderType = headerTypeFilter === "all" || budget.budget_type === headerTypeFilter;
-      return matchesSearch && matchesType && matchesDept && matchesHeaderType;
+      const matchesYear = yearFilter === "all" || budget.fiscal_year === yearFilter;
+      return matchesSearch && matchesType && matchesDept && matchesHeaderType && matchesYear;
     });
     if (sorting.length > 0) {
       const { id, desc } = sorting[0];
@@ -272,7 +304,7 @@ export default function BudgetManagementPage() {
       });
     }
     return filtered;
-  }, [budgets, searchTerm, typeFilter, departmentFilter, headerTypeFilter, sorting]);
+  }, [budgets, searchTerm, typeFilter, departmentFilter, headerTypeFilter, yearFilter, sorting]);
 
   const exportToExcel = (exportType = "current") => {
     try {
@@ -339,6 +371,7 @@ export default function BudgetManagementPage() {
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
         .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .period-badge:hover { background: #2c4a7a; }
+        .period-badge-disabled { background: #6b7280; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0.5; cursor: not-allowed; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
         .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -347,21 +380,24 @@ export default function BudgetManagementPage() {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 300px; overflow-y: auto; padding: 4px; }
       `}</style>
 
       <div className="space-y-5">
 
-        {/* ── Header with clickable badge ── */}
+        {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-bold text-gray-900">Manage Budget</h1>
+              
+              {/* Type Filter Badge */}
               <div className="relative">
                 <button
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                   className="period-badge flex items-center gap-2"
                 >
-                  {headerTypeFilter === "all" ? "CAPEX/OPEX" : headerTypeFilter} — {new Date().getFullYear()}
+                  {headerTypeFilter === "all" ? "CAPEX/OPEX" : headerTypeFilter}
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {showTypeDropdown && (
@@ -405,12 +441,79 @@ export default function BudgetManagementPage() {
                   </>
                 )}
               </div>
+
+              {/* Year Filter Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowYearDropdown(!showYearDropdown)}
+                  className="period-badge flex items-center gap-2"
+                >
+                  {yearFilter === "all" ? "All Years" : yearFilter}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showYearDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowYearDropdown(false)} />
+                    <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-3">
+                      <div className="mb-2 px-2 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100">
+                        Select Year (2000 - {new Date().getFullYear() + 10})
+                      </div>
+                      <div className="year-grid">
+                        <button
+                          onClick={() => {
+                            setYearFilter("all");
+                            setShowYearDropdown(false);
+                          }}
+                          className={`col-span-4 px-3 py-2 text-sm rounded-lg mb-2 ${
+                            yearFilter === "all" ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          All Years
+                        </button>
+                        {availableYears.map(year => {
+                          const isDisabled = parseInt(year) < 2026;
+                          const isSelected = yearFilter === year;
+                          
+                          return (
+                            <button
+                              key={year}
+                              onClick={() => {
+                                if (!isDisabled) {
+                                  setYearFilter(year);
+                                  setShowYearDropdown(false);
+                                }
+                              }}
+                              disabled={isDisabled}
+                              className={`
+                                px-2 py-1.5 text-sm rounded-lg transition-colors
+                                ${isSelected ? 'bg-blue-50 text-blue-600 font-semibold' : ''}
+                                ${isDisabled 
+                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                  : 'text-gray-700 hover:bg-gray-50'
+                                }
+                              `}
+                              title={isDisabled ? "Years before 2026 cannot be selected" : ""}
+                            >
+                              {year}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 px-2 py-1 text-xs text-gray-400 border-t border-gray-100">
+                        * Years before 2026 are disabled • Years automatically update
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <p className="text-sm text-gray-500 mt-1">
               {headerTypeFilter === "all" 
                 ? "Showing all CAPEX and OPEX budgets" 
                 : `Showing ${headerTypeFilter} budgets only`}
+              {yearFilter !== "all" && ` for year ${yearFilter}`}
             </p>
+            
           </div>
         </div>
 
@@ -580,47 +683,52 @@ export default function BudgetManagementPage() {
             </div>
 
             {/* 4 KPI Cards */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {/* Budget Used Card */}
-              <div className="bg-blue-50 rounded-xl p-3">
-                <h4 className="text-xs font-medium text-blue-700 mb-1">Budget Used</h4>
-                <InlineDonut pct={usedPct} color="#2563eb" size={70} stroke={8} />
-                <p className="text-xs text-gray-600 mt-2 text-center">
-                  {(() => {
-                    const { symbol, formatted } = formatFullNumber(filteredStats.totalUsed, displayCurrency);
-                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
-                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
-                  })()}
-                </p>
-              </div>
 
-              {/* CAPEX Ratio Card */}
-              <div className="bg-indigo-50 rounded-xl p-3">
-                <h4 className="text-xs font-medium text-indigo-700 mb-1">CAPEX Ratio</h4>
-                <InlineDonut pct={capexPct} color="#1e3a5f" size={70} stroke={8} />
-                <p className="text-xs text-gray-600 mt-2 text-center">{filteredStats.CAPEX} CAPEX • {filteredStats.OPEX} OPEX</p>
-              </div>
+<div className="grid grid-cols-2 gap-2 pt-1">
+  {/* Budget Used Card */}
+  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+    <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Used</h4>
+    <InlineDonut pct={usedPct} color="#2563eb" size={70} stroke={8} />
+    <p className="text-xs text-gray-500 mt-2 text-center">
+      {(() => {
+        const { symbol, formatted } = formatFullNumber(filteredStats.totalUsed, displayCurrency);
+        const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+        return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+      })()}
+    </p>
+  </div>
 
-              {/* Budget Health Card */}
-              <div className="bg-emerald-50 rounded-xl p-3">
-                <h4 className="text-xs font-medium text-emerald-700 mb-1">Budget Health</h4>
-                <InlineDonut pct={remainingPct} color="#10b981" size={70} stroke={8} />
-                <p className="text-xs text-gray-600 mt-2 text-center">
-                  {(() => {
-                    const { symbol, formatted } = formatFullNumber(filteredStats.totalRemaining, displayCurrency);
-                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
-                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
-                  })()}
-                </p>
-              </div>
+  {/* CAPEX Ratio Card */}
+  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+    <h4 className="text-xs font-medium text-gray-600 mb-1">CAPEX Ratio</h4>
+    <InlineDonut pct={capexPct} color="#1e3a5f" size={70} stroke={8} />
+    <p className="text-xs text-gray-500 mt-2 text-center">
+      {filteredStats.CAPEX} CAPEX • {filteredStats.OPEX} OPEX
+    </p>
+  </div>
 
-              {/* Active Budgets Card */}
-              <div className="bg-amber-50 rounded-xl p-3">
-                <h4 className="text-xs font-medium text-amber-700 mb-1">Active Budgets</h4>
-                <InlineDonut pct={activePct} color="#f59e0b" size={70} stroke={8} />
-                <p className="text-xs text-gray-600 mt-2 text-center">{filteredStats.active} of {filteredStats.total} active</p>
-              </div>
-            </div>
+  {/* Budget Health Card */}
+  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+    <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Health</h4>
+    <InlineDonut pct={remainingPct} color="#10b981" size={70} stroke={8} />
+    <p className="text-xs text-gray-500 mt-2 text-center">
+      {(() => {
+        const { symbol, formatted } = formatFullNumber(filteredStats.totalRemaining, displayCurrency);
+        const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+        return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+      })()}
+    </p>
+  </div>
+
+  {/* Active Budgets Card */}
+  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+    <h4 className="text-xs font-medium text-gray-600 mb-1">Active Budgets</h4>
+    <InlineDonut pct={activePct} color="#f59e0b" size={70} stroke={8} />
+    <p className="text-xs text-gray-500 mt-2 text-center">
+      {filteredStats.active} of {filteredStats.total} active
+    </p>
+  </div>
+</div>
           </div>
         </div>
 

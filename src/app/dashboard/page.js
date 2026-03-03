@@ -224,7 +224,15 @@ export default function DashboardPage() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
         .bm-root { font-family: 'DM Sans', sans-serif; }
         .bm-root .mono { font-family: 'DM Mono', monospace; }
-        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
+        .card { 
+          background: #ffffff; 
+          border-radius: 16px; 
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          transition: box-shadow 0.2s ease;
+        }
+        .card:hover {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
         .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
         .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
@@ -235,6 +243,30 @@ export default function DashboardPage() {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        
+        /* Grey background for stat boxes */
+        .stat-box-grey {
+          background-color: #f9fafb;
+          border: 1px solid #f3f4f6;
+          border-radius: 12px;
+          padding: 12px;
+        }
+        .stat-box-grey .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        .stat-box-grey .stat-label {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .stat-box-grey .stat-sub {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
       `}</style>
 
       <div className="bm-root space-y-5">
@@ -248,14 +280,6 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-gray-500 mt-1">Monitor CAPEX/OPEX budgets, requests & revisions</p>
           </div>
-          {/* <button
-            onClick={() => { setRefreshing(true); fetchAllDashboardData(); }}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto justify-center"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button> */}
         </div>
 
         {/* ── Main Layout ── */}
@@ -303,7 +327,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Stacked Distribution */}
+              {/* Stacked Distribution - GREY BACKGROUND */}
               <div className="card p-5 lg:col-span-2 space-y-4">
                 <p className="section-title">Budget Distribution</p>
 
@@ -335,23 +359,23 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Quick summary */}
+                  {/* Quick summary - GREY BACKGROUND */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="bg-blue-50 rounded-xl p-3 text-center">
-                      <div className="text-base sm:text-lg font-bold text-blue-700 mono">{fmtCompact(stats.total_used)}</div>
-                      <div className="text-xs text-blue-500">Used</div>
+                    <div className="stat-box-grey">
+                      <div className="stat-value">{fmtCompact(stats.total_used)}</div>
+                      <div className="stat-label">Used</div>
                     </div>
-                    <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                      <div className="text-base sm:text-lg font-bold text-emerald-700 mono">{fmtCompact(stats.total_remaining)}</div>
-                      <div className="text-xs text-emerald-500">Remaining</div>
+                    <div className="stat-box-grey">
+                      <div className="stat-value">{fmtCompact(stats.total_remaining)}</div>
+                      <div className="stat-label">Remaining</div>
                     </div>
-                    <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                      <div className="text-base sm:text-lg font-bold text-yellow-700 mono">{fmtCompact(stats.total_reserved)}</div>
-                      <div className="text-xs text-yellow-600">Reserved</div>
+                    <div className="stat-box-grey">
+                      <div className="stat-value">{fmtCompact(stats.total_reserved)}</div>
+                      <div className="stat-label">Reserved</div>
                     </div>
-                    <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <div className="text-base sm:text-lg font-bold text-gray-700 mono">{fmtCompact(stats.total_amount)}</div>
-                      <div className="text-xs text-gray-500">Total</div>
+                    <div className="stat-box-grey">
+                      <div className="stat-value">{fmtCompact(stats.total_amount)}</div>
+                      <div className="stat-label">Total</div>
                     </div>
                   </div>
                 </div>
@@ -385,11 +409,11 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Revision & System Stats */}
+              {/* Revision & System Stats - GREY BACKGROUND */}
               <div className="card p-5 lg:col-span-2 space-y-4">
                 <p className="section-title">Revision & System Stats</p>
 
-                {/* 4 neutral stat boxes */}
+                {/* 4 neutral stat boxes - GREY BACKGROUND */}
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: "Total Revisions", value: stats.total_revisions, sub: `${stats.capex_revisions} CAPEX • ${stats.opex_revisions} OPEX` },
@@ -397,10 +421,10 @@ export default function DashboardPage() {
                     { label: "Active Budgets", value: stats.active_budgets, sub: `of ${stats.total_budgets} total` },
                     { label: "Approval Rate", value: `${approvalRate.toFixed(0)}%`, sub: `${stats.approved_requests} approved` },
                   ].map((s, i) => (
-                    <div key={i} className="bg-gray-50 border border-gray-100 rounded-xl p-3">
-                      <div className="text-xl sm:text-2xl font-bold text-gray-800 mono">{s.value}</div>
-                      <div className="text-xs font-medium text-gray-600 mt-1">{s.label}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
+                    <div key={i} className="stat-box-grey">
+                      <div className="stat-value">{s.value}</div>
+                      <div className="stat-label">{s.label}</div>
+                      <div className="stat-sub">{s.sub}</div>
                     </div>
                   ))}
                 </div>
@@ -427,7 +451,7 @@ export default function DashboardPage() {
             <div className="card overflow-hidden">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-blue-600" /> Recent Budgets
+                  <Wallet className="w-4 h-4 text-gray-600" /> Recent Budgets
                 </h3>
                 <Link href="/manage_budget/budget_management" className="text-sm text-blue-600 font-medium hover:text-blue-700">
                   View All →
@@ -448,8 +472,8 @@ export default function DashboardPage() {
                         className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                              {b.budget_type === "CAPEX" ? <Building className="w-4 h-4 text-blue-600" /> : <Calendar className="w-4 h-4 text-blue-600" />}
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              {b.budget_type === "CAPEX" ? <Building className="w-4 h-4 text-gray-600" /> : <Calendar className="w-4 h-4 text-gray-600" />}
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900 text-sm">{b.budget_name}</div>
@@ -484,7 +508,7 @@ export default function DashboardPage() {
             <div className="card overflow-hidden">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" /> Recent Requests
+                  <FileText className="w-4 h-4 text-gray-600" /> Recent Requests
                 </h3>
                 <Link href="/manage_request/budget_request_list" className="text-sm text-blue-600 font-medium hover:text-blue-700">
                   View All →
@@ -534,7 +558,7 @@ export default function DashboardPage() {
             <div className="card overflow-hidden">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 border-b border-gray-100">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4 text-blue-600" /> Recent Revisions
+                  <RotateCcw className="w-4 h-4 text-gray-600" /> Recent Revisions
                 </h3>
                 <Link href="/manage_revision/budget_revision" className="text-sm text-blue-600 font-medium hover:text-blue-700">
                   View All →
@@ -608,20 +632,20 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick Actions - ALL GREY ICONS */}
               <div className="border-t border-gray-100 p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quick Actions</p>
                 <div className="space-y-1">
                   {[
-                    { label: "Add Budget", href: "/manage_budget/create_budget", icon: Plus, color: "#2563eb", bg: "#dbeafe" },
-                    { label: "View Budgets", href: "/budget_management", icon: Wallet, color: "#059669", bg: "#d1fae5" },
-                    { label: "New Request", href: "/manage_request/request_budget_form", icon: FileText, color: "#7c3aed", bg: "#ede9fe" },
-                    { label: "Request List", href: "/request_budget_list", icon: Send, color: "#d97706", bg: "#fef3c7" },
+                    { label: "Add Budget", href: "/manage_budget/create_budget", icon: Plus },
+                    { label: "View Budgets", href: "/budget_management", icon: Wallet },
+                    { label: "New Request", href: "/manage_request/request_budget_form", icon: FileText },
+                    { label: "Request List", href: "/request_budget_list", icon: Send },
                   ].map((a, i) => (
                     <Link key={i} href={a.href} className="block">
                       <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: a.bg }}>
-                          <a.icon className="w-4 h-4" style={{ color: a.color }} />
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <a.icon className="w-4 h-4 text-gray-600" />
                         </div>
                         <span className="text-sm font-medium text-gray-600">{a.label}</span>
                       </div>
