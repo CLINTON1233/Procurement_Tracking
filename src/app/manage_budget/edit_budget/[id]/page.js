@@ -18,11 +18,12 @@ import {
   TrendingUp,
   Edit3,
   Check,
+  XCircle,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
-import { CURRENCIES, formatCurrency, getCurrencySymbol, convertCurrency } from "@/utils/currency";
+import { CURRENCIES, formatCurrency, getCurrencySymbol, convertCurrency, formatIDR } from "@/utils/currency";
 
 // Data kurs dari CURRENCIES
 const getInitialExchangeRates = () => {
@@ -51,6 +52,7 @@ export default function EditBudgetPage() {
   const [mounted, setMounted] = useState(false);
   const [useCustomRate, setUseCustomRate] = useState(false);
   const [customRate, setCustomRate] = useState("");
+  const [amountError, setAmountError] = useState(""); // State untuk error message
   
   const [formData, setFormData] = useState({
     fiscal_year: "",
@@ -114,8 +116,6 @@ export default function EditBudgetPage() {
       // Set showConvert jika ada data konversi
       if (budgetData.convert_to && budgetData.converted_amount) {
         setShowConvert(true);
-        // Cek apakah menggunakan custom rate? (anda bisa tambahkan field di DB jika perlu)
-        // Untuk sekarang, asumsikan menggunakan system rate
         setUseCustomRate(false);
       }
       
@@ -130,6 +130,24 @@ export default function EditBudgetPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fungsi validasi amount berdasarkan tipe budget
+  const validateAmountByType = (budgetType, amount, currency) => {
+    if (budgetType === "OPEX" && amount) {
+      const amountValue = parseFloat(amount);
+      const amountInIDR = currency === "IDR" 
+        ? amountValue 
+        : amountValue * (exchangeRates[currency] || 1);
+
+      if (amountInIDR > 16000000) {
+        return {
+          isValid: false,
+          message: `OPEX budget cannot exceed IDR 16,000,000 (Current: ${formatIDR(amountInIDR)})`,
+        };
+      }
+    }
+    return { isValid: true };
   };
 
   // Fungsi untuk menyimpan rates ke localStorage
@@ -150,6 +168,14 @@ export default function EditBudgetPage() {
         // Recalculate conversion if needed
         if (showConvert && formData.currency && formData.convert_to) {
           recalculateConversion(newRates);
+        }
+
+        // Revalidate amount jika currency berubah
+        const validation = validateAmountByType(formData.budget_type, formData.total_amount, formData.currency);
+        if (!validation.isValid) {
+          setAmountError(validation.message);
+        } else {
+          setAmountError("");
         }
         
         Swal.fire({
@@ -211,8 +237,23 @@ export default function EditBudgetPage() {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
       
+      // Validasi amount jika field yang berubah adalah total_amount, currency, atau budget_type
+      if (["total_amount", "currency", "budget_type"].includes(field)) {
+        const validation = validateAmountByType(
+          field === "budget_type" ? value : updated.budget_type,
+          field === "total_amount" ? value : updated.total_amount,
+          field === "currency" ? value : updated.currency
+        );
+        
+        if (!validation.isValid) {
+          setAmountError(validation.message);
+        } else {
+          setAmountError("");
+        }
+      }
+      
       // Auto calculate conversion jika perlu
-      if (["total_amount", "convert_to"].includes(field) || 
+      if (["total_amount", "convert_to", "currency"].includes(field) || 
           (field === "total_amount" && showConvert)) {
         setTimeout(() => recalculateConversion(), 0);
       }
@@ -301,6 +342,12 @@ export default function EditBudgetPage() {
     if (!formData.budget_name) errors.push("Budget name is required");
     if (!formData.total_amount || parseFloat(formData.total_amount) <= 0) errors.push("Total amount must be greater than 0");
     
+    // Validasi khusus OPEX
+    const validation = validateAmountByType(formData.budget_type, formData.total_amount, formData.currency);
+    if (!validation.isValid) {
+      errors.push(validation.message);
+    }
+    
     if (showConvert && useCustomRate && (!customRate || parseFloat(customRate) <= 0)) {
       errors.push("Custom exchange rate must be greater than 0");
     }
@@ -331,7 +378,7 @@ export default function EditBudgetPage() {
         budget_code: formData.budget_code || null,
         department_name: formData.department_name, 
         budget_type: formData.budget_type,
-        currency: formData.currency, // Currency tidak berubah
+        currency: formData.currency,
         budget_name: formData.budget_name,
         total_amount: parseFloat(formData.total_amount), 
         budget_owner: formData.budget_owner || null,
@@ -518,6 +565,11 @@ export default function EditBudgetPage() {
                     </label>
                   ))}
                 </div>
+                {formData.budget_type === "OPEX" && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Note: OPEX budget maximum is IDR 16,000,000
+                  </p>
+                )}
               </div>
 
               {/* ▸ DEPARTMENT & OWNER ─────────────────────────────────── */}
@@ -620,15 +672,24 @@ export default function EditBudgetPage() {
                 <div>
                   <Label required>Currency</Label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      value={`${formData.currency} — ${getCurrencyName(formData.currency)} (${getCurrencySymbol(formData.currency)})`}
-                      className={readonlyCls}
-                      readOnly
-                      disabled
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Currency cannot be changed after creation</p>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => handleChange("currency", e.target.value)}
+                      className={selectCls}
+                    >
+                      {Object.keys(exchangeRates).map((code) => (
+                        <option key={code} value={code}>
+                          {code} — {getCurrencyName(code)} ({getCurrencySymbol(code)})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
+                  {formData.currency !== "IDR" && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      1 {formData.currency} = {exchangeRates[formData.currency]?.toLocaleString()} IDR
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label required>Total Amount ({getCurrencySymbol(formData.currency)})</Label>
@@ -636,10 +697,16 @@ export default function EditBudgetPage() {
                     type="number"
                     value={formData.total_amount}
                     onChange={(e) => handleChange("total_amount", e.target.value)}
-                    className={inputCls}
+                    className={`${inputCls} ${amountError ? "border-red-500 focus:ring-red-500" : ""}`}
                     placeholder="Enter total budget amount"
                     min="0"
                   />
+                  {amountError && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <XCircle className="w-3 h-3" />
+                      {amountError}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -875,7 +942,8 @@ export default function EditBudgetPage() {
                 <div className="text-xs text-blue-700 space-y-0.5">
                   <p className="font-semibold mb-1">Budget Update Process</p>
                   <p>• Modify the fields you want to update</p>
-                  <p>• Currency cannot be changed after creation (read-only)</p>
+                  <p>• Currency can be changed</p>
+                  <p>• For OPEX budgets: maximum amount is IDR 16,000,000 (in IDR equivalent)</p>
                   <p>• Update exchange rates in the Budget Amount section if needed</p>
                   <p>• Financial status is automatically calculated from transactions</p>
                   <p>• Changes will be applied immediately after saving</p>
@@ -898,8 +966,12 @@ export default function EditBudgetPage() {
                   </button>
                   <button
                     onClick={handleSubmit}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                    disabled={saving || !!amountError}
+                    className={`flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg transition shadow-sm ${
+                      saving || amountError
+                        ? "bg-gray-400 cursor-not-allowed" 
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                   >
                     <Save className="w-4 h-4" />
                     {saving ? "Saving..." : "Save Changes"}
