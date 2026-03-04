@@ -859,57 +859,85 @@ export default function BudgetRequestListPage() {
         </div>
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Bar chart by dept */}
-          <div className="card p-5 md:col-span-3">
-            <p className="section-title flex items-center gap-2">
-              <span className="bullet-dot bg-blue-800" />
-              Request Amount by Department (IDR Jt)
-            </p>
-            {deptChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart
-                  data={deptChartData}
-                  margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) =>
-                      v && v.length > 8 ? v.slice(0, 8) + "…" : v || ""
-                    }
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    formatter={(v) => [`${v} Juta IDR`, "Total"]}
-                    contentStyle={{
-                      fontSize: 12,
-                      borderRadius: 8,
-                      border: "1px solid #e5e7eb",
-                      backgroundColor: "#fff",
-                      color: "#111827",
-                    }}
-                  />
-                  <Bar
-                    dataKey="value"
-                    fill="#1e3a5f"
-                    radius={[4, 4, 0, 0]}
-                    barSize={22}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-[180px] text-gray-400 text-sm">
-                No data available for chart
-              </div>
-            )}
-          </div>
+     {/* Bar chart by dept */}
+<div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
+  <p className="section-title flex items-center gap-2 mb-3">
+    <span className="bullet-dot bg-blue-800" />
+    Request Amount by Department (IDR Jt)
+  </p>
+  {deptChartData.length > 0 ? (
+    <>
+      <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={deptChartData}
+            margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+            barSize={20}
+          >
+            <CartesianGrid vertical={false} stroke="#f3f4f6" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) =>
+                v && v.length > 12 ? v.slice(0, 12) + "…" : v || ""
+              }
+              interval={0}
+              angle={-10}
+              textAnchor="end"
+              height={45}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
+            <Tooltip
+              formatter={(v) => [
+                `${v.toLocaleString()} Juta IDR`,
+                "Total Request",
+              ]}
+              labelFormatter={(label) => `Department: ${label}`}
+              contentStyle={{
+                fontSize: 12,
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                backgroundColor: "#fff",
+                padding: "8px 12px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              }}
+            />
+            <Bar
+              dataKey="value"
+              fill="#1e3a5f"
+              radius={[4, 4, 0, 0]}
+              barSize={20}
+              animationDuration={600}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Summary info di bawah chart - SEKARANG AKAN TERLIHAT */}
+      <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
+        <span className="inline-flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+          Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value} Jt)</span>
+        </span>
+      </div>
+    </>
+  ) : (
+    <div className="flex items-center justify-center h-[230px] text-gray-400 text-sm">
+      No data available for chart
+    </div>
+  )}
+</div>
 
           {/* Distribution panel */}
           <div className="card p-5 md:col-span-2 space-y-4">

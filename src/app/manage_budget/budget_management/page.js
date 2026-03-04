@@ -617,40 +617,73 @@ export default function BudgetManagementPage() {
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           {/* Bar Chart by Department */}
-          <div className="card p-5 md:col-span-3">
-            <p className="section-title flex items-center gap-2">
-              <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
-            </p>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
-                  tickLine={false} 
-                  axisLine={false}
-                  tickFormatter={v => v.length > 8 ? v.slice(0, 8) + "…" : v} 
-                />
-                <YAxis 
-                  tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <Tooltip 
-                  formatter={(v) => [`${v}M IDR`, "Total"]} 
-                  contentStyle={{ 
-                    fontSize: 12, 
-                    borderRadius: 8, 
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#fff",
-                    color: "#111827"
-                  }} 
-                />
-                <Bar dataKey="value" fill="#1e3a5f" radius={[4, 4, 0, 0]} barSize={22} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
+   {/* Bar Chart by Department - FULL CARD dengan batang lebih kecil */}
+<div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
+  <p className="section-title flex items-center gap-2 mb-3">
+    <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
+  </p>
+  <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart 
+        data={deptChartData} 
+        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+        barSize={18}
+      >
+        <CartesianGrid vertical={false} stroke="#f3f4f6" />
+        <XAxis 
+          dataKey="name" 
+          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+          tickLine={false} 
+          axisLine={false}
+          tickFormatter={v => v.length > 12 ? v.slice(0, 12) + "…" : v}
+          interval={0}
+          angle={-10}
+          textAnchor="end"
+          height={45}
+        />
+        <YAxis 
+          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+          tickLine={false} 
+          axisLine={false}
+          width={40}
+        />
+        <Tooltip 
+          formatter={(v) => [`${v.toLocaleString()}M IDR`, "Total Budget"]} 
+          labelFormatter={(label) => `Department: ${label}`}
+          contentStyle={{ 
+            fontSize: 12, 
+            borderRadius: 8, 
+            border: "1px solid #e5e7eb",
+            backgroundColor: "#fff",
+            padding: "8px 12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
+          }} 
+        />
+        <Bar 
+          dataKey="value" 
+          fill="#1e3a5f" 
+          radius={[4, 4, 0, 0]}
+          barSize={18}
+          animationDuration={600}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+  
+  {/* Summary info di bawah chart - SEKARANG AKAN TERLIHAT */}
+  {deptChartData.length > 0 && (
+    <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
+      <span className="flex items-center gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+        Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+        Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value}M)</span>
+      </span>
+    </div>
+  )}
+</div>
           {/* Budget Distribution */}
           <div className="card p-5 md:col-span-2 space-y-4">
             <p className="section-title">Budget Distribution</p>

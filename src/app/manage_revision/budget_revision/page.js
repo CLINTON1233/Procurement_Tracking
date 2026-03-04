@@ -3,18 +3,43 @@
 import { useState, useEffect, useMemo } from "react";
 import LayoutDashboard from "@/components/LayoutDashboard";
 import {
-  Search, RefreshCw, RotateCcw, Eye, Calendar, DollarSign,
-  ArrowUp, ArrowDown, FileText, Clock, Layers,
-  Grid, List as ListIcon, Server, Trash2, TrendingDown, ChevronDown,
+  Search,
+  RefreshCw,
+  RotateCcw,
+  Eye,
+  Calendar,
+  DollarSign,
+  ArrowUp,
+  ArrowDown,
+  FileText,
+  Clock,
+  Layers,
+  Grid,
+  List as ListIcon,
+  Server,
+  Trash2,
+  TrendingDown,
+  ChevronDown,
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import Swal from "sweetalert2";
 import { budgetService } from "@/services/budgetService";
 import { formatTableCurrency } from "@/utils/currencyFormatter";
-import { showDeleteRevisionModal, showDeleteMultipleRevisionsModal } from "@/components/modals/BudgetRevisionModals";
+import {
+  showDeleteRevisionModal,
+  showDeleteMultipleRevisionsModal,
+} from "@/components/modals/BudgetRevisionModals";
 import Link from "next/link";
 
 // ─── Generate tahun dari 2000 sampai 10 tahun ke depan ───────────────────────
@@ -23,7 +48,7 @@ const generateYears = () => {
   const years = [];
   const startYear = 2000;
   const endYear = currentYear + 10;
-  
+
   for (let year = startYear; year <= endYear; year++) {
     years.push(year.toString());
   }
@@ -31,19 +56,49 @@ const generateYears = () => {
 };
 
 // ─── Inline Donut ─────────────────────────────────────────────────────────────
-const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) => {
+const InlineDonut = ({
+  pct = 0,
+  color = "#2563eb",
+  size = 100,
+  stroke = 11,
+}) => {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const off = circ * (1 - Math.min(pct, 100) / 100);
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} style={{ position: "absolute", transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-          strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        style={{ position: "absolute", transform: "rotate(-90deg)" }}
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="#E5E7EB"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeDasharray={circ}
+          strokeDashoffset={off}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
       </svg>
-      <span className="text-xl font-bold text-gray-800 z-10">{isNaN(pct) ? 0 : pct.toFixed(0)}%</span>
+      <span className="text-xl font-bold text-gray-800 z-10">
+        {isNaN(pct) ? 0 : pct.toFixed(0)}%
+      </span>
     </div>
   );
 };
@@ -52,8 +107,11 @@ const InlineDonut = ({ pct = 0, color = "#2563eb", size = 100, stroke = 11 }) =>
 const StackedBar = ({ segments }) => (
   <div className="flex rounded-full overflow-hidden h-6 w-full">
     {segments.map((s, i) => (
-      <div key={i} style={{ width: `${s.pct}%`, background: s.color }}
-        className="flex items-center justify-center text-xs font-bold text-white transition-all">
+      <div
+        key={i}
+        style={{ width: `${s.pct}%`, background: s.color }}
+        className="flex items-center justify-center text-xs font-bold text-white transition-all"
+      >
         {s.pct > 12 ? `${s.pct.toFixed(0)}%` : ""}
       </div>
     ))}
@@ -95,26 +153,42 @@ export default function BudgetRevisionPage() {
   const currentYear = new Date().getFullYear().toString();
 
   const [stats, setStats] = useState({
-    total: 0, totalReduction: 0, averageReduction: 0,
-    capexRevisions: 0, opexRevisions: 0,
+    total: 0,
+    totalReduction: 0,
+    averageReduction: 0,
+    capexRevisions: 0,
+    opexRevisions: 0,
   });
 
-  useEffect(() => { fetchData(); fetchDepartments(); }, []);
+  useEffect(() => {
+    fetchData();
+    fetchDepartments();
+  }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [revisionsData, requestsData, budgetsData] = await Promise.all([
-        budgetService.getAllRevisions(),
-        budgetService.getAllRequests(),
-        budgetService.getAllBudgets(),
-      ]);
-      setRevisions(revisionsData);
-      setRequests(requestsData);
-      setBudgets(budgetsData);
-      calculateStats(revisionsData, budgetsData);
-    } catch (error) {
-      Swal.fire({ title: "Error!", text: "Failed to fetch revision data", icon: "error", confirmButtonColor: "#1e40af" });
+ const fetchData = async () => {
+  setLoading(true);
+  try {
+    const [revisionsData, requestsData, budgetsData] = await Promise.all([
+      budgetService.getAllRevisions(),
+      budgetService.getAllRequests(),
+      budgetService.getAllBudgets(),
+    ]);
+    setRevisions(revisionsData);
+    setRequests(requestsData);
+    setBudgets(budgetsData);
+    calculateStats(revisionsData, budgetsData);
+
+    console.log("Revisions Data:", revisionsData);
+    console.log("Budgets Data:", budgetsData);
+    
+  } catch (error) {
+
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to fetch revision data",
+        icon: "error",
+        confirmButtonColor: "#1e40af",
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,13 +204,23 @@ export default function BudgetRevisionPage() {
 
   const calculateStats = (revisionsData, budgetsData) => {
     const total = revisionsData.length;
-    const totalReduction = revisionsData.reduce((s, r) => s + (Number(r.original_amount) - Number(r.new_amount)), 0);
+    const totalReduction = revisionsData.reduce(
+      (s, r) => s + (Number(r.original_amount) - Number(r.new_amount)),
+      0,
+    );
     setStats({
       total,
       totalReduction,
       averageReduction: total > 0 ? totalReduction / total : 0,
-      capexRevisions: revisionsData.filter(r => budgetsData.find(b => b.id === r.budget_id)?.budget_type === "CAPEX").length,
-      opexRevisions: revisionsData.filter(r => budgetsData.find(b => b.id === r.budget_id)?.budget_type === "OPEX").length,
+      capexRevisions: revisionsData.filter(
+        (r) =>
+          budgetsData.find((b) => b.id === r.budget_id)?.budget_type ===
+          "CAPEX",
+      ).length,
+      opexRevisions: revisionsData.filter(
+        (r) =>
+          budgetsData.find((b) => b.id === r.budget_id)?.budget_type === "OPEX",
+      ).length,
     });
   };
 
@@ -147,78 +231,143 @@ export default function BudgetRevisionPage() {
       budgetName: getBudgetName(revision.budget_id),
       onConfirm: async () => {
         try {
-          const newRevisions = revisions.filter(r => r.id !== revision.id);
+          const newRevisions = revisions.filter((r) => r.id !== revision.id);
           setRevisions(newRevisions);
           calculateStats(newRevisions, budgets);
-          Swal.fire({ title: "Deleted!", text: "Revision deleted successfully", icon: "success", timer: 1500, showConfirmButton: false });
+          Swal.fire({
+            title: "Deleted!",
+            text: "Revision deleted successfully",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+          });
         } catch (error) {
-          Swal.fire({ title: "Error!", text: error.message || "Failed to delete", icon: "error", confirmButtonColor: "#1e40af" });
+          Swal.fire({
+            title: "Error!",
+            text: error.message || "Failed to delete",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
         }
       },
     });
   };
 
-  const toggleSelectMode = () => { setSelectMode(!selectMode); setSelectedRevisions([]); setSelectAll(false); };
-  const handleSelectRevision = (id) => setSelectedRevisions(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-  const handleSelectAll = () => { if (selectAll) setSelectedRevisions([]); else setSelectedRevisions(filteredRevisions.map(r => r.id)); setSelectAll(!selectAll); };
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedRevisions([]);
+    setSelectAll(false);
+  };
+  const handleSelectRevision = (id) =>
+    setSelectedRevisions((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id],
+    );
+  const handleSelectAll = () => {
+    if (selectAll) setSelectedRevisions([]);
+    else setSelectedRevisions(filteredRevisions.map((r) => r.id));
+    setSelectAll(!selectAll);
+  };
 
   const handleBulkDelete = () => {
-    if (!selectedRevisions.length) return Swal.fire({ title: "No Selection", text: "Please select at least one revision", icon: "warning", confirmButtonColor: "#1e40af" });
-    const selectedData = revisions.filter(r => selectedRevisions.includes(r.id));
+    if (!selectedRevisions.length)
+      return Swal.fire({
+        title: "No Selection",
+        text: "Please select at least one revision",
+        icon: "warning",
+        confirmButtonColor: "#1e40af",
+      });
+    const selectedData = revisions.filter((r) =>
+      selectedRevisions.includes(r.id),
+    );
     showDeleteMultipleRevisionsModal({
       revisions: selectedData,
-      requestNos: selectedData.map(r => getRequestNo(r.request_id)),
-      budgetNames: selectedData.map(r => getBudgetName(r.budget_id)),
+      requestNos: selectedData.map((r) => getRequestNo(r.request_id)),
+      budgetNames: selectedData.map((r) => getBudgetName(r.budget_id)),
       onConfirm: async () => {
         setDeleting(true);
         try {
-          const newRevisions = revisions.filter(r => !selectedRevisions.includes(r.id));
+          const newRevisions = revisions.filter(
+            (r) => !selectedRevisions.includes(r.id),
+          );
           setRevisions(newRevisions);
           calculateStats(newRevisions, budgets);
-          setSelectedRevisions([]); setSelectAll(false); setSelectMode(false);
-          Swal.fire({ title: "Deleted!", text: `${selectedRevisions.length} revision(s) deleted`, icon: "success", timer: 1500, showConfirmButton: false });
+          setSelectedRevisions([]);
+          setSelectAll(false);
+          setSelectMode(false);
+          Swal.fire({
+            title: "Deleted!",
+            text: `${selectedRevisions.length} revision(s) deleted`,
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+          });
         } catch {
-          Swal.fire({ title: "Error!", text: "Failed to delete revisions", icon: "error", confirmButtonColor: "#1e40af" });
-        } finally { setDeleting(false); }
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete revisions",
+            icon: "error",
+            confirmButtonColor: "#1e40af",
+          });
+        } finally {
+          setDeleting(false);
+        }
       },
     });
   };
 
   const formatDate = (d) => {
     if (!d) return "-";
-    try { return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
-    catch { return "-"; }
+    try {
+      return new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "-";
+    }
   };
 
-  const getRequestNo = (id) => requests.find(r => r.id === id)?.request_no || `ID: ${id}`;
-  const getBudgetName = (id) => budgets.find(b => b.id === id)?.budget_name || `ID: ${id}`;
-  const getBudgetType = (id) => budgets.find(b => b.id === id)?.budget_type || "Unknown";
-  const getBudgetDepartment = (id) => budgets.find(b => b.id === id)?.department_name || "Unknown";
-  const getBudgetCurrency = (id) => budgets.find(b => b.id === id)?.currency || "IDR";
-  const formatBudgetCurrency = (amount, code) => formatTableCurrency(amount, code);
+  const getRequestNo = (id) =>
+    requests.find((r) => r.id === id)?.request_no || `ID: ${id}`;
+  const getBudgetName = (id) =>
+    budgets.find((b) => b.id === id)?.budget_name || `ID: ${id}`;
+  const getBudgetType = (id) =>
+    budgets.find((b) => b.id === id)?.budget_type || "Unknown";
+  const getBudgetDepartment = (id) =>
+    budgets.find((b) => b.id === id)?.department_name || "Unknown";
+  const getBudgetCurrency = (id) =>
+    budgets.find((b) => b.id === id)?.currency || "IDR";
+  const formatBudgetCurrency = (amount, code) =>
+    formatTableCurrency(amount, code);
 
-  const uniqueDepartments = useMemo(() => [...new Set(budgets.map(b => b.department_name))].filter(Boolean), [budgets]);
+  const uniqueDepartments = useMemo(
+    () => [...new Set(budgets.map((b) => b.department_name))].filter(Boolean),
+    [budgets],
+  );
 
   // Filter revisions berdasarkan tipe dari header dan tahun
   const filteredRevisionsByHeader = useMemo(() => {
     let filtered = revisions;
-    
+
     // Filter by type
     if (headerTypeFilter !== "all") {
-      filtered = filtered.filter(r => {
-        const bud = budgets.find(b => b.id === r.budget_id);
+      filtered = filtered.filter((r) => {
+        const bud = budgets.find((b) => b.id === r.budget_id);
         return bud?.budget_type === headerTypeFilter;
       });
     }
-    
+
     // Filter by year - menggunakan fiscal_year dari budget
     if (yearFilter !== "all") {
-      filtered = filtered.filter(r => {
-        const bud = budgets.find(b => b.id === r.budget_id);
+      filtered = filtered.filter((r) => {
+        const bud = budgets.find((b) => b.id === r.budget_id);
         return bud?.fiscal_year === yearFilter;
       });
     }
-    
+
     return filtered;
   }, [revisions, budgets, headerTypeFilter, yearFilter]);
 
@@ -226,59 +375,118 @@ export default function BudgetRevisionPage() {
   const filteredStats = useMemo(() => {
     const filtered = filteredRevisionsByHeader;
     const total = filtered.length;
-    const totalReduction = filtered.reduce((s, r) => s + (Number(r.original_amount) - Number(r.new_amount)), 0);
+    const totalReduction = filtered.reduce(
+      (s, r) => s + (Number(r.original_amount) - Number(r.new_amount)),
+      0,
+    );
     return {
       total,
       totalReduction,
       averageReduction: total > 0 ? totalReduction / total : 0,
-      capexRevisions: filtered.filter(r => budgets.find(b => b.id === r.budget_id)?.budget_type === "CAPEX").length,
-      opexRevisions: filtered.filter(r => budgets.find(b => b.id === r.budget_id)?.budget_type === "OPEX").length,
+      capexRevisions: filtered.filter(
+        (r) =>
+          budgets.find((b) => b.id === r.budget_id)?.budget_type === "CAPEX",
+      ).length,
+      opexRevisions: filtered.filter(
+        (r) =>
+          budgets.find((b) => b.id === r.budget_id)?.budget_type === "OPEX",
+      ).length,
     };
   }, [filteredRevisionsByHeader, budgets]);
 
   const filteredRevisions = useMemo(() => {
-    let filtered = filteredRevisionsByHeader.filter(revision => {
-      const req = requests.find(r => r.id === revision.request_id);
-      const bud = budgets.find(b => b.id === revision.budget_id);
+    let filtered = filteredRevisionsByHeader.filter((revision) => {
+      const req = requests.find((r) => r.id === revision.request_id);
+      const bud = budgets.find((b) => b.id === revision.budget_id);
       const q = searchTerm.toLowerCase();
-      const matchSearch = !searchTerm ||
+      const matchSearch =
+        !searchTerm ||
         (req?.request_no || "").toLowerCase().includes(q) ||
         (bud?.budget_name || "").toLowerCase().includes(q) ||
         (revision.reason || "").toLowerCase().includes(q) ||
         (bud?.budget_owner || "").toLowerCase().includes(q);
       const matchType = typeFilter === "all" || bud?.budget_type === typeFilter;
-      const matchDept = departmentFilter === "all" || bud?.department_name === departmentFilter;
+      const matchDept =
+        departmentFilter === "all" || bud?.department_name === departmentFilter;
       return matchSearch && matchType && matchDept;
     });
     if (sorting.length > 0) {
       const { id, desc } = sorting[0];
       filtered.sort((a, b) => {
-        let av = a[id], bv = b[id];
-        if (["original_amount", "new_amount"].includes(id)) { av = Number(av || 0); bv = Number(bv || 0); }
-        if (id === "created_at") { av = new Date(av).getTime(); bv = new Date(bv).getTime(); }
-        if (id === "budget_name") { av = getBudgetName(a.budget_id); bv = getBudgetName(b.budget_id); }
-        if (id === "budget_type") { av = getBudgetType(a.budget_id); bv = getBudgetType(b.budget_id); }
-        if (id === "department") { av = getBudgetDepartment(a.budget_id); bv = getBudgetDepartment(b.budget_id); }
+        let av = a[id],
+          bv = b[id];
+        if (["original_amount", "new_amount"].includes(id)) {
+          av = Number(av || 0);
+          bv = Number(bv || 0);
+        }
+        if (id === "created_at") {
+          av = new Date(av).getTime();
+          bv = new Date(bv).getTime();
+        }
+        if (id === "budget_name") {
+          av = getBudgetName(a.budget_id);
+          bv = getBudgetName(b.budget_id);
+        }
+        if (id === "budget_type") {
+          av = getBudgetType(a.budget_id);
+          bv = getBudgetType(b.budget_id);
+        }
+        if (id === "department") {
+          av = getBudgetDepartment(a.budget_id);
+          bv = getBudgetDepartment(b.budget_id);
+        }
         return av < bv ? (desc ? 1 : -1) : av > bv ? (desc ? -1 : 1) : 0;
       });
     }
     return filtered;
-  }, [filteredRevisionsByHeader, requests, budgets, searchTerm, sorting, typeFilter, departmentFilter]);
+  }, [
+    filteredRevisionsByHeader,
+    requests,
+    budgets,
+    searchTerm,
+    sorting,
+    typeFilter,
+    departmentFilter,
+  ]);
 
   // ── Chart data ──────────────────────────────────────────────────────────────
-  const capexPct = filteredStats.total > 0 ? (filteredStats.capexRevisions / filteredStats.total) * 100 : 0;
-  const opexPct = filteredStats.total > 0 ? (filteredStats.opexRevisions / filteredStats.total) * 100 : 0;
+  const capexPct =
+    filteredStats.total > 0
+      ? (filteredStats.capexRevisions / filteredStats.total) * 100
+      : 0;
+  const opexPct =
+    filteredStats.total > 0
+      ? (filteredStats.opexRevisions / filteredStats.total) * 100
+      : 0;
 
-  const deptChartData = useMemo(() => {
-    const map = new Map();
-    filteredRevisionsByHeader.forEach(r => {
-      const d = getBudgetDepartment(r.budget_id);
-      const reduction = Number(r.original_amount) - Number(r.new_amount);
+const deptChartData = useMemo(() => {
+  const map = new Map();
+  
+  filteredRevisionsByHeader.forEach((r) => {
+    const d = getBudgetDepartment(r.budget_id);
+    // Pastikan original_amount dan new_amount adalah number
+    const original = Number(r.original_amount) || 0;
+    const newAmount = Number(r.new_amount) || 0;
+    const reduction = original - newAmount;
+    
+    // Hanya tambahkan jika reduction > 0 (ada pengurangan)
+    if (reduction > 0) {
       map.set(d, (map.get(d) || 0) + reduction);
-    });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value: Math.round(value / 1e6) }))
-      .sort((a, b) => b.value - a.value).slice(0, 7);
-  }, [filteredRevisionsByHeader, budgets]);
+    }
+  });
+  
+  const chartData = Array.from(map.entries())
+    .map(([name, value]) => ({ 
+      name, 
+      value: Math.round(value / 1e6) 
+    }))
+    .filter(item => item.value > 0) 
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7);
+  
+  console.log("Chart Data:", chartData); 
+  return chartData;
+}, [filteredRevisionsByHeader, budgets]);
 
   const pieData = [
     { name: "CAPEX", value: filteredStats.capexRevisions },
@@ -292,14 +500,20 @@ export default function BudgetRevisionPage() {
     const total = filteredRevisionsByHeader.reduce((s, r) => {
       const orig = Number(r.original_amount);
       if (!orig) return s;
-      return s + ((Number(r.original_amount) - Number(r.new_amount)) / orig) * 100;
+      return (
+        s + ((Number(r.original_amount) - Number(r.new_amount)) / orig) * 100
+      );
     }, 0);
     return total / filteredRevisionsByHeader.length;
   }, [filteredRevisionsByHeader]);
 
   const showDetailModal = (revision) => {
-    const reductionAmount = Number(revision.original_amount) - Number(revision.new_amount);
-    const reductionPercent = ((reductionAmount / Number(revision.original_amount)) * 100).toFixed(1);
+    const reductionAmount =
+      Number(revision.original_amount) - Number(revision.new_amount);
+    const reductionPercent = (
+      (reductionAmount / Number(revision.original_amount)) *
+      100
+    ).toFixed(1);
     const budgetType = getBudgetType(revision.budget_id);
     const currency = getBudgetCurrency(revision.budget_id);
     Swal.fire({
@@ -387,25 +601,31 @@ export default function BudgetRevisionPage() {
       `}</style>
 
       <div className="space-y-5">
-
         {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Budget Revision History</h1>
-              
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Budget Revision History
+              </h1>
+
               {/* Type Filter Badge */}
               <div className="relative">
                 <button
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                   className="period-badge flex items-center gap-2"
                 >
-                  {headerTypeFilter === "all" ? "CAPEX/OPEX (ALL)" : headerTypeFilter}
+                  {headerTypeFilter === "all"
+                    ? "CAPEX/OPEX (ALL)"
+                    : headerTypeFilter}
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {showTypeDropdown && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowTypeDropdown(false)}
+                    />
                     <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-1">
                       <button
                         onClick={() => {
@@ -413,7 +633,9 @@ export default function BudgetRevisionPage() {
                           setShowTypeDropdown(false);
                         }}
                         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          headerTypeFilter === "all"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-gray-700 hover:bg-gray-50"
                         }`}
                       >
                         ALL (CAPEX & OPEX)
@@ -424,7 +646,9 @@ export default function BudgetRevisionPage() {
                           setShowTypeDropdown(false);
                         }}
                         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          headerTypeFilter === "CAPEX"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-gray-700 hover:bg-gray-50"
                         }`}
                       >
                         CAPEX
@@ -435,7 +659,9 @@ export default function BudgetRevisionPage() {
                           setShowTypeDropdown(false);
                         }}
                         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          headerTypeFilter === "OPEX"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-gray-700 hover:bg-gray-50"
                         }`}
                       >
                         OPEX
@@ -456,7 +682,10 @@ export default function BudgetRevisionPage() {
                 </button>
                 {showYearDropdown && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowYearDropdown(false)} />
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowYearDropdown(false)}
+                    />
                     <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-3">
                       <div className="mb-2 px-2 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100">
                         Select Year (2000 - {new Date().getFullYear() + 10})
@@ -468,15 +697,17 @@ export default function BudgetRevisionPage() {
                             setShowYearDropdown(false);
                           }}
                           className={`col-span-4 px-3 py-2 text-sm rounded-lg mb-2 ${
-                            yearFilter === "all" ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-50"
+                            yearFilter === "all"
+                              ? "bg-blue-50 text-blue-600 font-semibold"
+                              : "text-gray-700 hover:bg-gray-50"
                           }`}
                         >
                           All Years
                         </button>
-                        {availableYears.map(year => {
+                        {availableYears.map((year) => {
                           const isDisabled = parseInt(year) < 2026;
                           const isSelected = yearFilter === year;
-                          
+
                           return (
                             <button
                               key={year}
@@ -489,13 +720,18 @@ export default function BudgetRevisionPage() {
                               disabled={isDisabled}
                               className={`
                                 px-2 py-1.5 text-sm rounded-lg transition-colors
-                                ${isSelected ? 'bg-blue-50 text-blue-600 font-semibold' : ''}
-                                ${isDisabled 
-                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
-                                  : 'text-gray-700 hover:bg-gray-50'
+                                ${isSelected ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                                ${
+                                  isDisabled
+                                    ? "text-gray-300 cursor-not-allowed bg-gray-50"
+                                    : "text-gray-700 hover:bg-gray-50"
                                 }
                               `}
-                              title={isDisabled ? "Years before 2026 cannot be selected" : ""}
+                              title={
+                                isDisabled
+                                  ? "Years before 2026 cannot be selected"
+                                  : ""
+                              }
                             >
                               {year}
                             </button>
@@ -503,7 +739,8 @@ export default function BudgetRevisionPage() {
                         })}
                       </div>
                       <div className="mt-2 px-2 py-1 text-xs text-gray-400 border-t border-gray-100">
-                        * Years before 2026 are disabled • Years automatically update
+                        * Years before 2026 are disabled • Years automatically
+                        update
                       </div>
                     </div>
                   </>
@@ -511,16 +748,19 @@ export default function BudgetRevisionPage() {
               </div>
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              {headerTypeFilter === "all" 
-                ? "Showing all CAPEX and OPEX budget revisions" 
+              {headerTypeFilter === "all"
+                ? "Showing all CAPEX and OPEX budget revisions"
                 : `Showing ${headerTypeFilter} budget revisions only`}
               {yearFilter !== "all" && ` for year ${yearFilter}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/manage_request/budget_request_list"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
-              <FileText className="w-4 h-4" />New Request
+            <Link
+              href="/manage_request/budget_request_list"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+            >
+              <FileText className="w-4 h-4" />
+              New Request
             </Link>
           </div>
         </div>
@@ -530,77 +770,184 @@ export default function BudgetRevisionPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-gray-100">
             <div className="donut-card">
               <h4>CAPEX Revisions</h4>
-              <InlineDonut pct={capexPct} color="#1e3a5f" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.capexRevisions} of {filteredStats.total} total</p>
+              <InlineDonut
+                pct={capexPct}
+                color="#1e3a5f"
+                size={110}
+                stroke={13}
+              />
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                {filteredStats.capexRevisions} of {filteredStats.total} total
+              </p>
             </div>
             <div className="donut-card">
               <h4>OPEX Revisions</h4>
-              <InlineDonut pct={opexPct} color="#2563eb" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.opexRevisions} of {filteredStats.total} total</p>
+              <InlineDonut
+                pct={opexPct}
+                color="#2563eb"
+                size={110}
+                stroke={13}
+              />
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                {filteredStats.opexRevisions} of {filteredStats.total} total
+              </p>
             </div>
             <div className="donut-card">
               <h4>Avg Reduction %</h4>
-              <InlineDonut pct={Math.min(avgReductionPct, 100)} color="#ef4444" size={110} stroke={13} />
-              <p className="text-xs text-gray-500 mt-3 text-center">Avg per revision</p>
+              <InlineDonut
+                pct={Math.min(avgReductionPct, 100)}
+                color="#ef4444"
+                size={110}
+                stroke={13}
+              />
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                Avg per revision
+              </p>
             </div>
             <div className="donut-card">
               <h4>Total Revisions</h4>
-              <div className="relative inline-flex items-center justify-center" style={{ width: 110, height: 110 }}>
-                <svg width={110} height={110} style={{ position: "absolute", transform: "rotate(-90deg)" }}>
-                  <circle cx={55} cy={55} r={42} fill="none" stroke="#E5E7EB" strokeWidth={13} />
-                  <circle cx={55} cy={55} r={42} fill="none" stroke="#10b981" strokeWidth={13}
-                    strokeDasharray={2 * Math.PI * 42} strokeDashoffset={0} strokeLinecap="round" />
+              <div
+                className="relative inline-flex items-center justify-center"
+                style={{ width: 110, height: 110 }}
+              >
+                <svg
+                  width={110}
+                  height={110}
+                  style={{ position: "absolute", transform: "rotate(-90deg)" }}
+                >
+                  <circle
+                    cx={55}
+                    cy={55}
+                    r={42}
+                    fill="none"
+                    stroke="#E5E7EB"
+                    strokeWidth={13}
+                  />
+                  <circle
+                    cx={55}
+                    cy={55}
+                    r={42}
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth={13}
+                    strokeDasharray={2 * Math.PI * 42}
+                    strokeDashoffset={0}
+                    strokeLinecap="round"
+                  />
                 </svg>
-                <span className="text-2xl font-bold text-gray-800 z-10">{filteredStats.total}</span>
+                <span className="text-2xl font-bold text-gray-800 z-10">
+                  {filteredStats.total}
+                </span>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">{filteredStats.capexRevisions} CAPEX • {filteredStats.opexRevisions} OPEX</p>
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                {filteredStats.capexRevisions} CAPEX •{" "}
+                {filteredStats.opexRevisions} OPEX
+              </p>
             </div>
           </div>
         </div>
 
         {/* ── Row 2: Charts (menggunakan filtered data) ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-          {/* Bar chart: reduction by dept */}
-          <div className="card p-5 md:col-span-3">
-            <p className="section-title flex items-center gap-2">
-              <span className="bullet-dot bg-red-600" />Budget Reduction by Department (IDR Jt)
+          {/* Bar chart*/}
+          <div
+            className="card p-5 md:col-span-3"
+            style={{ minHeight: "300px" }}
+          >
+            <p className="section-title flex items-center gap-2 mb-3">
+              <span className="bullet-dot bg-red-600" />
+              Budget Reduction by Department (IDR Jt)
             </p>
             {deptChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={deptChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#f3f4f6" />
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tickFormatter={v => v && v.length > 8 ? v.slice(0, 8) + "…" : v || ""} 
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
-                    tickLine={false} 
-                    axisLine={false} 
-                  />
-                  <Tooltip 
-                    formatter={(v) => [`${v}M IDR`, "Reduction"]} 
-                    contentStyle={{ 
-                      fontSize: 12, 
-                      borderRadius: 8, 
-                      border: "1px solid #e5e7eb",
-                      backgroundColor: "#fff",
-                      color: "#111827"
-                    }} 
-                  />
-                  <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={22} />
-                </BarChart>
-              </ResponsiveContainer>
+              <>
+                <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={deptChartData}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                      barSize={20}
+                    >
+                      <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{
+                          fontSize: 11,
+                          fill: "#374151",
+                          fontWeight: 500,
+                        }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) =>
+                          v && v.length > 12 ? v.slice(0, 12) + "…" : v || ""
+                        }
+                        interval={0}
+                        angle={-10}
+                        textAnchor="end"
+                        height={45}
+                      />
+                      <YAxis
+                        tick={{
+                          fontSize: 11,
+                          fill: "#374151",
+                          fontWeight: 500,
+                        }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={40}
+                      />
+                      <Tooltip
+                        formatter={(v) => [
+                          `${v.toLocaleString()} Juta IDR`,
+                          "Total Reduction",
+                        ]}
+                        labelFormatter={(label) => `Department: ${label}`}
+                        contentStyle={{
+                          fontSize: 12,
+                          borderRadius: 8,
+                          border: "1px solid #e5e7eb",
+                          backgroundColor: "#fff",
+                          padding: "8px 12px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                        }}
+                      />
+                      <Bar
+                        dataKey="value"
+                        fill="#ef4444"
+                        radius={[4, 4, 0, 0]}
+                        barSize={20}
+                        animationDuration={600}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Summary info di bawah chart - DIPERBAIKI POSISINYA */}
+                <div
+                  className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center"
+                  style={{ marginTop: "2px" }}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    Total Departemen:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {deptChartData.length}
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Tertinggi:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {deptChartData[0]?.name} ({deptChartData[0]?.value} Jt)
+                    </span>
+                  </span>
+                </div>
+              </>
             ) : (
-              <div className="flex items-center justify-center h-[180px] text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-[230px] text-gray-400 text-sm">
                 No reduction data available
               </div>
             )}
           </div>
-
           {/* Distribution panel */}
           <div className="card p-5 md:col-span-2 space-y-4">
             <p className="section-title">Revision Distribution</p>
@@ -608,46 +955,84 @@ export default function BudgetRevisionPage() {
             {/* Type pie */}
             <div className="flex items-center gap-4">
               <PieChart width={80} height={80}>
-                <Pie data={pieData} cx={35} cy={35} innerRadius={22} outerRadius={36} dataKey="value" strokeWidth={0}>
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                <Pie
+                  data={pieData}
+                  cx={35}
+                  cy={35}
+                  innerRadius={22}
+                  outerRadius={36}
+                  dataKey="value"
+                  strokeWidth={0}
+                >
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i]} />
+                  ))}
                 </Pie>
               </PieChart>
               <div className="text-xs text-gray-500 space-y-1.5">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" /> CAPEX: {filteredStats.capexRevisions}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" /> OPEX: {filteredStats.opexRevisions}</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> Total: {filteredStats.total}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#1e3a5f] inline-block" />{" "}
+                  CAPEX: {filteredStats.capexRevisions}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />{" "}
+                  OPEX: {filteredStats.opexRevisions}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" />{" "}
+                  Total: {filteredStats.total}
+                </div>
               </div>
             </div>
 
             {/* CAPEX vs OPEX bar */}
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">CAPEX vs OPEX Split</p>
-                <StackedBar segments={[
-                  { pct: Math.max(Math.round(capexPct) || 1, 1), color: "#1e3a5f" },
-                  { pct: Math.max(Math.round(opexPct) || 1, 1), color: "#2563eb" },
-                ]} />
+                <p className="text-xs text-gray-500 mb-1.5 font-medium">
+                  CAPEX vs OPEX Split
+                </p>
+                <StackedBar
+                  segments={[
+                    {
+                      pct: Math.max(Math.round(capexPct) || 1, 1),
+                      color: "#1e3a5f",
+                    },
+                    {
+                      pct: Math.max(Math.round(opexPct) || 1, 1),
+                      color: "#2563eb",
+                    },
+                  ]}
+                />
                 <div className="flex gap-4 mt-1.5 text-xs text-gray-500">
-                  <span>● CAPEX</span><span>● OPEX</span>
+                  <span>● CAPEX</span>
+                  <span>● OPEX</span>
                 </div>
               </div>
 
               {/* Summary cards - GREY BACKGROUND */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="stat-box-grey">
-                  <div className="stat-value">{fmtCompact(filteredStats.totalReduction)}</div>
+                  <div className="stat-value">
+                    {fmtCompact(filteredStats.totalReduction)}
+                  </div>
                   <div className="stat-label">Total Reduction</div>
                 </div>
                 <div className="stat-box-grey">
-                  <div className="stat-value">{fmtCompact(filteredStats.averageReduction)}</div>
+                  <div className="stat-value">
+                    {fmtCompact(filteredStats.averageReduction)}
+                  </div>
                   <div className="stat-label">Avg Reduction</div>
                 </div>
                 <div className="stat-box-grey">
-                  <div className="stat-value">{filteredStats.capexRevisions}</div>
+                  <div className="stat-value">
+                    {filteredStats.capexRevisions}
+                  </div>
                   <div className="stat-label">CAPEX Rev.</div>
                 </div>
                 <div className="stat-box-grey">
-                  <div className="stat-value">{filteredStats.opexRevisions}</div>
+                  <div className="stat-value">
+                    {filteredStats.opexRevisions}
+                  </div>
                   <div className="stat-label">OPEX Rev.</div>
                 </div>
               </div>
@@ -664,27 +1049,38 @@ export default function BudgetRevisionPage() {
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                   <ListIcon className="w-4 h-4 text-blue-600" />
                   Revision List
-                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">{filteredRevisionsByHeader.length}</span>
+                  <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                    {filteredRevisionsByHeader.length}
+                  </span>
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Select */}
-                  <button onClick={toggleSelectMode}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${selectMode ? "bg-orange-100 text-orange-700 border border-orange-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                    <Layers className="w-3.5 h-3.5" />{selectMode ? "Cancel Select" : "Select Multiple"}
+                  <button
+                    onClick={toggleSelectMode}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${selectMode ? "bg-orange-100 text-orange-700 border border-orange-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    {selectMode ? "Cancel Select" : "Select Multiple"}
                   </button>
 
                   {/* Bulk actions */}
                   {selectMode && (
                     <>
-                      <button onClick={handleSelectAll}
-                        className="flex items-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg text-xs font-medium">
+                      <button
+                        onClick={handleSelectAll}
+                        className="flex items-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg text-xs font-medium"
+                      >
                         {selectAll ? "Unselect All" : "Select All"}
                       </button>
                       {selectedRevisions.length > 0 && (
-                        <button onClick={handleBulkDelete} disabled={deleting}
-                          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50">
-                          <Trash2 className="w-3.5 h-3.5" />Delete ({selectedRevisions.length})
+                        <button
+                          onClick={handleBulkDelete}
+                          disabled={deleting}
+                          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete ({selectedRevisions.length})
                         </button>
                       )}
                     </>
@@ -692,12 +1088,16 @@ export default function BudgetRevisionPage() {
 
                   {/* View toggle */}
                   <div className="flex border border-gray-200 rounded-lg overflow-hidden">
-                    <button onClick={() => setViewMode("list")}
-                      className={`p-2 transition-colors ${viewMode === "list" ? "bg-gray-100 text-blue-600" : "text-gray-500 hover:bg-gray-50"}`}>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`p-2 transition-colors ${viewMode === "list" ? "bg-gray-100 text-blue-600" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
                       <ListIcon className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setViewMode("grid")}
-                      className={`p-2 border-l border-gray-200 transition-colors ${viewMode === "grid" ? "bg-gray-100 text-blue-600" : "text-gray-500 hover:bg-gray-50"}`}>
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-2 border-l border-gray-200 transition-colors ${viewMode === "grid" ? "bg-gray-100 text-blue-600" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
                       <Grid className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -708,29 +1108,50 @@ export default function BudgetRevisionPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                  <input type="text" placeholder="Search request no, budget name, reason, owner..."
-                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" />
+                  <input
+                    type="text"
+                    placeholder="Search request no, budget name, reason, owner..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                  />
                 </div>
 
                 {/* Type filter chips - untuk filter di dalam tabel */}
                 <div className="flex gap-1.5">
-                  {["all", "CAPEX", "OPEX"].map(type => (
-                    <button key={type} onClick={() => setTypeFilter(type)}
-                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${typeFilter === type
-                        ? type === "CAPEX" ? "bg-[#1e3a5f] text-white" : type === "OPEX" ? "bg-blue-600 text-white" : "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                  {["all", "CAPEX", "OPEX"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setTypeFilter(type)}
+                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                        typeFilter === type
+                          ? type === "CAPEX"
+                            ? "bg-[#1e3a5f] text-white"
+                            : type === "OPEX"
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-800 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
                       {type === "all" ? "All Types" : type}
                     </button>
                   ))}
                 </div>
 
                 {/* Department filter */}
-                <select value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="all">All Departments</option>
-                  {(departments.length > 0 ? departments.map(d => ({ id: d.id, name: d.name })) : uniqueDepartments.map((n, i) => ({ id: i, name: n }))).map(d => (
-                    <option key={d.id} value={d.name}>{d.name}</option>
+                  {(departments.length > 0
+                    ? departments.map((d) => ({ id: d.id, name: d.name }))
+                    : uniqueDepartments.map((n, i) => ({ id: i, name: n }))
+                  ).map((d) => (
+                    <option key={d.id} value={d.name}>
+                      {d.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -742,39 +1163,74 @@ export default function BudgetRevisionPage() {
             {filteredRevisionsByHeader.length === 0 ? (
               <div className="py-16 text-center">
                 <RotateCcw className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <h3 className="text-gray-700 font-medium mb-1">No revisions available</h3>
-                <p className="text-gray-400 text-sm">Revisions will appear here when budgets are revised</p>
+                <h3 className="text-gray-700 font-medium mb-1">
+                  No revisions available
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Revisions will appear here when budgets are revised
+                </p>
               </div>
             ) : filteredRevisions.length === 0 ? (
               <div className="py-16 text-center">
                 <Search className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <h3 className="text-gray-700 font-medium mb-1">No matching revisions</h3>
-                <p className="text-gray-400 text-sm mb-5">Try adjusting your filters</p>
-                <button onClick={() => { setSearchTerm(""); setTypeFilter("all"); setDepartmentFilter("all"); }}
-                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs inline-flex items-center gap-2 hover:bg-gray-200">
-                  <RefreshCw className="w-3.5 h-3.5" />Clear Filters
+                <h3 className="text-gray-700 font-medium mb-1">
+                  No matching revisions
+                </h3>
+                <p className="text-gray-400 text-sm mb-5">
+                  Try adjusting your filters
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setTypeFilter("all");
+                    setDepartmentFilter("all");
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs inline-flex items-center gap-2 hover:bg-gray-200"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Clear Filters
                 </button>
               </div>
             ) : viewMode === "grid" ? (
               /* GRID VIEW */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {filteredRevisions.map(revision => {
-                  const reductionAmount = Number(revision.original_amount) - Number(revision.new_amount);
-                  const reductionPercent = ((reductionAmount / Number(revision.original_amount)) * 100).toFixed(1);
+                {filteredRevisions.map((revision) => {
+                  const reductionAmount =
+                    Number(revision.original_amount) -
+                    Number(revision.new_amount);
+                  const reductionPercent = (
+                    (reductionAmount / Number(revision.original_amount)) *
+                    100
+                  ).toFixed(1);
                   const budgetType = getBudgetType(revision.budget_id);
                   const currency = getBudgetCurrency(revision.budget_id);
                   return (
-                    <div key={revision.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all bg-white relative">
+                    <div
+                      key={revision.id}
+                      className="border border-gray-100 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all bg-white relative"
+                    >
                       {selectMode && (
-                        <input type="checkbox" checked={selectedRevisions.includes(revision.id)} onChange={() => handleSelectRevision(revision.id)}
-                          className="absolute top-3 left-3 w-4 h-4 text-blue-600 rounded border-gray-300" />
+                        <input
+                          type="checkbox"
+                          checked={selectedRevisions.includes(revision.id)}
+                          onChange={() => handleSelectRevision(revision.id)}
+                          className="absolute top-3 left-3 w-4 h-4 text-blue-600 rounded border-gray-300"
+                        />
                       )}
-                      <div className={`flex items-center gap-2 mb-3 ${selectMode ? "ml-6" : ""}`}>
+                      <div
+                        className={`flex items-center gap-2 mb-3 ${selectMode ? "ml-6" : ""}`}
+                      >
                         <div className="p-2 rounded-lg bg-blue-50">
-                          {budgetType === "CAPEX" ? <Calendar className="w-4 h-4 text-blue-600" /> : <Server className="w-4 h-4 text-blue-600" />}
+                          {budgetType === "CAPEX" ? (
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                          ) : (
+                            <Server className="w-4 h-4 text-blue-600" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 truncate text-sm">{getBudgetName(revision.budget_id)}</div>
+                          <div className="font-semibold text-gray-900 truncate text-sm">
+                            {getBudgetName(revision.budget_id)}
+                          </div>
                           <span className="inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
                             {getRequestNo(revision.request_id)}
                           </span>
@@ -782,32 +1238,77 @@ export default function BudgetRevisionPage() {
                       </div>
 
                       <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between"><span className="text-gray-400">Department</span><span className="font-medium text-gray-700">{getBudgetDepartment(revision.budget_id)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Type</span>
-                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budgetType === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>{budgetType}</span>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Department</span>
+                          <span className="font-medium text-gray-700">
+                            {getBudgetDepartment(revision.budget_id)}
+                          </span>
                         </div>
-                        <div className="flex justify-between"><span className="text-gray-400">Original</span><span className="font-medium text-gray-900">{formatBudgetCurrency(revision.original_amount, currency)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">New Amount</span><span className="font-medium text-blue-600">{formatBudgetCurrency(revision.new_amount, currency)}</span></div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Type</span>
+                          <span
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budgetType === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}
+                          >
+                            {budgetType}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Original</span>
+                          <span className="font-medium text-gray-900">
+                            {formatBudgetCurrency(
+                              revision.original_amount,
+                              currency,
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">New Amount</span>
+                          <span className="font-medium text-blue-600">
+                            {formatBudgetCurrency(
+                              revision.new_amount,
+                              currency,
+                            )}
+                          </span>
+                        </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Reduction</span>
                           <div className="text-right">
-                            <span className="font-semibold text-red-600">{reductionPercent}%</span>
-                            <span className="text-gray-400 ml-1">({fmtCompact(reductionAmount)})</span>
+                            <span className="font-semibold text-red-600">
+                              {reductionPercent}%
+                            </span>
+                            <span className="text-gray-400 ml-1">
+                              ({fmtCompact(reductionAmount)})
+                            </span>
                           </div>
                         </div>
                         <div className="pt-1.5 border-t border-gray-100">
                           <p className="text-gray-400 mb-1">Reason</p>
-                          <p className="text-gray-700 line-clamp-2">{revision.reason}</p>
+                          <p className="text-gray-700 line-clamp-2">
+                            {revision.reason}
+                          </p>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-gray-100">
                           <span className="text-gray-400">Date</span>
-                          <span className="font-medium text-gray-700">{formatDate(revision.created_at)}</span>
+                          <span className="font-medium text-gray-700">
+                            {formatDate(revision.created_at)}
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex justify-end gap-0.5 mt-3 pt-2 border-t border-gray-100">
-                        <button onClick={() => showDetailModal(revision)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDeleteRevision(revision)} disabled={deleting} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button
+                          onClick={() => showDetailModal(revision)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRevision(revision)}
+                          disabled={deleting}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -821,45 +1322,104 @@ export default function BudgetRevisionPage() {
                     <tr className="bg-gray-50 border-b border-gray-100">
                       {selectMode && (
                         <th className="px-4 py-3 text-center">
-                          <input type="checkbox" checked={selectAll} onChange={handleSelectAll}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                          />
                         </th>
                       )}
                       {[
                         { label: "Date", id: "created_at", align: "left" },
-                        { label: "Request No", id: "budget_name", align: "left" },
+                        {
+                          label: "Request No",
+                          id: "budget_name",
+                          align: "left",
+                        },
                         { label: "Budget", id: null, align: "left" },
                         { label: "Type", id: "budget_type", align: "center" },
-                        { label: "Department", id: "department", align: "center" },
-                        { label: "Original", id: "original_amount", align: "center" },
-                        { label: "New Amount", id: "new_amount", align: "center" },
+                        {
+                          label: "Department",
+                          id: "department",
+                          align: "center",
+                        },
+                        {
+                          label: "Original",
+                          id: "original_amount",
+                          align: "center",
+                        },
+                        {
+                          label: "New Amount",
+                          id: "new_amount",
+                          align: "center",
+                        },
                         { label: "Reduction", id: null, align: "center" },
                         { label: "Reason", id: null, align: "left" },
                         { label: "Actions", id: null, align: "center" },
                       ].map((col, i) => (
-                        <th key={i}
-                          onClick={col.id ? () => setSorting([{ id: col.id, desc: sorting[0]?.id === col.id ? !sorting[0].desc : false }]) : undefined}
-                          className={`px-4 py-3 text-${col.align} text-xs font-semibold text-gray-500 uppercase tracking-wide ${col.id ? "cursor-pointer hover:text-gray-700" : ""}`}>
-                          <div className={`flex items-center ${col.align === "center" ? "justify-center" : ""} gap-1`}>
+                        <th
+                          key={i}
+                          onClick={
+                            col.id
+                              ? () =>
+                                  setSorting([
+                                    {
+                                      id: col.id,
+                                      desc:
+                                        sorting[0]?.id === col.id
+                                          ? !sorting[0].desc
+                                          : false,
+                                    },
+                                  ])
+                              : undefined
+                          }
+                          className={`px-4 py-3 text-${col.align} text-xs font-semibold text-gray-500 uppercase tracking-wide ${col.id ? "cursor-pointer hover:text-gray-700" : ""}`}
+                        >
+                          <div
+                            className={`flex items-center ${col.align === "center" ? "justify-center" : ""} gap-1`}
+                          >
                             {col.label}
-                            {col.id && sorting[0]?.id === col.id ? (sorting[0].desc ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />) : null}
+                            {col.id && sorting[0]?.id === col.id ? (
+                              sorting[0].desc ? (
+                                <ArrowDown className="w-3 h-3" />
+                              ) : (
+                                <ArrowUp className="w-3 h-3" />
+                              )
+                            ) : null}
                           </div>
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRevisions.map(revision => {
-                      const reductionAmount = Number(revision.original_amount) - Number(revision.new_amount);
-                      const reductionPercent = ((reductionAmount / Number(revision.original_amount)) * 100).toFixed(1);
+                    {filteredRevisions.map((revision) => {
+                      const reductionAmount =
+                        Number(revision.original_amount) -
+                        Number(revision.new_amount);
+                      const reductionPercent = (
+                        (reductionAmount / Number(revision.original_amount)) *
+                        100
+                      ).toFixed(1);
                       const budgetType = getBudgetType(revision.budget_id);
                       const currency = getBudgetCurrency(revision.budget_id);
                       return (
-                        <tr key={revision.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={revision.id}
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                        >
                           {selectMode && (
                             <td className="px-4 py-3 text-center">
-                              <input type="checkbox" checked={selectedRevisions.includes(revision.id)} onChange={() => handleSelectRevision(revision.id)}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                              <input
+                                type="checkbox"
+                                checked={selectedRevisions.includes(
+                                  revision.id,
+                                )}
+                                onChange={() =>
+                                  handleSelectRevision(revision.id)
+                                }
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                              />
                             </td>
                           )}
                           <td className="px-4 py-3">
@@ -869,35 +1429,76 @@ export default function BudgetRevisionPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-semibold text-gray-900 text-sm">{getRequestNo(revision.request_id)}</span>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {getRequestNo(revision.request_id)}
+                            </span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                {budgetType === "CAPEX" ? <Calendar className="w-3.5 h-3.5 text-blue-600" /> : <Server className="w-3.5 h-3.5 text-blue-600" />}
+                                {budgetType === "CAPEX" ? (
+                                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                ) : (
+                                  <Server className="w-3.5 h-3.5 text-blue-600" />
+                                )}
                               </div>
-                              <span className="text-sm text-gray-700 max-w-[150px] truncate">{getBudgetName(revision.budget_id)}</span>
+                              <span className="text-sm text-gray-700 max-w-[150px] truncate">
+                                {getBudgetName(revision.budget_id)}
+                              </span>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budgetType === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}>
+                            <span
+                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budgetType === "CAPEX" ? "bg-[#1e3a5f] text-white" : "bg-blue-100 text-blue-700"}`}
+                            >
                               {budgetType}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-600">{getBudgetDepartment(revision.budget_id)}</td>
-                          <td className="px-4 py-3 text-center text-sm text-gray-900">{formatBudgetCurrency(revision.original_amount, currency)}</td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600">{formatBudgetCurrency(revision.new_amount, currency)}</td>
+                          <td className="px-4 py-3 text-center text-xs text-gray-600">
+                            {getBudgetDepartment(revision.budget_id)}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm text-gray-900">
+                            {formatBudgetCurrency(
+                              revision.original_amount,
+                              currency,
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600">
+                            {formatBudgetCurrency(
+                              revision.new_amount,
+                              currency,
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                              <TrendingDown className="w-2.5 h-2.5" />{reductionPercent}%
+                              <TrendingDown className="w-2.5 h-2.5" />
+                              {reductionPercent}%
                             </span>
-                            <div className="text-xs text-gray-400 mt-0.5">({fmtCompact(reductionAmount)})</div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              ({fmtCompact(reductionAmount)})
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-xs text-gray-600 max-w-[180px] truncate" title={revision.reason}>{revision.reason}</td>
+                          <td
+                            className="px-4 py-3 text-xs text-gray-600 max-w-[180px] truncate"
+                            title={revision.reason}
+                          >
+                            {revision.reason}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => showDetailModal(revision)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => handleDeleteRevision(revision)} disabled={deleting} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button
+                                onClick={() => showDetailModal(revision)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRevision(revision)}
+                                disabled={deleting}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -912,9 +1513,19 @@ export default function BudgetRevisionPage() {
           {/* Footer */}
           {filteredRevisions.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-wrap gap-2">
-              <span className="text-xs text-gray-500">Showing {filteredRevisions.length} of {filteredRevisionsByHeader.length} revisions</span>
-              <span className="text-xs font-semibold text-red-600">Total Reduction: {formatBudgetCurrency(filteredStats.totalReduction, "IDR")}</span>
-              {selectMode && <span className="text-xs font-medium text-gray-500">{selectedRevisions.length} selected</span>}
+              <span className="text-xs text-gray-500">
+                Showing {filteredRevisions.length} of{" "}
+                {filteredRevisionsByHeader.length} revisions
+              </span>
+              <span className="text-xs font-semibold text-red-600">
+                Total Reduction:{" "}
+                {formatBudgetCurrency(filteredStats.totalReduction, "IDR")}
+              </span>
+              {selectMode && (
+                <span className="text-xs font-medium text-gray-500">
+                  {selectedRevisions.length} selected
+                </span>
+              )}
             </div>
           )}
         </div>
