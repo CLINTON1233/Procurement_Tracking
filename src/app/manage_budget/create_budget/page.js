@@ -38,10 +38,14 @@ import {
   formatIDR,
 } from "@/utils/currency";
 
-// Data kurs dari CURRENCIES
+// Filter hanya 3 mata uang yang diperlukan
+const ALLOWED_CURRENCIES = ['IDR', 'USD', 'SGD'];
+const FILTERED_CURRENCIES = CURRENCIES.filter(c => ALLOWED_CURRENCIES.includes(c.code));
+
+// Data kurs dari CURRENCIES yang sudah difilter
 const getInitialExchangeRates = () => {
   const rates = { IDR: 1 };
-  CURRENCIES.forEach((currency) => {
+  FILTERED_CURRENCIES.forEach((currency) => {
     if (currency.code !== "IDR") {
       rates[currency.code] = currency.rate;
     }
@@ -647,7 +651,7 @@ export default function CreateBudgetPage() {
                 <div className="text-xs text-blue-700 space-y-0.5">
                   <p className="font-semibold mb-1">Budget Creation Process:</p>
                   <p>• Fill in all required fields marked with *</p>
-                  <p>• Select currency for each budget entry</p>
+                  <p>• Select currency (IDR, USD, SGD) for each budget entry</p>
                   <p>
                     • Update exchange rates in the Budget Amount section if
                     needed (based on current market)
@@ -721,6 +725,10 @@ function BudgetEntryForm({
   setEntryErrors,
   validateAmountByType,
 }) {
+  // Filter hanya 3 mata uang yang diperlukan untuk ditampilkan
+  const ALLOWED_CURRENCIES = ['IDR', 'USD', 'SGD'];
+  const FILTERED_CURRENCIES = CURRENCIES.filter(c => ALLOWED_CURRENCIES.includes(c.code));
+
   const getExchangeRate = () => {
     if (
       entry.currency &&
@@ -956,7 +964,7 @@ function BudgetEntryForm({
             <p className="text-xs text-gray-500">Click on rate to edit</p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {Object.entries(exchangeRates)
               .filter(([code]) => code !== "IDR")
               .map(([code, rate]) => (
@@ -1017,9 +1025,9 @@ function BudgetEntryForm({
                 onChange={(e) => onUpdate(entry.id, "currency", e.target.value)}
                 className={selectCls}
               >
-                {Object.keys(exchangeRates).map((code) => (
-                  <option key={code} value={code}>
-                    {code} — {getCurrencyName(code)} ({getCurrencySymbol(code)})
+                {FILTERED_CURRENCIES.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code} — {currency.name} ({currency.symbol})
                   </option>
                 ))}
               </select>
@@ -1119,12 +1127,11 @@ function BudgetEntryForm({
                       className={selectCls}
                     >
                       <option value="">Select Currency</option>
-                      {Object.keys(exchangeRates)
-                        .filter((code) => code !== entry.currency)
-                        .map((code) => (
-                          <option key={code} value={code}>
-                            {code} — {getCurrencyName(code)} (
-                            {getCurrencySymbol(code)})
+                      {FILTERED_CURRENCIES
+                        .filter((currency) => currency.code !== entry.currency)
+                        .map((currency) => (
+                          <option key={currency.code} value={currency.code}>
+                            {currency.code} — {currency.name} ({currency.symbol})
                           </option>
                         ))}
                     </select>

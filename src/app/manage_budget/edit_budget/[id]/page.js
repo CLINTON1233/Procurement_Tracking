@@ -25,10 +25,14 @@ import { budgetService } from "@/services/budgetService";
 import { departmentService } from "@/services/departmentService";
 import { CURRENCIES, formatCurrency, getCurrencySymbol, convertCurrency, formatIDR } from "@/utils/currency";
 
-// Data kurs dari CURRENCIES
+// Filter hanya 3 mata uang yang diperlukan
+const ALLOWED_CURRENCIES = ['IDR', 'USD', 'SGD'];
+const FILTERED_CURRENCIES = CURRENCIES.filter(c => ALLOWED_CURRENCIES.includes(c.code));
+
+// Data kurs dari CURRENCIES yang sudah difilter
 const getInitialExchangeRates = () => {
   const rates = { IDR: 1 };
-  CURRENCIES.forEach(currency => {
+  FILTERED_CURRENCIES.forEach(currency => {
     if (currency.code !== 'IDR') {
       rates[currency.code] = currency.rate;
     }
@@ -671,7 +675,7 @@ export default function EditBudgetPage() {
                   <p className="text-xs text-gray-500">Click on rate to edit</p>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {Object.entries(exchangeRates)
                     .filter(([code]) => code !== 'IDR')
                     .map(([code, rate]) => (
@@ -726,9 +730,9 @@ export default function EditBudgetPage() {
                       onChange={(e) => handleChange("currency", e.target.value)}
                       className={selectCls}
                     >
-                      {Object.keys(exchangeRates).map((code) => (
-                        <option key={code} value={code}>
-                          {code} — {getCurrencyName(code)} ({getCurrencySymbol(code)})
+                      {FILTERED_CURRENCIES.map((currency) => (
+                        <option key={currency.code} value={currency.code}>
+                          {currency.code} — {currency.name} ({currency.symbol})
                         </option>
                       ))}
                     </select>
@@ -839,11 +843,11 @@ export default function EditBudgetPage() {
                             className={selectCls}
                           >
                             <option value="">Select Currency</option>
-                            {Object.keys(exchangeRates)
-                              .filter((code) => code !== formData.currency)
-                              .map((code) => (
-                                <option key={code} value={code}>
-                                  {code} — {getCurrencyName(code)} ({getCurrencySymbol(code)})
+                            {FILTERED_CURRENCIES
+                              .filter((currency) => currency.code !== formData.currency)
+                              .map((currency) => (
+                                <option key={currency.code} value={currency.code}>
+                                  {currency.code} — {currency.name} ({currency.symbol})
                                 </option>
                               ))}
                           </select>
@@ -991,7 +995,7 @@ export default function EditBudgetPage() {
                 <div className="text-xs text-blue-700 space-y-0.5">
                   <p className="font-semibold mb-1">Budget Update Process</p>
                   <p>• Modify the fields you want to update</p>
-                  <p>• Currency can be changed</p>
+                  <p>• Currency can be changed (IDR, USD, SGD)</p>
                   <p>• For OPEX budgets: maximum amount is IDR 16,000,000 (in IDR equivalent)</p>
                   <p>• Update exchange rates in the Budget Amount section if needed</p>
                   <p>• Financial status is automatically calculated from transactions</p>
