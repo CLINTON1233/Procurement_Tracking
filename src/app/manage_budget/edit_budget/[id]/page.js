@@ -813,7 +813,7 @@ export default function EditBudgetPage() {
                           1 {formData.currency} = {exchangeRates[formData.currency]?.toLocaleString() || 1} IDR
                         </p>
                       </div>
-                      <span className="text-sm font-bold text-blue-700 mono">{formatIDR(getAmountInIDR())}</span>
+                      <span className="text-sm font-bold text-blue-700">{formatIDR(getAmountInIDR())}</span>
                     </div>
                   )}
                 </div>

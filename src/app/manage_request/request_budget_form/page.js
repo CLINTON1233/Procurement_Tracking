@@ -41,10 +41,14 @@ import {
   convertCurrency,
 } from "@/utils/currency";
 
-// Data kurs dari CURRENCIES
+// Filter hanya 3 mata uang yang diperlukan
+const ALLOWED_CURRENCIES = ['IDR', 'USD', 'SGD'];
+const FILTERED_CURRENCIES = CURRENCIES.filter(c => ALLOWED_CURRENCIES.includes(c.code));
+
+// Data kurs dari CURRENCIES yang sudah difilter
 const getInitialExchangeRates = () => {
   const rates = { IDR: 1 };
-  CURRENCIES.forEach((currency) => {
+  FILTERED_CURRENCIES.forEach((currency) => {
     if (currency.code !== "IDR") {
       rates[currency.code] = currency.rate;
     }
@@ -710,7 +714,7 @@ export default function RequestBudgetForm() {
                     <p className="text-xs text-gray-500">Click on rate to edit</p>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {Object.entries(exchangeRates)
                       .filter(([code]) => code !== "IDR")
                       .map(([code, rate]) => (
@@ -807,7 +811,7 @@ export default function RequestBudgetForm() {
                     <p className="font-semibold mb-1">Request Process:</p>
                     <p>• Fill in requester information (shared for all items)</p>
                     <p>• Add multiple request items using the "Add Another" button</p>
-                    <p>• Select currency and enter quantity/price for each item</p>
+                    <p>• Select currency (IDR, USD, SGD) and enter quantity/price for each item</p>
                     <p>• Choose appropriate budget for each item</p>
                     <p>• System will automatically check budget availability</p>
                     <p>• All items will be submitted together for approval</p>
@@ -822,7 +826,7 @@ export default function RequestBudgetForm() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-sm font-medium text-gray-600">Total Amount (IDR):</span>
-                    <span className="text-sm font-bold text-blue-600 mono">
+                    <span className="text-sm font-bold text-blue-600 ">
                       {formatIDR(requestItems.reduce((sum, item) => sum + item.estimated_total_idr, 0))}
                     </span>
                   </div>
@@ -879,6 +883,10 @@ function RequestItemCard({
   Label,
   Hint,
 }) {
+  // Filter hanya 3 mata uang yang diperlukan untuk ditampilkan
+  const ALLOWED_CURRENCIES = ['IDR', 'USD', 'SGD'];
+  const FILTERED_CURRENCIES = CURRENCIES.filter(c => ALLOWED_CURRENCIES.includes(c.code));
+
   const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -997,9 +1005,9 @@ function RequestItemCard({
                 onChange={(e) => onUpdate(item.id, "currency", e.target.value)}
                 className={selectCls}
               >
-                {Object.keys(exchangeRates).map((code) => (
-                  <option key={code} value={code}>
-                    {code}
+                {FILTERED_CURRENCIES.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code}
                   </option>
                 ))}
               </select>
@@ -1045,14 +1053,14 @@ function RequestItemCard({
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-600">Total in {item.currency}:</span>
-            <span className="text-sm font-bold text-blue-600 mono">
+            <span className="text-sm font-bold text-blue-600 ">
               {formatCurrencyWithSymbol(item.estimated_total, item.currency)}
             </span>
           </div>
           {item.currency !== "IDR" && (
             <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
               <span className="text-xs font-medium text-gray-500">IDR Equivalent:</span>
-              <span className="text-sm font-semibold text-green-600 mono">
+              <span className="text-sm font-semibold text-green-600 ">
                 {formatRupiah(item.estimated_total_idr)}
               </span>
             </div>
@@ -1078,7 +1086,7 @@ function RequestItemCard({
                     1 {item.currency} = {exchangeRates[item.currency]?.toLocaleString()} IDR
                   </p>
                 </div>
-                <span className="text-sm font-bold text-blue-700 mono">
+                <span className="text-sm font-bold text-blue-700 ">
                   {formatRupiah(item.estimated_total_idr)}
                 </span>
               </div>
@@ -1101,7 +1109,7 @@ function RequestItemCard({
                 .filter((b) => b.is_active)
                 .map((budget) => (
                   <option key={budget.id} value={budget.id}>
-                    {budget.budget_name} - {budget.currency === 'USD' ? '$' : 'Rp'} {budget.remaining_amount?.toLocaleString()} remaining
+                    {budget.budget_name} - {budget.currency === 'USD' ? '$' : budget.currency === 'SGD' ? 'S$' : 'Rp'} {budget.remaining_amount?.toLocaleString()} remaining
                   </option>
                 ))}
             </select>
@@ -1139,7 +1147,9 @@ function RequestItemCard({
                 } mono`}>
                   {selectedBudget.currency === 'USD' 
                     ? formatCurrencyWithSymbol(selectedBudget.remaining_amount, 'USD')
-                    : formatRupiah(selectedBudget.remaining_amount)}
+                    : selectedBudget.currency === 'SGD'
+                      ? formatCurrencyWithSymbol(selectedBudget.remaining_amount, 'SGD')
+                      : formatRupiah(selectedBudget.remaining_amount)}
                 </p>
               </div>
               <div>
