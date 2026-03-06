@@ -538,7 +538,56 @@ export default function RequestBudgetForm() {
 
   return (
     <LayoutDashboard activeMenu={2}>
-      <div className="min-h-screen bg-gray-50">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .bm-root { font-family: 'DM Sans', sans-serif; }
+        .bm-root .mono { font-family: 'DM Mono', monospace; }
+        .card { 
+          background: #ffffff; 
+          border-radius: 16px; 
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          transition: box-shadow 0.2s ease;
+        }
+        .card:hover {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
+        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
+        .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        
+        /* Grey background for stat boxes */
+        .stat-box-grey {
+          background-color: #f9fafb;
+          border: 1px solid #f3f4f6;
+          border-radius: 12px;
+          padding: 12px;
+        }
+        .stat-box-grey .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        .stat-box-grey .stat-label {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .stat-box-grey .stat-sub {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
+      `}</style>
+
+      <div className="bm-root min-h-screen bg-gray-50">
         {/* Breadcrumb */}
         <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="flex items-center gap-1.5 text-sm">
@@ -773,7 +822,7 @@ export default function RequestBudgetForm() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-sm font-medium text-gray-600">Total Amount (IDR):</span>
-                    <span className="text-sm font-bold text-blue-600">
+                    <span className="text-sm font-bold text-blue-600 mono">
                       {formatIDR(requestItems.reduce((sum, item) => sum + item.estimated_total_idr, 0))}
                     </span>
                   </div>
@@ -996,14 +1045,14 @@ function RequestItemCard({
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 mb-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-600">Total in {item.currency}:</span>
-            <span className="text-sm font-bold text-blue-600">
+            <span className="text-sm font-bold text-blue-600 mono">
               {formatCurrencyWithSymbol(item.estimated_total, item.currency)}
             </span>
           </div>
           {item.currency !== "IDR" && (
             <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200">
               <span className="text-xs font-medium text-gray-500">IDR Equivalent:</span>
-              <span className="text-sm font-semibold text-green-600">
+              <span className="text-sm font-semibold text-green-600 mono">
                 {formatRupiah(item.estimated_total_idr)}
               </span>
             </div>
@@ -1029,7 +1078,7 @@ function RequestItemCard({
                     1 {item.currency} = {exchangeRates[item.currency]?.toLocaleString()} IDR
                   </p>
                 </div>
-                <span className="text-sm font-bold text-blue-700">
+                <span className="text-sm font-bold text-blue-700 mono">
                   {formatRupiah(item.estimated_total_idr)}
                 </span>
               </div>
@@ -1087,7 +1136,7 @@ function RequestItemCard({
                   selectedBudget.remaining_amount < item.estimated_total_idr
                     ? "text-red-600"
                     : "text-green-600"
-                }`}>
+                } mono`}>
                   {selectedBudget.currency === 'USD' 
                     ? formatCurrencyWithSymbol(selectedBudget.remaining_amount, 'USD')
                     : formatRupiah(selectedBudget.remaining_amount)}

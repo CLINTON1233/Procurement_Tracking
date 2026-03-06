@@ -606,12 +606,15 @@ export default function BudgetRequestListPage() {
   return (
     <LayoutDashboard activeMenu={2}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .bm-root { font-family: 'DM Sans', sans-serif; }
+        .bm-root .mono { font-family: 'DM Mono', monospace; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
-        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .section-title { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
         .period-badge:hover { background: #2c4a7a; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
-        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
+        .donut-card h4 { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
@@ -619,9 +622,35 @@ export default function BudgetRequestListPage() {
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        /* Grey background for stat boxes */
+        .stat-box-grey {
+          background-color: #f9fafb;
+          border: 1px solid #f3f4f6;
+          border-radius: 12px;
+          padding: 12px;
+        }
+        .stat-box-grey .stat-value {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        .stat-box-grey .stat-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .stat-box-grey .stat-sub {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.7rem;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
       `}</style>
 
-      <div className="space-y-5">
+      <div className="bm-root space-y-5">
         {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -758,7 +787,6 @@ export default function BudgetRequestListPage() {
           </div>
         </div>
 
-        {/* ── Row 1: 4 Donut KPIs ── */}
         {/* ── Row 1: 4 Donut KPIs with currency filter ── */}
         <div className="card p-5">
           <div className="flex justify-end mb-2">
@@ -805,7 +833,7 @@ export default function BudgetRequestListPage() {
             {/* Total Request Amount Card (menggantikan Approval Rate) */}
             <div className="donut-card">
               <h4>Total Amount Requested</h4>
-              <div className="text-3xl font-bold text-gray-800 mb-1">
+              <div className="text-3xl font-bold text-gray-800 mb-1 mono">
                 {formatRequestAmount(filteredStats.totalAmount)}
               </div>
               <p className="text-xs text-gray-500">
@@ -859,85 +887,86 @@ export default function BudgetRequestListPage() {
         </div>
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-     {/* Bar chart by dept */}
-<div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
-  <p className="section-title flex items-center gap-2 mb-3">
-    <span className="bullet-dot bg-blue-800" />
-    Request Amount by Department (IDR Jt)
-  </p>
-  {deptChartData.length > 0 ? (
-    <>
-      <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={deptChartData}
-            margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
-            barSize={20}
-          >
-            <CartesianGrid vertical={false} stroke="#f3f4f6" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) =>
-                v && v.length > 12 ? v.slice(0, 12) + "…" : v || ""
-              }
-              interval={0}
-              angle={-10}
-              textAnchor="end"
-              height={45}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }}
-              tickLine={false}
-              axisLine={false}
-              width={40}
-            />
-            <Tooltip
-              formatter={(v) => [
-                `${v.toLocaleString()} Juta IDR`,
-                "Total Request",
-              ]}
-              labelFormatter={(label) => `Department: ${label}`}
-              contentStyle={{
-                fontSize: 12,
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                backgroundColor: "#fff",
-                padding: "8px 12px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              }}
-            />
-            <Bar
-              dataKey="value"
-              fill="#1e3a5f"
-              radius={[4, 4, 0, 0]}
-              barSize={20}
-              animationDuration={600}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+          {/* Bar chart by dept */}
+          <div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
+            <p className="section-title flex items-center gap-2 mb-3">
+              <span className="bullet-dot bg-blue-800" />
+              Request Amount by Department (IDR Jt)
+            </p>
+            {deptChartData.length > 0 ? (
+              <>
+                <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={deptChartData}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                      barSize={20}
+                    >
+                      <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) =>
+                          v && v.length > 12 ? v.slice(0, 12) + "…" : v || ""
+                        }
+                        interval={0}
+                        angle={-10}
+                        textAnchor="end"
+                        height={45}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={40}
+                      />
+                      <Tooltip
+                        formatter={(v) => [
+                          `${v.toLocaleString()} Juta IDR`,
+                          "Total Request",
+                        ]}
+                        labelFormatter={(label) => `Department: ${label}`}
+                        contentStyle={{
+                          fontSize: 12,
+                          borderRadius: 8,
+                          border: "1px solid #e5e7eb",
+                          backgroundColor: "#fff",
+                          padding: "8px 12px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                          fontFamily: "'DM Sans', sans-serif"
+                        }}
+                      />
+                      <Bar
+                        dataKey="value"
+                        fill="#1e3a5f"
+                        radius={[4, 4, 0, 0]}
+                        barSize={20}
+                        animationDuration={600}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
 
-      {/* Summary info di bawah chart - SEKARANG AKAN TERLIHAT */}
-      <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
-        <span className="inline-flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-          Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-          Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value} Jt)</span>
-        </span>
-      </div>
-    </>
-  ) : (
-    <div className="flex items-center justify-center h-[230px] text-gray-400 text-sm">
-      No data available for chart
-    </div>
-  )}
-</div>
+                {/* Summary info di bawah chart */}
+                <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value} Jt)</span>
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-[230px] text-gray-400 text-sm">
+                No data available for chart
+              </div>
+            )}
+          </div>
 
           {/* Distribution panel */}
           <div className="card p-5 md:col-span-2 space-y-4">
@@ -1010,34 +1039,26 @@ export default function BudgetRequestListPage() {
                 </div>
               </div>
 
-              {/* Summary cards */}
+              {/* Summary cards - GREY BACKGROUND */}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-emerald-700">
-                    {filteredStats.approved}
-                  </div>
-                  <div className="text-xs text-emerald-500">Approved</div>
+                <div className="stat-box-grey text-center">
+                  <div className="stat-value">{filteredStats.approved}</div>
+                  <div className="stat-label">Approved</div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-red-600">
-                    {filteredStats.rejected}
-                  </div>
-                  <div className="text-xs text-red-400">Rejected</div>
+                <div className="stat-box-grey text-center">
+                  <div className="stat-value">{filteredStats.rejected}</div>
+                  <div className="stat-label">Rejected</div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-blue-700">
-                    {filteredStats.submitted}
-                  </div>
-                  <div className="text-xs text-blue-500">Submitted</div>
+                <div className="stat-box-grey text-center">
+                  <div className="stat-value">{filteredStats.submitted}</div>
+                  <div className="stat-label">Submitted</div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-purple-700">
-                    {filteredStats.waiting}
-                  </div>
-                  <div className="text-xs text-purple-400">Waiting</div>
+                <div className="stat-box-grey text-center">
+                  <div className="stat-value">{filteredStats.waiting}</div>
+                  <div className="stat-label">Waiting</div>
                 </div>
               </div>
             </div>
@@ -1343,14 +1364,14 @@ export default function BudgetRequestListPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Total</span>
-                          <span className="font-bold text-blue-600">
-                            {formatBudgetCurrency(
-                              request.estimated_total,
-                              request.currency || "IDR",
-                            )}
-                          </span>
-                        </div>
+  <span className="text-gray-400">Total</span>
+  <span className="text-blue-600 font-semibold">
+    {formatBudgetCurrency(
+      request.estimated_total,
+      request.currency || "IDR",
+    )}
+  </span>
+</div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Budget</span>
                           <span
@@ -1521,12 +1542,12 @@ export default function BudgetRequestListPage() {
                               {request.request_type}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-blue-600">
-                            {formatBudgetCurrency(
-                              request.estimated_total,
-                              request.currency || "IDR",
-                            )}
-                          </td>
+                        <td className="px-4 py-3 text-right text-blue-600 font-semibold">
+  {formatBudgetCurrency(
+    request.estimated_total,
+    request.currency || "IDR",
+  )}
+</td>
                           <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">
                             {getBudgetName(request.budget_id)}
                           </td>

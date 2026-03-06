@@ -367,13 +367,16 @@ export default function BudgetManagementPage() {
   return (
     <LayoutDashboard activeMenu={1}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .bm-root { font-family: 'DM Sans', sans-serif; }
+        .bm-root .mono { font-family: 'DM Mono', monospace; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
-        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+        .section-title { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
         .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .period-badge:hover { background: #2c4a7a; }
         .period-badge-disabled { background: #6b7280; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0.5; cursor: not-allowed; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
-        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
+        .donut-card h4 { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
@@ -381,9 +384,35 @@ export default function BudgetManagementPage() {
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 300px; overflow-y: auto; padding: 4px; }
+        /* Grey background for stat boxes */
+        .stat-box-grey {
+          background-color: #f9fafb;
+          border: 1px solid #f3f4f6;
+          border-radius: 12px;
+          padding: 12px;
+        }
+        .stat-box-grey .stat-value {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+        .stat-box-grey .stat-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #6b7280;
+          margin-top: 4px;
+        }
+        .stat-box-grey .stat-sub {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.7rem;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
       `}</style>
 
-      <div className="space-y-5">
+      <div className="bm-root space-y-5">
 
         {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -632,7 +661,7 @@ export default function BudgetManagementPage() {
         <CartesianGrid vertical={false} stroke="#f3f4f6" />
         <XAxis 
           dataKey="name" 
-          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }} 
           tickLine={false} 
           axisLine={false}
           tickFormatter={v => v.length > 12 ? v.slice(0, 12) + "…" : v}
@@ -642,7 +671,7 @@ export default function BudgetManagementPage() {
           height={45}
         />
         <YAxis 
-          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500 }} 
+          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }} 
           tickLine={false} 
           axisLine={false}
           width={40}
@@ -656,7 +685,8 @@ export default function BudgetManagementPage() {
             border: "1px solid #e5e7eb",
             backgroundColor: "#fff",
             padding: "8px 12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            fontFamily: "'DM Sans', sans-serif"
           }} 
         />
         <Bar 
@@ -937,10 +967,10 @@ export default function BudgetManagementPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_code || "—"}</td>
-                        <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
+               <td className="px-4 py-3 text-right font-semibold text-sm text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
+<td className="px-4 py-3 text-right font-semibold text-sm text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
+<td className="px-4 py-3 text-right font-semibold text-sm text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
+<td className="px-4 py-3 text-right font-semibold text-sm text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-600">{budget.department_name}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_owner || "—"}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-700">{budget.fiscal_year}</td>

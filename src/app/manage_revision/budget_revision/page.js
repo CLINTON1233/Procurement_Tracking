@@ -549,13 +549,16 @@ const deptChartData = useMemo(() => {
   return (
     <LayoutDashboard activeMenu={4}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .bm-root { font-family: 'DM Sans', sans-serif; }
+        .bm-root .mono { font-family: 'DM Mono', monospace; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); }
-        .section-title { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .section-title { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+        .period-badge { background: #1e3a5f; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
         .period-badge:hover { background: #2c4a7a; }
-        .period-badge-disabled { background: #6b7280; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0.5; cursor: not-allowed; }
+        .period-badge-disabled { background: #6b7280; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0.5; cursor: not-allowed; font-family: 'DM Sans', sans-serif; }
         .donut-card { display: flex; flex-direction: column; align-items: center; padding: 20px 12px; }
-        .donut-card h4 { font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
+        .donut-card h4 { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #374151; text-align: center; margin-bottom: 12px; }
         .bullet-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
@@ -572,18 +575,21 @@ const deptChartData = useMemo(() => {
           padding: 12px;
         }
         .stat-box-grey .stat-value {
+          font-family: 'DM Sans', sans-serif;
           font-size: 1.5rem;
           font-weight: 700;
           color: #1f2937;
           line-height: 1.2;
         }
         .stat-box-grey .stat-label {
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.75rem;
           font-weight: 500;
           color: #6b7280;
           margin-top: 4px;
         }
         .stat-box-grey .stat-sub {
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.7rem;
           color: #9ca3af;
           margin-top: 2px;
@@ -600,7 +606,7 @@ const deptChartData = useMemo(() => {
         }
       `}</style>
 
-      <div className="space-y-5">
+      <div className="bm-root space-y-5">
         {/* ── Header with clickable badge for type and year ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -874,6 +880,7 @@ const deptChartData = useMemo(() => {
                           fontSize: 11,
                           fill: "#374151",
                           fontWeight: 500,
+                          fontFamily: "'DM Sans', sans-serif",
                         }}
                         tickLine={false}
                         axisLine={false}
@@ -890,6 +897,7 @@ const deptChartData = useMemo(() => {
                           fontSize: 11,
                           fill: "#374151",
                           fontWeight: 500,
+                          fontFamily: "'DM Sans', sans-serif",
                         }}
                         tickLine={false}
                         axisLine={false}
@@ -908,6 +916,7 @@ const deptChartData = useMemo(() => {
                           backgroundColor: "#fff",
                           padding: "8px 12px",
                           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                          fontFamily: "'DM Sans', sans-serif",
                         }}
                       />
                       <Bar
@@ -1252,35 +1261,35 @@ const deptChartData = useMemo(() => {
                             {budgetType}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Original</span>
-                          <span className="font-medium text-gray-900">
-                            {formatBudgetCurrency(
-                              revision.original_amount,
-                              currency,
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">New Amount</span>
-                          <span className="font-medium text-blue-600">
-                            {formatBudgetCurrency(
-                              revision.new_amount,
-                              currency,
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Reduction</span>
-                          <div className="text-right">
-                            <span className="font-semibold text-red-600">
-                              {reductionPercent}%
-                            </span>
-                            <span className="text-gray-400 ml-1">
-                              ({fmtCompact(reductionAmount)})
-                            </span>
-                          </div>
-                        </div>
+                    <div className="flex justify-between">
+  <span className="text-gray-400">Original</span>
+  <span className="text-gray-900">
+    {formatBudgetCurrency(
+      revision.original_amount,
+      currency,
+    )}
+  </span>
+</div>
+<div className="flex justify-between">
+  <span className="text-gray-400">New Amount</span>
+  <span className="text-blue-600">
+    {formatBudgetCurrency(
+      revision.new_amount,
+      currency,
+    )}
+  </span>
+</div>
+<div className="flex justify-between">
+  <span className="text-gray-400">Reduction</span>
+  <div className="text-right">
+    <span className="font-semibold text-red-600">
+      {reductionPercent}%
+    </span>
+    <span className="text-gray-400 ml-1">
+      ({fmtCompact(reductionAmount)})
+    </span>
+  </div>
+</div>
                         <div className="pt-1.5 border-t border-gray-100">
                           <p className="text-gray-400 mb-1">Reason</p>
                           <p className="text-gray-700 line-clamp-2">
@@ -1457,24 +1466,24 @@ const deptChartData = useMemo(() => {
                           <td className="px-4 py-3 text-center text-xs text-gray-600">
                             {getBudgetDepartment(revision.budget_id)}
                           </td>
-                          <td className="px-4 py-3 text-center text-sm text-gray-900">
-                            {formatBudgetCurrency(
-                              revision.original_amount,
-                              currency,
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-blue-600">
-                            {formatBudgetCurrency(
-                              revision.new_amount,
-                              currency,
-                            )}
-                          </td>
+                      <td className="px-4 py-3 text-center text-sm text-gray-900 font-semibold ">
+  {formatBudgetCurrency(
+    revision.original_amount,
+    currency,
+  )}
+</td>
+<td className="px-4 py-3 text-center text-sm text-blue-600 font-semibold ">
+  {formatBudgetCurrency(
+    revision.new_amount,
+    currency,
+  )}
+</td>
                           <td className="px-4 py-3 text-center">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">
                               <TrendingDown className="w-2.5 h-2.5" />
                               {reductionPercent}%
                             </span>
-                            <div className="text-xs text-gray-400 mt-0.5">
+                            <div className="text-xs text-gray-400 mt-0.5 mono">
                               ({fmtCompact(reductionAmount)})
                             </div>
                           </td>
@@ -1517,10 +1526,10 @@ const deptChartData = useMemo(() => {
                 Showing {filteredRevisions.length} of{" "}
                 {filteredRevisionsByHeader.length} revisions
               </span>
-              <span className="text-xs font-semibold text-red-600">
-                Total Reduction:{" "}
-                {formatBudgetCurrency(filteredStats.totalReduction, "IDR")}
-              </span>
+             <span className="text-xs text-red-600">
+  Total Reduction:{" "}
+  {formatBudgetCurrency(filteredStats.totalReduction, "IDR")}
+</span>
               {selectMode && (
                 <span className="text-xs font-medium text-gray-500">
                   {selectedRevisions.length} selected
