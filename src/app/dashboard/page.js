@@ -40,7 +40,7 @@ const InlineDonut = ({ pct, color, size = 110, stroke = 12 }) => {
 const StackedBar = ({ segments }) => (
   <div className="flex rounded-full overflow-hidden h-6 w-full">
     {segments.map((s, i) => (
-      <div key={i} style={{ width: `${s.pct}%`, background: s.color }} 
+      <div key={i} style={{ width: `${s.pct}%`, background: s.color }}
         className="flex items-center justify-center text-xs font-bold text-white transition-all">
         {s.pct > 12 ? `${s.pct.toFixed(0)}%` : ""}
       </div>
@@ -293,7 +293,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-100">
                 {[
                   { title: "Budget Used", pct: usedPct, color: "#2563eb", sub: `${fmtCompact(stats.total_used)} / ${fmtCompact(stats.total_amount)}` },
-                  { title: "CAPEX Ratio", pct: capexRatio, color: "#1e3a5f", sub: `${stats.capex_count} CAPEX • ${stats.opex_count} OPEX` },
+                  { title: "CAPEX/OPEX Ratio", pct: capexRatio, color: "#1e3a5f", sub: `${stats.capex_count} CAPEX • ${stats.opex_count} OPEX` },
                   { title: "Approval Rate", pct: approvalRate, color: "#10b981", sub: `${stats.approved_requests} of ${stats.total_requests} requests` },
                   { title: "Budget Health", pct: remainingPct, color: "#f59e0b", sub: `${fmtCompact(stats.total_remaining)} remaining` },
                 ].map((d, i) => (
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                   </thead>
                   <tbody>
                     {recentBudgets.map(b => (
-                      <tr key={b.id} onClick={() => router.push("/manage_budget/budget_management")} 
+                      <tr key={b.id} onClick={() => router.push("/manage_budget/budget_management")}
                         className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -487,8 +487,8 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-600">{b.department_name}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 mono">{fmt(b.total_amount)}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-emerald-600 mono">{fmt(b.remaining_amount)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 ">{fmt(b.total_amount)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-emerald-600 ">{fmt(b.remaining_amount)}</td>
                         <td className="px-4 py-3">
                           {b.is_active
                             ? <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full"><CheckCircle className="w-3 h-3" />Active</span>
@@ -527,7 +527,7 @@ export default function DashboardPage() {
                     {recentRequests.map(req => {
                       const s = getStatusBadge(req.status);
                       return (
-                        <tr key={req.id} onClick={() => router.push("/manage_request/budget_request_list")} 
+                        <tr key={req.id} onClick={() => router.push("/manage_request/budget_request_list")}
                           className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                           <td className="px-4 py-3 text-sm font-semibold text-gray-900">{req.request_no}</td>
                           <td className="px-4 py-3 text-xs text-gray-600">{req.requester_name}</td>
@@ -538,7 +538,7 @@ export default function DashboardPage() {
                               {req.request_type}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm font-semibold text-blue-600 mono">{fmt(req.estimated_total)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-blue-600">{fmt(req.estimated_total)}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full" style={{ background: s.bg, color: s.text }}>{s.label}</span>
                           </td>
@@ -580,15 +580,15 @@ export default function DashboardPage() {
                       const reduction = Number(rv.original_amount) - Number(rv.new_amount);
                       const pct = Number(rv.original_amount) > 0 ? ((reduction / Number(rv.original_amount)) * 100).toFixed(1) : "0.0";
                       return (
-                        <tr key={rv.id} onClick={() => router.push("/manage_revision/budget_revision")} 
+                        <tr key={rv.id} onClick={() => router.push("/manage_revision/budget_revision")}
                           className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
                           <td className="px-4 py-3">
                             <div className="font-semibold text-gray-900 text-sm">{bd?.budget_name || `ID: ${rv.budget_id}`}</div>
                             <div className="text-xs text-gray-400">{bd?.budget_type}</div>
                           </td>
                           <td className="px-4 py-3 text-xs text-gray-600">{rq?.request_no || `ID: ${rv.request_id}`}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-gray-900 mono">{fmt(rv.original_amount)}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-blue-600 mono">{fmt(rv.new_amount)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900">{fmt(rv.original_amount)}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-blue-600">{fmt(rv.new_amount)}</td>
                           <td className="px-4 py-3">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-red-700 bg-red-50 rounded-full">
                               <TrendingDown className="w-3 h-3" />{pct}%

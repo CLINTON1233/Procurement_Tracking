@@ -316,7 +316,7 @@ export default function BudgetRequestListPage() {
         try {
           await budgetService.deleteRequest(id);
           success++;
-        } catch {}
+        } catch { }
       }
       Swal.fire({
         title: "Deleted!",
@@ -680,11 +680,10 @@ export default function BudgetRequestListPage() {
                           setHeaderTypeFilter("all");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "all"
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "all"
                             ? "bg-blue-50 text-blue-600"
                             : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         ALL (CAPEX & OPEX)
                       </button>
@@ -693,11 +692,10 @@ export default function BudgetRequestListPage() {
                           setHeaderTypeFilter("CAPEX");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "CAPEX"
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "CAPEX"
                             ? "bg-blue-50 text-blue-600"
                             : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         CAPEX
                       </button>
@@ -706,11 +704,10 @@ export default function BudgetRequestListPage() {
                           setHeaderTypeFilter("OPEX");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "OPEX"
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "OPEX"
                             ? "bg-blue-50 text-blue-600"
                             : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         OPEX
                       </button>
@@ -740,11 +737,10 @@ export default function BudgetRequestListPage() {
                           setYearFilter("all");
                           setShowYearDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          yearFilter === "all"
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${yearFilter === "all"
                             ? "bg-blue-50 text-blue-600"
                             : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         All Years
                       </button>
@@ -755,11 +751,10 @@ export default function BudgetRequestListPage() {
                             setYearFilter(year);
                             setShowYearDropdown(false);
                           }}
-                          className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                            yearFilter === year
+                          className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${yearFilter === year
                               ? "bg-blue-50 text-blue-600"
                               : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           {year}
                         </button>
@@ -841,9 +836,9 @@ export default function BudgetRequestListPage() {
               </p>
             </div>
 
-            {/* CAPEX Ratio Card */}
+            {/* CAPEX/OPEX Ratio Card */}
             <div className="donut-card">
-              <h4>CAPEX Ratio</h4>
+              <h4>CAPEX/OPEX Ratio</h4>
               <InlineDonut
                 pct={capexPct}
                 color="#1e3a5f"
@@ -1188,8 +1183,7 @@ export default function BudgetRequestListPage() {
                     <button
                       key={s.val}
                       onClick={() => setStatusFilter(s.val)}
-                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                        statusFilter === s.val
+                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${statusFilter === s.val
                           ? s.val === "BUDGET_APPROVED"
                             ? "bg-emerald-600 text-white"
                             : s.val === "BUDGET_REJECTED"
@@ -1202,7 +1196,7 @@ export default function BudgetRequestListPage() {
                                     ? "bg-gray-500 text-white"
                                     : "bg-gray-800 text-white"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       {s.label}
                     </button>
@@ -1215,15 +1209,14 @@ export default function BudgetRequestListPage() {
                     <button
                       key={type}
                       onClick={() => setTypeFilter(type)}
-                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                        typeFilter === type
+                      className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${typeFilter === type
                           ? type === "ITEM"
                             ? "bg-[#1e3a5f] text-white"
                             : type === "SERVICE"
                               ? "bg-blue-600 text-white"
                               : "bg-gray-800 text-white"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       {type === "all" ? "All Types" : type}
                     </button>
@@ -1339,11 +1332,10 @@ export default function BudgetRequestListPage() {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Budget Type</span>
                           <span
-                            className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                              request.budget_type === "CAPEX"
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full ${request.budget_type === "CAPEX"
                                 ? "bg-[#1e3a5f] text-white"
                                 : "bg-green-100 text-green-700"
-                            }`}
+                              }`}
                           >
                             {request.budget_type}
                           </span>
@@ -1364,14 +1356,14 @@ export default function BudgetRequestListPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-  <span className="text-gray-400">Total</span>
-  <span className="text-blue-600 font-semibold">
-    {formatBudgetCurrency(
-      request.estimated_total,
-      request.currency || "IDR",
-    )}
-  </span>
-</div>
+                          <span className="text-gray-400">Total</span>
+                          <span className="text-blue-600 font-semibold">
+                            {formatBudgetCurrency(
+                              request.estimated_total,
+                              request.currency || "IDR",
+                            )}
+                          </span>
+                        </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Budget</span>
                           <span
@@ -1522,32 +1514,30 @@ export default function BudgetRequestListPage() {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span
-                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                request.budget_type === "CAPEX"
+                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${request.budget_type === "CAPEX"
                                   ? "bg-[#1e3a5f] text-white"
                                   : "bg-green-100 text-green-700"
-                              }`}
+                                }`}
                             >
                               {request.budget_type}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span
-                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                request.request_type === "ITEM"
+                              className={`px-2 py-0.5 text-xs font-semibold rounded-full ${request.request_type === "ITEM"
                                   ? "bg-blue-100 text-blue-700"
                                   : "bg-purple-100 text-purple-700"
-                              }`}
+                                }`}
                             >
                               {request.request_type}
                             </span>
                           </td>
-                        <td className="px-4 py-3 text-right text-blue-600 font-semibold">
-  {formatBudgetCurrency(
-    request.estimated_total,
-    request.currency || "IDR",
-  )}
-</td>
+                          <td className="px-4 py-3 text-right text-blue-600 font-semibold">
+                            {formatBudgetCurrency(
+                              request.estimated_total,
+                              request.currency || "IDR",
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">
                             {getBudgetName(request.budget_id)}
                           </td>

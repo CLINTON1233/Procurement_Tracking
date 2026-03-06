@@ -32,7 +32,7 @@ const generateYears = () => {
   // Dari tahun 2000 sampai 10 tahun ke depan (otomatis bertambah setiap tahun)
   const startYear = 2000;
   const endYear = currentYear + 10;
-  
+
   for (let year = startYear; year <= endYear; year++) {
     years.push(year.toString());
   }
@@ -165,17 +165,17 @@ export default function BudgetManagementPage() {
   // Filter budgets berdasarkan tipe dari header dan tahun
   const filteredBudgetsByHeader = useMemo(() => {
     let filtered = budgets;
-    
+
     // Filter by type
     if (headerTypeFilter !== "all") {
       filtered = filtered.filter(b => b.budget_type === headerTypeFilter);
     }
-    
+
     // Filter by year
     if (yearFilter !== "all") {
       filtered = filtered.filter(b => b.fiscal_year === yearFilter);
     }
-    
+
     return filtered;
   }, [budgets, headerTypeFilter, yearFilter]);
 
@@ -209,7 +209,7 @@ export default function BudgetManagementPage() {
   // Format untuk angka besar dengan font yang mengecil
   const formatAmountWithDynamicFont = (amountInIDR) => {
     let amount, currency;
-    
+
     if (displayCurrency === "IDR") {
       amount = amountInIDR;
       currency = "IDR";
@@ -217,10 +217,10 @@ export default function BudgetManagementPage() {
       amount = convertCurrency(amountInIDR, "IDR", "USD");
       currency = "USD";
     }
-    
+
     const { symbol, formatted } = formatFullNumber(amount, currency);
     const fontSizeClass = getFontSizeClass(formatted);
-    
+
     return { symbol, formatted, fontSizeClass };
   };
 
@@ -258,7 +258,7 @@ export default function BudgetManagementPage() {
         try {
           Swal.fire({ title: "Updating...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
           let success = 0;
-          for (const b of updatedBudgets) { try { await budgetService.updateBudget(b.id, b); success++; } catch {} }
+          for (const b of updatedBudgets) { try { await budgetService.updateBudget(b.id, b); success++; } catch { } }
           Swal.fire({ title: "Updated!", text: `${success} Budgets updated`, icon: "success", confirmButtonColor: "#1e40af" });
           fetchBudgets(); setSelectMode(false); setSelectedBudgets([]); setSelectAll(false);
         } catch { Swal.fire({ title: "Error!", text: "Failed to update budgets", icon: "error", confirmButtonColor: "#1e40af" }); }
@@ -276,7 +276,7 @@ export default function BudgetManagementPage() {
     if (r.isConfirmed) {
       Swal.fire({ title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       let success = 0;
-      for (const id of selectedBudgets) { try { await budgetService.deleteBudget(id); success++; } catch {} }
+      for (const id of selectedBudgets) { try { await budgetService.deleteBudget(id); success++; } catch { } }
       Swal.fire({ title: "Deleted!", text: `${success} Budgets deleted`, icon: "success", confirmButtonColor: "#1e40af" });
       fetchBudgets(); setSelectMode(false); setSelectedBudgets([]); setSelectAll(false);
     }
@@ -419,7 +419,7 @@ export default function BudgetManagementPage() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-bold text-gray-900">Manage Budget</h1>
-              
+
               {/* Type Filter Badge */}
               <div className="relative">
                 <button
@@ -438,9 +438,8 @@ export default function BudgetManagementPage() {
                           setHeaderTypeFilter("all");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "all" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
                         ALL (CAPEX & OPEX)
                       </button>
@@ -449,22 +448,20 @@ export default function BudgetManagementPage() {
                           setHeaderTypeFilter("CAPEX");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "CAPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
-                        CAPEX 
+                        CAPEX
                       </button>
                       <button
                         onClick={() => {
                           setHeaderTypeFilter("OPEX");
                           setShowTypeDropdown(false);
                         }}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${
-                          headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg ${headerTypeFilter === "OPEX" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
+                          }`}
                       >
-                        OPEX 
+                        OPEX
                       </button>
                     </div>
                   </>
@@ -493,16 +490,15 @@ export default function BudgetManagementPage() {
                             setYearFilter("all");
                             setShowYearDropdown(false);
                           }}
-                          className={`col-span-4 px-3 py-2 text-sm rounded-lg mb-2 ${
-                            yearFilter === "all" ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                          className={`col-span-4 px-3 py-2 text-sm rounded-lg mb-2 ${yearFilter === "all" ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-50"
+                            }`}
                         >
                           All Years
                         </button>
                         {availableYears.map(year => {
                           const isDisabled = parseInt(year) < 2026;
                           const isSelected = yearFilter === year;
-                          
+
                           return (
                             <button
                               key={year}
@@ -516,8 +512,8 @@ export default function BudgetManagementPage() {
                               className={`
                                 px-2 py-1.5 text-sm rounded-lg transition-colors
                                 ${isSelected ? 'bg-blue-50 text-blue-600 font-semibold' : ''}
-                                ${isDisabled 
-                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                ${isDisabled
+                                  ? 'text-gray-300 cursor-not-allowed bg-gray-50'
                                   : 'text-gray-700 hover:bg-gray-50'
                                 }
                               `}
@@ -537,12 +533,12 @@ export default function BudgetManagementPage() {
               </div>
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              {headerTypeFilter === "all" 
-                ? "Showing all CAPEX and OPEX budgets" 
+              {headerTypeFilter === "all"
+                ? "Showing all CAPEX and OPEX budgets"
                 : `Showing ${headerTypeFilter} budgets only`}
               {yearFilter !== "all" && ` for year ${yearFilter}`}
             </p>
-            
+
           </div>
         </div>
 
@@ -598,7 +594,7 @@ export default function BudgetManagementPage() {
               })()}
               <p className="text-xs text-gray-500">from {formatDisplayAmount(filteredStats.totalAmount)} total</p>
             </div>
-            
+
             {/* Total Card */}
             <div className="donut-card">
               <h4>Total Amount</h4>
@@ -612,7 +608,7 @@ export default function BudgetManagementPage() {
               })()}
               <p className="text-xs text-gray-500">total budget</p>
             </div>
-            
+
             {/* Used Card */}
             <div className="donut-card">
               <h4>Used</h4>
@@ -626,7 +622,7 @@ export default function BudgetManagementPage() {
               })()}
               <p className="text-xs text-gray-500">{usedPct.toFixed(1)}% of total</p>
             </div>
-            
+
             {/* Reserved Card */}
             <div className="donut-card">
               <h4>Reserved</h4>
@@ -646,74 +642,74 @@ export default function BudgetManagementPage() {
         {/* ── Row 2: Charts ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           {/* Bar Chart by Department */}
-   {/* Bar Chart by Department - FULL CARD dengan batang lebih kecil */}
-<div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
-  <p className="section-title flex items-center gap-2 mb-3">
-    <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
-  </p>
-  <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart 
-        data={deptChartData} 
-        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
-        barSize={18}
-      >
-        <CartesianGrid vertical={false} stroke="#f3f4f6" />
-        <XAxis 
-          dataKey="name" 
-          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }} 
-          tickLine={false} 
-          axisLine={false}
-          tickFormatter={v => v.length > 12 ? v.slice(0, 12) + "…" : v}
-          interval={0}
-          angle={-10}
-          textAnchor="end"
-          height={45}
-        />
-        <YAxis 
-          tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }} 
-          tickLine={false} 
-          axisLine={false}
-          width={40}
-        />
-        <Tooltip 
-          formatter={(v) => [`${v.toLocaleString()}M IDR`, "Total Budget"]} 
-          labelFormatter={(label) => `Department: ${label}`}
-          contentStyle={{ 
-            fontSize: 12, 
-            borderRadius: 8, 
-            border: "1px solid #e5e7eb",
-            backgroundColor: "#fff",
-            padding: "8px 12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            fontFamily: "'DM Sans', sans-serif"
-          }} 
-        />
-        <Bar 
-          dataKey="value" 
-          fill="#1e3a5f" 
-          radius={[4, 4, 0, 0]}
-          barSize={18}
-          animationDuration={600}
-        />
-      </BarChart>
-    </ResponsiveContainer>
-  </div>
-  
-  {/* Summary info di bawah chart - SEKARANG AKAN TERLIHAT */}
-  {deptChartData.length > 0 && (
-    <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
-      <span className="flex items-center gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-        Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
-      </span>
-      <span className="flex items-center gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-        Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value}M)</span>
-      </span>
-    </div>
-  )}
-</div>
+          {/* Bar Chart by Department - FULL CARD dengan batang lebih kecil */}
+          <div className="card p-5 md:col-span-3" style={{ minHeight: "300px" }}>
+            <p className="section-title flex items-center gap-2 mb-3">
+              <span className="bullet-dot bg-blue-800" />Budget by Department (IDR Jt)
+            </p>
+            <div style={{ width: "100%", height: "calc(100% - 55px)" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={deptChartData}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                  barSize={18}
+                >
+                  <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={v => v.length > 12 ? v.slice(0, 12) + "…" : v}
+                    interval={0}
+                    angle={-10}
+                    textAnchor="end"
+                    height={45}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#374151", fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={40}
+                  />
+                  <Tooltip
+                    formatter={(v) => [`${v.toLocaleString()}M IDR`, "Total Budget"]}
+                    labelFormatter={(label) => `Department: ${label}`}
+                    contentStyle={{
+                      fontSize: 12,
+                      borderRadius: 8,
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#fff",
+                      padding: "8px 12px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      fontFamily: "'DM Sans', sans-serif"
+                    }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="#1e3a5f"
+                    radius={[4, 4, 0, 0]}
+                    barSize={18}
+                    animationDuration={600}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Summary info di bawah chart - SEKARANG AKAN TERLIHAT */}
+            {deptChartData.length > 0 && (
+              <div className="mt-1 text-xs text-gray-500 border-t border-gray-100 pt-1.5 flex justify-between items-center">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  Total: <span className="font-medium text-gray-700">{deptChartData.length} Dept</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Tertinggi: <span className="font-medium text-gray-700">{deptChartData[0]?.name} ({deptChartData[0]?.value}M)</span>
+                </span>
+              </div>
+            )}
+          </div>
           {/* Budget Distribution */}
           <div className="card p-5 md:col-span-2 space-y-4">
             <p className="section-title">Budget Distribution</p>
@@ -747,51 +743,51 @@ export default function BudgetManagementPage() {
 
             {/* 4 KPI Cards */}
 
-<div className="grid grid-cols-2 gap-2 pt-1">
-  {/* Budget Used Card */}
-  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-    <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Used</h4>
-    <InlineDonut pct={usedPct} color="#2563eb" size={70} stroke={8} />
-    <p className="text-xs text-gray-500 mt-2 text-center">
-      {(() => {
-        const { symbol, formatted } = formatFullNumber(filteredStats.totalUsed, displayCurrency);
-        const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
-        return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
-      })()}
-    </p>
-  </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Budget Used Card */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Used</h4>
+                <InlineDonut pct={usedPct} color="#2563eb" size={70} stroke={8} />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {(() => {
+                    const { symbol, formatted } = formatFullNumber(filteredStats.totalUsed, displayCurrency);
+                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+                  })()}
+                </p>
+              </div>
 
-  {/* CAPEX Ratio Card */}
-  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-    <h4 className="text-xs font-medium text-gray-600 mb-1">CAPEX Ratio</h4>
-    <InlineDonut pct={capexPct} color="#1e3a5f" size={70} stroke={8} />
-    <p className="text-xs text-gray-500 mt-2 text-center">
-      {filteredStats.CAPEX} CAPEX • {filteredStats.OPEX} OPEX
-    </p>
-  </div>
+              {/* CAPEX Ratio Card */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <h4 className="text-xs font-medium text-gray-600 mb-1">CAPEX/OPEX Ratio</h4>
+                <InlineDonut pct={capexPct} color="#1e3a5f" size={70} stroke={8} />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {filteredStats.CAPEX} CAPEX • {filteredStats.OPEX} OPEX
+                </p>
+              </div>
 
-  {/* Budget Health Card */}
-  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-    <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Health</h4>
-    <InlineDonut pct={remainingPct} color="#10b981" size={70} stroke={8} />
-    <p className="text-xs text-gray-500 mt-2 text-center">
-      {(() => {
-        const { symbol, formatted } = formatFullNumber(filteredStats.totalRemaining, displayCurrency);
-        const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
-        return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
-      })()}
-    </p>
-  </div>
+              {/* Budget Health Card */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <h4 className="text-xs font-medium text-gray-600 mb-1">Budget Health</h4>
+                <InlineDonut pct={remainingPct} color="#10b981" size={70} stroke={8} />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {(() => {
+                    const { symbol, formatted } = formatFullNumber(filteredStats.totalRemaining, displayCurrency);
+                    const { symbol: symbol2, formatted: formatted2 } = formatFullNumber(filteredStats.totalAmount, displayCurrency);
+                    return `${symbol} ${formatted} / ${symbol2} ${formatted2}`;
+                  })()}
+                </p>
+              </div>
 
-  {/* Active Budgets Card */}
-  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-    <h4 className="text-xs font-medium text-gray-600 mb-1">Active Budgets</h4>
-    <InlineDonut pct={activePct} color="#f59e0b" size={70} stroke={8} />
-    <p className="text-xs text-gray-500 mt-2 text-center">
-      {filteredStats.active} of {filteredStats.total} active
-    </p>
-  </div>
-</div>
+              {/* Active Budgets Card */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <h4 className="text-xs font-medium text-gray-600 mb-1">Active Budgets</h4>
+                <InlineDonut pct={activePct} color="#f59e0b" size={70} stroke={8} />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  {filteredStats.active} of {filteredStats.total} active
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -958,19 +954,18 @@ export default function BudgetManagementPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                            budget.budget_type === "CAPEX" 
-                              ? "bg-[#1e3a5f] text-white" 
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${budget.budget_type === "CAPEX"
+                              ? "bg-[#1e3a5f] text-white"
                               : "bg-blue-100 text-blue-700"
-                          }`}>
+                            }`}>
                             {budget.budget_type}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_code || "—"}</td>
-               <td className="px-4 py-3 text-right font-semibold text-sm text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
-<td className="px-4 py-3 text-right font-semibold text-sm text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
-<td className="px-4 py-3 text-right font-semibold text-sm text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
-<td className="px-4 py-3 text-right font-semibold text-sm text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-sm text-gray-900">{formatBudgetCurrency(budget.total_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-sm text-yellow-600">{formatBudgetCurrency(budget.reserved_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-sm text-blue-600">{formatBudgetCurrency(budget.used_amount, budget.currency)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-sm text-emerald-600">{formatBudgetCurrency(budget.remaining_amount, budget.currency)}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-600">{budget.department_name}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-500">{budget.budget_owner || "—"}</td>
                         <td className="px-4 py-3 text-center text-xs text-gray-700">{budget.fiscal_year}</td>
